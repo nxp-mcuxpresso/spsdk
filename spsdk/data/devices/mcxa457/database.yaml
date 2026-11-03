@@ -87,6 +87,7 @@ features:
     iae_has_signed_offsets: True # There is a special cases when the Container is after images
     allow_empty_hash: False # Some chips allow empty image hash in OEM Open LC
     valid_offset_minimal_alignment: 4
+    signature_block_member_alignment: 4 # ROM requires word aligned signature block members
     container_image_size_alignment: 1
     pfr_hash_0:
       _name: "AHAB ECC SRKH"

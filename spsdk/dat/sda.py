@@ -590,7 +590,7 @@ class SdaAuthentication:
         # SDA AP on MCXE3xx is access-gated by DAPMUX before authentication and is not
         # reachable through a MEM-AP. Use direct CoreSight AP access.
         self.debug_probe.connect()
-        full_addr = DebugProbeCoreSightOnly.get_coresight_ap_address(
+        full_addr = self.debug_probe.get_coresight_ap_address(
             access_port=self.sda_ap_index, address=addr
         )
         return self.debug_probe.coresight_reg_read_safe(addr=full_addr)
@@ -605,7 +605,7 @@ class SdaAuthentication:
         """
         # See _read_reg: SDA AP requires direct CoreSight AP access.
         self.debug_probe.connect()
-        full_addr = DebugProbeCoreSightOnly.get_coresight_ap_address(
+        full_addr = self.debug_probe.get_coresight_ap_address(
             access_port=self.sda_ap_index, address=addr
         )
         self.debug_probe.coresight_reg_write_safe(addr=full_addr, data=data)

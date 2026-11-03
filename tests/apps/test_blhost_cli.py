@@ -15,7 +15,7 @@ to skip the hardware interface requirement. Tests must patch sys.argv accordingl
 """
 
 import sys
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -217,3 +217,54 @@ def test_fill_memory_missing_args(cli_runner: CliRunner) -> None:
     """Test fill-memory fails when no interface or args are given."""
     result = cli_runner.invoke(main, ["fill-memory"], expected_code=-1)
     assert result.exit_code != 0
+
+
+# ---------------------------------------------------------------------------
+# trust-provisioning prove_genuinity — mode selection (ecdsa vs hybrid)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "mode_arg, expected_mocked_method, other_method",
+    [
+        (None, "tp_prove_genuinity", "tp_prove_genuinity_hybrid"),
+        ("ecdsa", "tp_prove_genuinity", "tp_prove_genuinity_hybrid"),
+        ("hybrid", "tp_prove_genuinity_hybrid", "tp_prove_genuinity"),
+    ],
+)
+def test_prove_genuinity_mode_selects_correct_mcuboot_method(
+    cli_runner: CliRunner, mode_arg: str | None, expected_mocked_method: str, other_method: str
+) -> None:
+    """Test that --mode selects the correct McuBoot prove-genuinity method.
+
+    No --mode (default), --mode ecdsa must call tp_prove_genuinity.
+    --mode hybrid must call tp_prove_genuinity_hybrid.
+    """
+    args = ["trust-provisioning", "prove_genuinity", "0x1000", "0x100"]
+    if mode_arg is not None:
+        args += ["--mode", mode_arg]
+
+    with (
+        patch(
+            "spsdk.apps.utils.common_cli_options.load_interface_config",
+            return_value=MagicMock(IDENTIFIER="usb", get_scan_args=dict),
+        ),
+        patch(
+            "spsdk.apps.utils.common_cli_options.MbootProtocolBase.get_interface_class"
+        ) as get_cls,
+        patch("spsdk.apps.blhost.McuBoot") as mock_mboot_class,
+    ):
+        get_cls.return_value.scan_single.return_value = MagicMock()
+        mock_mboot = MagicMock()
+        mock_mboot.__enter__.return_value = mock_mboot
+        mock_mboot.status_code = 0
+        getattr(mock_mboot, expected_mocked_method).return_value = 0x100
+        mock_mboot_class.return_value = mock_mboot
+
+        result = cli_runner.invoke(main, args)
+
+    assert result.exit_code == 0
+    getattr(mock_mboot, expected_mocked_method).assert_called_once_with(
+        address=0x1000, buffer_size=0x100
+    )
+    getattr(mock_mboot, other_method).assert_not_called()

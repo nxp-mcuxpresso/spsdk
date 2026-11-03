@@ -1,0 +1,55 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ===========  AHAB converted config.  ===========
+# Two containers signed with the same SRK table/key, used to verify that
+# SRKH fuse files are generated only once when the SRK hash is identical
+# across all containers (SPSDK-6159).
+family: mimxrt1189 # [Required], MCU family
+revision: a0 # [Optional], MCU revision
+target_memory: standard # [Required], Type of image
+output: multi_container_same_srk_ahab.bin # [Required], Output file name
+containers: # [Required], List of containers present in AHAB
+  - container: # [Required], AHAB Container
+      srk_set: oem
+      used_srk_id: 0
+      srk_revoke_mask: 0
+      fuse_version: 0
+      sw_version: 0
+      signer: ../../_data/keys/ecc256/srk0_ecc256.pem
+      images:
+        - image_path: ahab/fuses_scripts/dummy_data.bin
+          image_offset: 0
+          load_address: 2
+          entry_point: 1
+          image_type: executable
+          core_id: cortex-m33
+          hash_type: sha512
+      srk_table:
+        srk_array:
+          - ../../_data/keys/ecc256/srk0_ecc256.pub
+          - ../../_data/keys/ecc256/srk1_ecc256.pub
+          - ../../_data/keys/ecc256/srk2_ecc256.pub
+          - ../../_data/keys/ecc256/srk3_ecc256.pub
+  - container: # [Required], AHAB Container - same SRK table/key as the first one
+      srk_set: oem
+      used_srk_id: 0
+      srk_revoke_mask: 0
+      fuse_version: 0
+      sw_version: 1
+      signer: ../../_data/keys/ecc256/srk0_ecc256.pem
+      images:
+        - image_path: ahab/fuses_scripts/dummy_data.bin
+          image_offset: 0
+          load_address: 2
+          entry_point: 1
+          image_type: executable
+          core_id: cortex-m33
+          hash_type: sha512
+      srk_table:
+        srk_array:
+          - ../../_data/keys/ecc256/srk0_ecc256.pub
+          - ../../_data/keys/ecc256/srk1_ecc256.pub
+          - ../../_data/keys/ecc256/srk2_ecc256.pub
+          - ../../_data/keys/ecc256/srk3_ecc256.pub

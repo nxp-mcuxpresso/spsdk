@@ -627,6 +627,9 @@ class AhabChipConfig:
     :cvar images_max_cnt: Maximum number of images per container.
     :cvar container_types: List of supported container type identifiers.
     :cvar valid_offset_minimal_alignment: Minimum alignment requirement for offsets.
+    :cvar signature_block_member_alignment: Alignment of individual members (SRK table array,
+        signature, certificate and blob) inside the AHAB v2 signature block and of the
+        signatures inside the AHAB certificate. Value 1 means no padding is inserted.
     :cvar allow_empty_hash: Whether empty hash values are permitted.
     :cvar allow_key_mix: Whether mixed SRK key types are permitted in a single SRK table.
     :cvar iae_has_signed_offsets: Whether Image Array Entry uses signed offset values.
@@ -651,6 +654,7 @@ class AhabChipConfig:
     images_max_cnt: int = 8
     container_types: list[int] = field(default_factory=list)
     valid_offset_minimal_alignment: int = 4
+    signature_block_member_alignment: int = 1
     allow_empty_hash: bool = False
     allow_key_mix: bool = False
     iae_has_signed_offsets: bool = False
@@ -773,6 +777,9 @@ def create_chip_config(
     valid_offset_minimal_alignment = db.get_int(
         feature, make_key("valid_offset_minimal_alignment"), 4
     )
+    signature_block_member_alignment = db.get_int(
+        feature, make_key("signature_block_member_alignment"), 1
+    )
 
     container_types = db.get_list(feature, make_key("container_types"))
     allow_empty_hash = db.get_bool(feature, make_key("allow_empty_hash"))
@@ -823,6 +830,7 @@ def create_chip_config(
         images_max_cnt=images_max_cnt,
         container_types=container_types,
         valid_offset_minimal_alignment=valid_offset_minimal_alignment,
+        signature_block_member_alignment=signature_block_member_alignment,
         allow_empty_hash=allow_empty_hash,
         allow_key_mix=allow_key_mix,
         iae_has_signed_offsets=iae_has_signed_offsets,

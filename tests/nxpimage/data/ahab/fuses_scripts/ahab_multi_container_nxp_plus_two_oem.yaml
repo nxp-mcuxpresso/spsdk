@@ -1,0 +1,80 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ===========  AHAB converted config.  ===========
+# First container is signed by NXP keys (SRKH fuse generation is always
+# skipped for NXP/DEVHSM containers), the two remaining containers are
+# signed by OEM keys using the *same* SRK table as the NXP container and
+# as each other. This is the common MPU layout (one NXP container plus
+# several OEM containers) and must still produce exactly one shared set
+# of SRKH fuse files for the OEM containers, not one set per OEM
+# container (SPSDK-6159).
+family: mx95 # [Required], MCU family
+revision: b0 # [Optional], MCU revision
+target_memory: standard # [Required], Type of image
+output: multi_container_nxp_plus_two_oem_ahab.bin # [Required], Output file name
+containers: # [Required], List of containers present in AHAB
+  - container: # [Required], AHAB Container - signed by NXP, must never produce SRKH fuse files
+      srk_set: nxp
+      used_srk_id: 0
+      srk_revoke_mask: 0
+      fuse_version: 0
+      sw_version: 0
+      signer: ../../_data/keys/ecc256/srk0_ecc256.pem
+      images:
+        - image_path: ahab/fuses_scripts/dummy_data.bin
+          image_offset: 0
+          load_address: 2
+          entry_point: 1
+          image_type: executable
+          core_id: cortex-a55
+          hash_type: sha512
+      srk_table:
+        srk_array:
+          - ../../_data/keys/ecc256/srk0_ecc256.pub
+          - ../../_data/keys/ecc256/srk1_ecc256.pub
+          - ../../_data/keys/ecc256/srk2_ecc256.pub
+          - ../../_data/keys/ecc256/srk3_ecc256.pub
+  - container: # [Required], AHAB Container - signed by OEM #1, same SRK table as the others
+      srk_set: oem
+      used_srk_id: 0
+      srk_revoke_mask: 0
+      fuse_version: 0
+      sw_version: 1
+      signer: ../../_data/keys/ecc256/srk0_ecc256.pem
+      images:
+        - image_path: ahab/fuses_scripts/dummy_data.bin
+          image_offset: 0
+          load_address: 2
+          entry_point: 1
+          image_type: executable
+          core_id: cortex-a55
+          hash_type: sha512
+      srk_table:
+        srk_array:
+          - ../../_data/keys/ecc256/srk0_ecc256.pub
+          - ../../_data/keys/ecc256/srk1_ecc256.pub
+          - ../../_data/keys/ecc256/srk2_ecc256.pub
+          - ../../_data/keys/ecc256/srk3_ecc256.pub
+  - container: # [Required], AHAB Container - signed by OEM #2, same SRK table as the others
+      srk_set: oem
+      used_srk_id: 0
+      srk_revoke_mask: 0
+      fuse_version: 0
+      sw_version: 2
+      signer: ../../_data/keys/ecc256/srk0_ecc256.pem
+      images:
+        - image_path: ahab/fuses_scripts/dummy_data.bin
+          image_offset: 0
+          load_address: 2
+          entry_point: 1
+          image_type: executable
+          core_id: cortex-a55
+          hash_type: sha512
+      srk_table:
+        srk_array:
+          - ../../_data/keys/ecc256/srk0_ecc256.pub
+          - ../../_data/keys/ecc256/srk1_ecc256.pub
+          - ../../_data/keys/ecc256/srk2_ecc256.pub
+          - ../../_data/keys/ecc256/srk3_ecc256.pub

@@ -48,6 +48,8 @@ from spsdk.ele.ele_message_hse import (
     KeyImportPayload,
 )
 from spsdk.ele.hse_attrs import (
+    CoreReleaseStrategy,
+    CoreResetReleaseAttributeHandler,
     DebugAuthModeAttributeHandler,
     EnablePublishKeyStoreRamToFlashAttributeHandler,
     HseAttributeHandler,
@@ -351,6 +353,35 @@ def debug_auth_mode(
 ) -> None:
     """Advance the secure lifecycle."""
     attr_handler = DebugAuthModeAttributeHandler(value)
+    cmd: EleMessageHseSetAttr = set_attr(ele_handler, attr_handler)
+    click.echo(
+        f"Setting up the attribute '{attr_handler.ATTR_ID.label}' finished: {cmd.status_string}."
+    )
+
+
+@set_attribute_group.command(name="core-reset-release", no_args_is_help=True)
+@click.option(
+    "-v",
+    "--value",
+    type=click.Choice(CoreReleaseStrategy.labels(), case_sensitive=False),
+    callback=lambda ctx, param, value: CoreReleaseStrategy.from_label(value.lower()),
+    required=True,
+    help="Core reset release strategy to be set (ALL_AT_ONCE or ONE_BY_ONE).",
+)
+@click.pass_obj
+def core_reset_release(
+    ele_handler: EleMessageHandler,
+    value: CoreReleaseStrategy,
+) -> None:
+    """Set the Core Reset table parsing / release strategy.
+
+    Configures whether HSE releases the application cores from reset all at once
+    (after the whole CR table pre-boot verification phase completes) or one by one
+    (each core released right after its own CR entry and pre-boot SMR entries have
+    been verified successfully). This is relevant for multi-core (e.g. dual-core)
+    boot configurations.
+    """
+    attr_handler = CoreResetReleaseAttributeHandler(value)
     cmd: EleMessageHseSetAttr = set_attr(ele_handler, attr_handler)
     click.echo(
         f"Setting up the attribute '{attr_handler.ATTR_ID.label}' finished: {cmd.status_string}."

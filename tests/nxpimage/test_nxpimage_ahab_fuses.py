@@ -31,6 +31,17 @@ from tests.nxpimage.test_nxpimage_cert_block import process_config_file
         # ("mimx8ulp", "latest", "ahab_classic.yaml", "nxpele", "cortex-a55"),
         ("mimx9131", "latest", "ahab_classic.yaml", "nxpele", "cortex-a55"),
         ("mimx9352", "latest", "ahab_classic.yaml", "nxpele", "cortex-a55"),
+        ("mimxrt2662", "a0", "ahab_classic.yaml", "blhost", "cortex-m85"),
+        pytest.param(
+            "mimxrt2662",
+            "a0",
+            "ahab_pqc.yaml",
+            "blhost",
+            "cortex-m85",
+            marks=pytest.mark.skipif(
+                not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed"
+            ),
+        ),
         pytest.param(
             "mimx943",
             "latest",
@@ -329,3 +340,172 @@ def test_nxpimage_ahab_fuse_indexes(
                 f"Generated fuse commands {generated_commands} do not match "
                 f"expected commands {expected_commands} for {family} ({srk_index})"
             )
+
+
+def test_nxpimage_ahab_fuse_generation_multi_container_same_srk(
+    cli_runner: CliRunner, tmpdir: str, data_dir: str
+) -> None:
+    """Test that only one shared set of SRKH fuse files is generated for identical SRKs.
+
+    When all AHAB containers in the image share the same SRK hash, only a single
+    set of SRKH fuse files without a container index should be generated instead
+    of one set per container (SPSDK-6159).
+
+    :param cli_runner: CLI runner instance for executing nxpimage commands.
+    :param tmpdir: Temporary directory for test output files.
+    :param data_dir: Directory containing test data files.
+    """
+    with use_working_directory(data_dir):
+        config_file = f"{data_dir}/ahab/fuses_scripts/ahab_multi_container_same_srk.yaml"
+        _, new_binary, new_config = process_config_file(config_file, tmpdir, "output")
+
+        cmd = f"ahab export -c {new_config}"
+        result = cli_runner.invoke(nxpimage.main, cmd.split())
+        assert result.exit_code == 0, f"Export failed: {result.stdout}"
+
+        output_dir = os.path.dirname(new_binary)
+
+        # Shared SRKH fuse files (without a container index) must be generated exactly once.
+        shared_hash_txt = os.path.join(output_dir, "ahab_oem_srk0_hash.txt")
+        shared_hash_bcf = os.path.join(output_dir, "ahab_oem_srk0_hash_blhost.bcf")
+        assert os.path.isfile(shared_hash_txt), "Shared SRK hash text file was not generated"
+        assert os.path.isfile(shared_hash_bcf), "Shared SRK hash fuse script was not generated"
+
+        # No per-container indexed files should exist for either container.
+        for cnt_ix in (0, 1):
+            assert not os.path.isfile(
+                os.path.join(output_dir, f"ahab_oem{cnt_ix}_srk0_hash.txt")
+            ), f"Unexpected per-container SRK hash file generated for container {cnt_ix}"
+
+
+def test_nxpimage_ahab_fuse_generation_multi_container_diff_srk(
+    cli_runner: CliRunner, tmpdir: str, data_dir: str
+) -> None:
+    """Test that per-container SRKH fuse files are generated when SRKs differ.
+
+    When AHAB containers in the image use different SRK hashes, the SRKH fuse
+    files must still be generated individually per container (SPSDK-6159).
+
+    :param cli_runner: CLI runner instance for executing nxpimage commands.
+    :param tmpdir: Temporary directory for test output files.
+    :param data_dir: Directory containing test data files.
+    """
+    with use_working_directory(data_dir):
+        config_file = f"{data_dir}/ahab/fuses_scripts/ahab_multi_container_diff_srk.yaml"
+        _, new_binary, new_config = process_config_file(config_file, tmpdir, "output")
+
+        cmd = f"ahab export -c {new_config}"
+        result = cli_runner.invoke(nxpimage.main, cmd.split())
+        assert result.exit_code == 0, f"Export failed: {result.stdout}"
+
+        output_dir = os.path.dirname(new_binary)
+
+        # Per-container indexed files must exist for both containers.
+        for cnt_ix in (0, 1):
+            hash_txt = os.path.join(output_dir, f"ahab_oem{cnt_ix}_srk0_hash.txt")
+            hash_bcf = os.path.join(output_dir, f"ahab_oem{cnt_ix}_srk0_hash_blhost.bcf")
+            assert os.path.isfile(hash_txt), f"SRK hash text file missing for container {cnt_ix}"
+            assert os.path.isfile(hash_bcf), f"SRK hash fuse script missing for container {cnt_ix}"
+
+        # No shared file (without a container index) should exist.
+        shared_hash_txt = os.path.join(output_dir, "ahab_oem_srk0_hash.txt")
+        assert not os.path.isfile(shared_hash_txt), "Unexpected shared SRK hash file generated"
+
+
+def test_nxpimage_ahab_fuse_generation_multi_container_nxp_first(
+    cli_runner: CliRunner, tmpdir: str, data_dir: str
+) -> None:
+    """Test SRKH fuse generation when container 0 is skipped but shares SRK hash with others.
+
+    Container 0 is signed by NXP keys (SRKH fuse generation is always skipped for
+    NXP/DEVHSM containers) while container 1 is signed by OEM keys using the *same*
+    SRK table. Even though the SRK hash of container 0 matches the SRK hash of the
+    other containers, container 0 itself never produces SRKH fuse files. Since
+    container 1 is the only container that actually produces fuse files, it is used
+    as the shared representative and a single shared set of files without a
+    container index is generated, instead of per-container indexed files
+    (SPSDK-6159).
+
+    :param cli_runner: CLI runner instance for executing nxpimage commands.
+    :param tmpdir: Temporary directory for test output files.
+    :param data_dir: Directory containing test data files.
+    """
+    with use_working_directory(data_dir):
+        config_file = f"{data_dir}/ahab/fuses_scripts/ahab_multi_container_nxp_first.yaml"
+        _, new_binary, new_config = process_config_file(config_file, tmpdir, "output")
+
+        cmd = f"ahab export -c {new_config}"
+        result = cli_runner.invoke(nxpimage.main, cmd.split())
+        assert result.exit_code == 0, f"Export failed: {result.stdout}"
+
+        output_dir = os.path.dirname(new_binary)
+
+        # Only container 1 (OEM) produces fuse files; since it is the sole producer,
+        # a shared set of files (without a container index) is generated instead
+        # of an indexed one.
+        shared_hash_txt = os.path.join(output_dir, "ahab_oem_srk0_hash.txt")
+        shared_hash_bcf = os.path.join(output_dir, "ahab_oem_srk0_hash_blhost.bcf")
+        assert os.path.isfile(shared_hash_txt), "Shared SRK hash text file was not generated"
+        assert os.path.isfile(shared_hash_bcf), "Shared SRK hash fuse script was not generated"
+
+        # No per-container indexed file should exist for the OEM container.
+        assert not os.path.isfile(
+            os.path.join(output_dir, "ahab_oem1_srk0_hash.txt")
+        ), "Unexpected per-container SRK hash file generated for OEM container"
+
+        # Container 0 (NXP) must never produce SRKH fuse files, indexed or shared.
+        assert not os.path.isfile(
+            os.path.join(output_dir, "ahab_nxp0_srk0_hash.txt")
+        ), "Unexpected SRK hash file generated for NXP container"
+        assert not os.path.isfile(
+            os.path.join(output_dir, "ahab_nxp_srk0_hash.txt")
+        ), "Unexpected SRK hash file generated for NXP container"
+
+
+def test_nxpimage_ahab_fuse_generation_multi_container_nxp_plus_two_oem(
+    cli_runner: CliRunner, tmpdir: str, data_dir: str
+) -> None:
+    """Test SRKH fuse generation for a common MPU layout: one NXP + several OEM containers.
+
+    Container 0 is signed by NXP keys (always skipped for SRKH fuse generation),
+    while containers 1 and 2 are signed by OEM keys using the *same* SRK table as
+    each other and as the NXP container. This is the typical MPU container layout.
+    Even though the SRK hash is identical across all three containers, only the
+    two OEM containers actually produce fuse files, so a single shared set of
+    files without a container index must be generated for them, not one set per
+    OEM container (SPSDK-6159).
+
+    :param cli_runner: CLI runner instance for executing nxpimage commands.
+    :param tmpdir: Temporary directory for test output files.
+    :param data_dir: Directory containing test data files.
+    """
+    with use_working_directory(data_dir):
+        config_file = f"{data_dir}/ahab/fuses_scripts/ahab_multi_container_nxp_plus_two_oem.yaml"
+        _, new_binary, new_config = process_config_file(config_file, tmpdir, "output")
+
+        cmd = f"ahab export -c {new_config}"
+        result = cli_runner.invoke(nxpimage.main, cmd.split())
+        assert result.exit_code == 0, f"Export failed: {result.stdout}"
+
+        output_dir = os.path.dirname(new_binary)
+
+        # A single shared set of files (without a container index) must be
+        # generated for the OEM containers, not one set per OEM container.
+        shared_hash_txt = os.path.join(output_dir, "ahab_oem_srk0_hash.txt")
+        shared_hash_bcf = os.path.join(output_dir, "ahab_oem_srk0_hash_nxpele.bcf")
+        assert os.path.isfile(shared_hash_txt), "Shared SRK hash text file was not generated"
+        assert os.path.isfile(shared_hash_bcf), "Shared SRK hash fuse script was not generated"
+
+        # No per-container indexed files should exist for either OEM container.
+        for cnt_ix in (1, 2):
+            assert not os.path.isfile(
+                os.path.join(output_dir, f"ahab_oem{cnt_ix}_srk0_hash.txt")
+            ), f"Unexpected per-container SRK hash file generated for container {cnt_ix}"
+
+        # Container 0 (NXP) must never produce SRKH fuse files, indexed or shared.
+        assert not os.path.isfile(
+            os.path.join(output_dir, "ahab_nxp0_srk0_hash.txt")
+        ), "Unexpected SRK hash file generated for NXP container"
+        assert not os.path.isfile(
+            os.path.join(output_dir, "ahab_nxp_srk0_hash.txt")
+        ), "Unexpected SRK hash file generated for NXP container"

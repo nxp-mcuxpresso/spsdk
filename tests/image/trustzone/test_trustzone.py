@@ -16,10 +16,11 @@ import os
 import pytest
 
 from spsdk.exceptions import SPSDKError
-from spsdk.image.trustzone import TrustZone
+from spsdk.image.trustzone import TrustZone, TrustZoneV2, TrustZoneV2Record
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import load_binary
+from spsdk.utils.verifier import VerifierResult
 
 
 @pytest.fixture(scope="module")
@@ -133,3 +134,47 @@ def test_tz_incorrect_family() -> None:
     """
     with pytest.raises(SPSDKError):
         TrustZone.get_validation_schemas(FamilyRevision("nonsense"))
+
+
+def test_tz_verify_default_values() -> None:
+    """Test TrustZone.verify() doesn't report the generic 'Not implemented' warning.
+
+    Covers SPSDK-7082/SPSDK-7098: verifying a default (non-customized) TrustZone
+    preset must succeed without any warnings.
+    """
+    tz = TrustZone(family=FamilyRevision("lpc55s69"))
+    verifier = tz.verify()
+    assert not verifier.has_warnings
+    assert not verifier.has_errors
+    assert verifier.result == VerifierResult.SUCCEEDED
+
+
+def test_tz_verify_customized(sample_tz_data: Config) -> None:
+    """Test TrustZone.verify() reports register values for a customized preset."""
+    tz = TrustZone.load_from_config(sample_tz_data)
+    verifier = tz.verify()
+    assert not verifier.has_warnings
+    assert not verifier.has_errors
+    # Customized configuration should report at least one register record
+    assert len(verifier.records) > 1
+
+
+def test_tz_v2_verify_default_values() -> None:
+    """Test TrustZoneV2.verify() doesn't report the generic 'Not implemented' warning."""
+    tz = TrustZoneV2(family=FamilyRevision("mcxn556s"))
+    verifier = tz.verify()
+    assert not verifier.has_warnings
+    assert not verifier.has_errors
+    assert verifier.result == VerifierResult.SUCCEEDED
+
+
+def test_tz_v2_verify_customized() -> None:
+    """Test TrustZoneV2.verify() reports each configured record."""
+    tz = TrustZoneV2(
+        family=FamilyRevision("mcxn556s"),
+        records=[TrustZoneV2Record(address=0x1000, value=0xDEAD, mask=0xFF)],
+    )
+    verifier = tz.verify()
+    assert not verifier.has_warnings
+    assert not verifier.has_errors
+    assert len(verifier.records) == 2  # configuration type + one record

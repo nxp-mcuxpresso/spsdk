@@ -196,6 +196,44 @@ def test_nxpcrypto_extract_puk(
         assert prk == puk
 
 
+@pytest.mark.parametrize("encoding", ["PEM", "DER"])
+@pytest.mark.parametrize(
+    "key_path",
+    [
+        os.path.join("..", "_data", "keys", "mldsa65", "srk0_mldsa65_native.pem"),
+        pytest.param(
+            os.path.join("data", "signature_tool", "dil3.bin"),
+            marks=pytest.mark.skipif(
+                not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed"
+            ),
+        ),
+    ],
+)
+def test_nxpcrypto_extract_puk_pqc(
+    cli_runner: CliRunner, tmpdir: str, key_path: str, encoding: str
+) -> None:
+    """Test extraction of public key from PQC private key using nxpcrypto CLI.
+
+    This test verifies that the nxpcrypto key convert command with --puk option
+    exports a public key (not the private key) for PQC keys such as ML-DSA and Dilithium.
+
+    :param cli_runner: Click CLI test runner for executing commands.
+    :param tmpdir: Temporary directory for output files.
+    :param key_path: Path to PQC private key relative to this test directory.
+    :param encoding: Key encoding format for conversion.
+    """
+    src_key = os.path.join(os.path.dirname(__file__), key_path)
+    dst_key = os.path.join(tmpdir, f"puk.{encoding.lower()}")
+    cmd = f"key convert -i {src_key} -e {encoding} --puk -o {dst_key}"
+    run_nxpcrypto(cli_runner, cmd, tmpdir)
+
+    prk = nxpcrypto.reconstruct_key(load_binary(src_key))
+    puk = nxpcrypto.reconstruct_key(load_binary(dst_key))
+    assert isinstance(prk, PrivateKey)
+    assert isinstance(puk, PublicKey)
+    assert prk.get_public_key() == puk
+
+
 def test_nxpcrypto_convert_rsa_raw_not_supported(
     cli_runner: CliRunner, data_dir: str, tmpdir: str
 ) -> None:
@@ -455,6 +493,76 @@ def test_nxpcrypto_rot_calc_hash(
     rotkth_bin = load_binary(out_file)
     rotkth = rotkth_bin.decode("utf-8") if base64 else rotkth_bin.hex()
     assert rotkth == ref_rotkth
+
+
+@pytest.mark.parametrize(
+    "family",
+    ["mimx943", "mimx9596", "mimxrt1189", "mimxrt595s", "mimxrt685s", "mimxrt735s"],
+)
+def test_nxpcrypto_rot_calc_hash_fuse_script(
+    cli_runner: CliRunner, data_dir: str, tmpdir: str, family: str
+) -> None:
+    """Test RoT hash BCF fuse-script generation for supported AHAB families."""
+    fuse_script = os.path.join(tmpdir, f"{family}_srk_hash.bcf")
+    keys = [f"ec_secp256r1_cert{index}.pem" for index in range(4)]
+    cmd = f"rot calculate-hash -f {family} -fs {fuse_script}"
+    for key in keys:
+        cmd = f"{cmd} -k {key}"
+
+    run_nxpcrypto(cli_runner, cmd, data_dir)
+
+    script = load_text(fuse_script)
+    assert "fuses programming script" in script
+    assert "write-fuse" in script or "efuse-program-once" in script
+
+
+def test_nxpcrypto_rot_calc_hash_fuse_script_unsupported(
+    cli_runner: CliRunner, data_dir: str, tmpdir: str
+) -> None:
+    """Test fuse-script generation rejection for a family without a fuse definition."""
+    fuse_script = os.path.join(tmpdir, "srk_hash.bcf")
+    result = run_nxpcrypto(
+        cli_runner,
+        f"rot calculate-hash -f mcxn9xx -fs {fuse_script} -k ec_secp256r1_cert0.pem",
+        data_dir,
+        expected_code=1,
+    )
+
+    assert "Unsupported feature: 'ahab'" in str(result.exception)
+    assert not os.path.exists(fuse_script)
+
+
+def test_nxpcrypto_rot_calc_hash_fuse_script_pfr_error(
+    cli_runner: CliRunner, data_dir: str, tmpdir: str
+) -> None:
+    """Test BCF generation error for an LPC family storing ROTKH in PFR CMPA."""
+    fuse_script = os.path.join(tmpdir, "srk_hash.bcf")
+    result = run_nxpcrypto(
+        cli_runner,
+        f"rot calculate-hash -f lpc55s69 -fs {fuse_script} -k ec_secp256r1_cert0.pem",
+        data_dir,
+        expected_code=1,
+    )
+
+    assert "stored in PFR CMPA, not OTP fuses" in str(result.exception)
+    assert not os.path.exists(fuse_script)
+
+
+def test_nxpcrypto_rot_calc_hash_pqc_fuse_script(cli_runner: CliRunner, tmpdir: str) -> None:
+    """Test ML-DSA RoT hash BCF fuse-script generation for RT2662."""
+    data_dir = os.path.join(os.path.dirname(__file__), "..", "_data", "keys", "mldsa65")
+    fuse_script = os.path.join(tmpdir, "mimxrt2662_pqc_srkh.bcf")
+    keys = [os.path.join(data_dir, f"srk{index}_mldsa65_native.pub") for index in range(4)]
+    cmd = f"rot calculate-hash -f mimxrt2662 -h sha3_256 -fs {fuse_script}"
+    for key in keys:
+        cmd = f"{cmd} -k {key}"
+
+    run_nxpcrypto(cli_runner, cmd, tmpdir)
+
+    script = load_text(fuse_script)
+    assert "AHAB SRKH PQC" in script
+    assert "OEM_PQC_SRKH0" in script
+    assert "efuse-program-once 712" in script
 
 
 @pytest.mark.parametrize(

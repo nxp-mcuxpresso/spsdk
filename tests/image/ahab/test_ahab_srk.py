@@ -7,6 +7,7 @@
 """Extra.image.ahab.ahab_srk."""
 
 from pathlib import Path
+from types import SimpleNamespace
 from typing import cast
 
 import pytest
@@ -24,6 +25,7 @@ if IS_LMS_SUPPORTED:
     from spsdk.crypto.keys import PrivateKeyLMS
     from spsdk.crypto.lms import LMSParams
 from spsdk.exceptions import SPSDKError, SPSDKUnsupportedOperation, SPSDKValueError
+from spsdk.image.ahab.ahab_container import AHABContainerV2
 from spsdk.image.ahab.ahab_data import (
     AhabChipContainerConfig,
     AHABSignAlgorithm,
@@ -840,6 +842,42 @@ def test_srk_table_array_two_tables_str(chip_config_container, ecc256_pub) -> No
     arr.update_fields()
     s = str(arr)
     assert "SRK_1 table HASH" in s
+
+
+@pytest.mark.skipif(not IS_LMS_SUPPORTED, reason="pyhsslms not available")
+def test_get_srk_table_fuse_db_index_lms_second_table(
+    rt2660_chip_config_container: AhabChipContainerConfig, ecc256_pub: PublicKeyEcc
+) -> None:
+    """An LMS SRK table must map to the PQC fuse DB index (1), same as DILITHIUM/ML-DSA.
+
+    Regression test for SPSDK-7248: RT2660 hybrid signing (ECC + LMS) generated identical
+    (colliding) fuse addresses for both SRK tables, because LMS was not recognized as a PQC
+    algorithm by `_get_srk_table_fuse_db_index`.
+    """
+    ecc_table = SRKTableV2()
+    for i in range(4):
+        ecc_table.add_record(ecc256_pub, srk_id=i)
+        cast(SRKRecordV2, ecc_table.srk_records[i]).srk_data = SRKData.create_from_key(
+            ecc256_pub, i
+        )
+    ecc_table.update_fields()
+
+    lms_table = SRKTableV2()
+    for i in range(4):
+        lms_table.add_record(
+            PrivateKeyLMS.generate_key(LMSParams(hash_length=32, height=5, w=1)).get_public_key(),
+            srk_id=i,
+        )
+    lms_table.update_fields()
+
+    arr = SRKTableArray(chip_config=rt2660_chip_config_container, srk_tables=[ecc_table, lms_table])
+    arr.update_fields()
+
+    container = cast(
+        AHABContainerV2, SimpleNamespace(signature_block=SimpleNamespace(srk_assets=arr))
+    )
+    assert AHABContainerV2._get_srk_table_fuse_db_index(container, 0) == 0
+    assert AHABContainerV2._get_srk_table_fuse_db_index(container, 1) == 1
 
 
 def test_srk_table_array_equality(chip_config_container, ecc256_pub) -> None:  # type: ignore[no-untyped-def]

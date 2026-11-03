@@ -37,7 +37,7 @@ from spsdk.image.ahab.ahab_signature import ContainerSignature
 from spsdk.image.ahab.ahab_srk import SRKRecord, SRKTable
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
-from spsdk.utils.family import FamilyRevision
+from spsdk.utils.family import FamilyRevision, get_db
 from spsdk.utils.misc import write_file
 
 
@@ -321,6 +321,69 @@ def test_image_array_entry_load_from_config_rejects_oversized_gap_after_image_fi
         ImageArrayEntry.load_from_config(chip_config, cfg)
 
 
+def test_image_array_entry_serial_downloader_nonzero_offset_warns(caplog: Any) -> None:
+    """A nonzero image_offset in serial_downloader mode is ignored with a warning (SPSDK-7169)."""
+    import logging
+
+    cfg = Config({"core_id": "cortex-m33", "image_offset": "0x1000"})
+    chip_config = AhabChipContainerConfig(
+        base=create_chip_config(
+            family=FamilyRevision("mimxrt1189"), target_memory="serial_downloader"
+        )
+    )
+
+    with caplog.at_level(logging.WARNING, logger="spsdk.image.ahab.ahab_iae"):
+        image_entry = ImageArrayEntry.load_from_config(chip_config, cfg)
+
+    assert image_entry.image_offset == 0
+    assert "image_offset" in caplog.text
+    assert "serial_downloader" in caplog.text
+
+
+@pytest.mark.parametrize(
+    "config_dict",
+    [
+        {"core_id": "cortex-m33"},
+        {"core_id": "cortex-m33", "image_offset": 0},
+        {"core_id": "cortex-m33", "image_offset": "0x0"},
+    ],
+)
+def test_image_array_entry_serial_downloader_zero_offset_no_warning(
+    caplog: Any, config_dict: dict
+) -> None:
+    """No warning is logged when image_offset is 0 (or omitted) in serial_downloader mode."""
+    import logging
+
+    cfg = Config(config_dict)
+    chip_config = AhabChipContainerConfig(
+        base=create_chip_config(
+            family=FamilyRevision("mimxrt1189"), target_memory="serial_downloader"
+        )
+    )
+
+    with caplog.at_level(logging.WARNING, logger="spsdk.image.ahab.ahab_iae"):
+        image_entry = ImageArrayEntry.load_from_config(chip_config, cfg)
+
+    assert image_entry.image_offset == 0
+    assert "image_offset" not in caplog.text
+
+
+def test_image_array_entry_standard_memory_respects_nonzero_offset(caplog: Any) -> None:
+    """A nonzero image_offset is respected (not ignored/warned) outside serial_downloader mode."""
+    import logging
+
+    cfg = Config({"core_id": "cortex-m33", "image_offset": "0x1000"})
+    chip_config = AhabChipContainerConfig(
+        base=create_chip_config(family=FamilyRevision("mimxrt1189"), target_memory="standard")
+    )
+
+    with caplog.at_level(logging.WARNING, logger="spsdk.image.ahab.ahab_iae"):
+        image_entry = ImageArrayEntry.load_from_config(chip_config, cfg)
+
+    assert image_entry.image_offset == 0x1000
+    assert "image_offset" not in caplog.text
+
+
 def test_container_head_compare(container_head: HeaderContainer) -> None:
     """Test HeaderContainer class equality comparison functionality.
 
@@ -367,6 +430,16 @@ def test_container_head_validate(container_head: HeaderContainer) -> None:
     container_head.version = 0x01
 
 
+def test_container_head_verify_parsed_header_without_parsed_data(
+    container_head: HeaderContainer,
+) -> None:
+    """Test that configured headers do not report missing parsed data as a warning."""
+    verifier = container_head.verify_parsed_header()
+
+    assert verifier.result.label == "Succeeded"
+    assert "Not included" not in str(verifier)
+
+
 def test_container_head_fixed_length(container_head: HeaderContainer) -> None:
     """Test HeaderContainer fixed input length validation functionality.
 
@@ -382,6 +455,109 @@ def test_container_head_fixed_length(container_head: HeaderContainer) -> None:
     container_head.length += 1
     with pytest.raises(SPSDKVerificationError):
         container_head._check_fixed_input_length(bytes(3)).validate()
+
+
+def test_rt2660_parallel_verification_config() -> None:
+    """Test RT2660 parallel verification configuration and flag loading."""
+    chip_config = AhabChipContainerConfig(base=create_chip_config(FamilyRevision("mimxrt2662")))
+    container = AHABContainerV2(chip_config=chip_config.base)
+
+    container._load_from_config_flags(Config({"parallel_verification": "enabled"}))
+
+    assert container.flag_parallel_verification == AHABContainerV2.FlagsParallelVerification.Enabled
+    assert container.flags == 1 << AHABContainerV2.FLAGS_PARALLEL_VERIFICATION_OFFSET
+    flags_config = container._create_flags_config()
+    assert flags_config["parallel_verification"] == "enabled"
+    assert "fast_boot" not in flags_config
+
+    with pytest.raises(SPSDKValueError, match="parallel_verification"):
+        container._load_from_config_flags(Config({"fast_boot": "hash_and_copy"}))
+
+
+@pytest.mark.parametrize("family", ["mimxrt2660", "mimxrt2662"])
+@pytest.mark.parametrize(
+    "srk_tag,srk_label", [(0, "none"), (1, "nxp"), (2, "oem"), (3, "dev"), (4, "iccs")]
+)
+def test_rt2660_srk_set_flags(family: str, srk_tag: int, srk_label: str) -> None:
+    """Decode and configure chip-specific SRK sets without losing adjacent flag fields."""
+    flags = srk_tag | (3 << 4) | (2 << 8) | (1 << 16)
+    container = AHABContainerV2(create_chip_config(FamilyRevision(family)), flags=flags)
+
+    assert container.flag_srk_set.label == srk_label
+    assert container.chip_config.srk_set.label == srk_label
+    assert container._create_flags_config()["srk_set"] == srk_label
+    container._load_from_config_flags(Config({}))
+    assert container.flags == flags
+
+    container._load_from_config_flags(Config({"srk_set": "iccs"}))
+    assert container.flags == (flags & ~0xF) | 4
+    assert container.chip_config.srk_set.label == "iccs"
+    container._load_from_config_flags(Config({"srk_set": "oem"}))
+    assert container.flags == (flags & ~0xF) | 2
+    assert container.chip_config.srk_set.label == "oem"
+
+
+@pytest.mark.parametrize("srk_tag", [0, 1, 2])
+def test_ahab_v1_srk_set_flags(srk_tag: int) -> None:
+    """Keep the legacy two-bit SRK field and reserved bits unchanged for V1."""
+    flags = srk_tag | 0xC | (3 << 4)
+    container = AHABContainer(create_chip_config(FamilyRevision("mimxrt1189")), flags=flags)
+    assert container.flag_srk_set.tag == srk_tag
+    container._load_from_config_flags(Config({}))
+    assert container.flags == flags
+
+
+@pytest.mark.parametrize(
+    "family,expected_core_ids",
+    [
+        ("mimxrt1181", ["CORTEX_M33", "ELE"]),
+        ("mimxrt1182", ["CORTEX_M33", "ELE"]),
+        ("mimxrt1189", ["CORTEX_M33", "CORTEX_M7", "ELE"]),
+    ],
+)
+def test_ahab_core_ids_rt118x(family: str, expected_core_ids: list[str]) -> None:
+    """mimxrt1181/mimxrt1182 are single application-core variants (no Cortex-M7).
+
+    mimxrt1181 aliases mimxrt1182, which in turn aliases mimxrt1189 and overrides
+    the inherited ``ahab.core_ids`` (via ``__replace__: true``) to drop the
+    Cortex-M7 core that is only present on mimxrt1189 (SPSDK-7168).
+    """
+    db = get_db(FamilyRevision(family))
+    core_ids = db.get_dict(DatabaseManager.AHAB, "core_ids")
+    assert list(core_ids) == expected_core_ids
+
+
+@pytest.mark.parametrize("srk_set", ["oem", "none"])
+def test_rt2660_encrypted_image_requires_blob(srk_set: str) -> None:
+    """Encrypted OEM and unsigned images must still report a missing blob."""
+    container = AHABContainerV2(create_chip_config(FamilyRevision("mimxrt2662")))
+    container.set_flags(srk_set)
+    container.image_array.append(
+        container.IAE_TYPE(
+            container.chip_config,
+            image=bytes(512),
+            flags=container.IAE_TYPE.create_flags(
+                3, 1, AHABSignHashAlgorithm.SHA256, is_encrypted=True
+            ),
+            image_iv=bytes(32),
+            already_encrypted_image=True,
+        )
+    )
+    container.update_fields()
+    verifier = container.verify()
+    assert verifier.has_errors
+    assert "Missing Blob container" in str(verifier)
+
+
+def test_rt2660_ahab_schema_uses_parallel_verification() -> None:
+    """Test RT2660 AHAB schema exposes parallel verification instead of fast boot."""
+    schema = AHABImage.get_validation_schemas(FamilyRevision("mimxrt2662"))[1]
+    properties = schema["properties"]["containers"]["items"]["oneOf"][1]["properties"]["container"][
+        "properties"
+    ]
+
+    assert "parallel_verification" in properties
+    assert "fast_boot" not in properties
 
 
 def test_container_head_parse() -> None:
@@ -572,3 +748,106 @@ def test_start_recommended_image_address_default(target_memory: str, expected_of
 
     assert ahab.chip_config.start_image_address == 0
     assert ahab.start_recommended_image_address == expected_offset
+
+
+@pytest.mark.parametrize("dual_key", [False, True])
+def test_ahab_certificate_signatures_word_aligned(dual_key: bool, tmp_path: Any) -> None:
+    """Certificate signatures must start at word aligned offsets on affected MCUs.
+
+    RSA SRK data has a 3-byte exponent, so the signature inside the certificate ends up
+    at an unaligned offset unless padding is added. See SPSDK-7128.
+
+    :param dual_key: Whether the certificate contains a second key/signature pair.
+    :param tmp_path: Pytest temporary directory used to store the signing keys.
+    """
+    from spsdk.crypto.keys import PrivateKeyRsa
+    from spsdk.crypto.signature_provider import PlainFileSP
+    from spsdk.image.ahab.ahab_certificate import get_ahab_certificate_class
+    from spsdk.image.ahab.ahab_srk import SRKData, SRKRecordV2
+
+    family = FamilyRevision("mcxn556s")
+    klass = get_ahab_certificate_class(family)
+
+    def make_key(srk_id: int) -> tuple[SRKRecordV2, PlainFileSP]:
+        key = PrivateKeyRsa.generate_key(2048)
+        record = SRKRecordV2.create_from_key(key.get_public_key(), srk_id=srk_id)
+        record.srk_data = SRKData.create_from_key(key.get_public_key(), srk_id)
+        key_file = str(tmp_path / f"key_{srk_id}.pem")
+        key.save(key_file)
+        return record, PlainFileSP(key_file)
+
+    key_0, sp_0 = make_key(0)
+    key_1, sp_1 = make_key(1) if dual_key else (None, None)
+
+    cert = klass(
+        family=family,
+        permissions=klass.create_permissions(["container"]),
+        public_key_0=key_0,
+        signature_provider_0=sp_0,
+        public_key_1=key_1,
+        signature_provider_1=sp_1,
+    )
+    cert.update_fields()
+
+    alignment = cert.member_alignment
+    assert alignment == 4
+    assert cert.signature_offset % alignment == 0
+    exported = cert.export()
+    assert len(exported) == len(cert)
+    if dual_key:
+        # The second signature must also start at an aligned offset
+        assert cert.signature_0 is not None
+        second_signature_offset = cert.signature_offset + len(cert.signature_0)
+        assert second_signature_offset % alignment == 0
+    # Round trip must reconstruct an identical certificate
+    parsed = klass.parse(exported, family)
+    assert parsed.signature_offset == cert.signature_offset
+    assert parsed.export() == exported
+    assert not parsed.verify().has_errors
+
+
+def test_ahab_certificate_parse_without_padding() -> None:
+    """Certificates exported before SPSDK-7128 must remain parseable.
+
+    The certificate length must not include any trailing padding, otherwise
+    binary certificates created by older SPSDK versions are rejected with
+    "The final parsing size of container doesn't fit to declared container length".
+    See SPSDK-7128.
+
+    """
+    import os
+
+    from spsdk.crypto.keys import PrivateKey
+    from spsdk.crypto.signature_provider import PlainFileSP
+    from spsdk.image.ahab.ahab_certificate import get_ahab_certificate_class
+    from spsdk.image.ahab.ahab_srk import SRKData, SRKRecordV2
+
+    family = FamilyRevision("kw43l43z97")
+    klass = get_ahab_certificate_class(family)
+
+    # ML-DSA-87 signature makes the certificate length unaligned (4635 % 4 == 3),
+    # which is exactly the case that must not be padded.
+    key_file = os.path.join(
+        os.path.dirname(__file__), "..", "..", "_data", "keys", "mldsa87", "srk0_mldsa87_native.pem"
+    )
+    public_key = PrivateKey.load(key_file).get_public_key()
+    record = SRKRecordV2.create_from_key(public_key, srk_id=0)
+    record.srk_data = SRKData.create_from_key(public_key, 0)
+
+    cert = klass(
+        family=family,
+        permissions=klass.create_permissions(["container"]),
+        public_key_0=record,
+        signature_provider_0=PlainFileSP(key_file),
+    )
+    cert.update_fields()
+    exported = cert.export()
+
+    # The declared length must match the data exactly, with no trailing padding
+    assert cert.length == len(exported)
+    assert cert.length == cert.signature_offset + len(cert.signature_0)
+
+    # Parsing must not require any padding beyond the declared length
+    parsed = klass.parse(exported, family)
+    assert parsed.export() == exported
+    assert not parsed.verify().has_errors

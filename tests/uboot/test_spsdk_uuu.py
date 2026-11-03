@@ -17,10 +17,12 @@ from types import SimpleNamespace
 from typing import Any
 from unittest.mock import patch
 
+import pytest
 from libuuu.libuuu import UUUNotifyType
 
 import spsdk.utils.progress_bar as progress_bar_module
 from spsdk.uboot.spsdk_uuu import SPSDKUUU, SPSDKUUUState
+from spsdk.utils.family import FamilyRevision
 from spsdk.utils.progress_bar import ESC_HIDE_CURSOR, ESC_SHOW_CURSOR
 
 
@@ -84,6 +86,33 @@ def test_replace_arguments_with_backslashes() -> None:
         result
         == "This is a test string with some/path/bootable_image/flash.bin and some/path/bootable_image/flash.bin."
     )
+
+
+@pytest.mark.parametrize("family", ["mimx943", "mimx9596"])
+@pytest.mark.parametrize("image_path", ["images/imx-boot.bin", r"images\imx-boot.bin"])
+def test_get_spl_script(family: str, image_path: str) -> None:
+    """Substitute the image filename in every boot stage without changing the sequence.
+
+    :param family: Device family using the shared SPL script.
+    :param image_path: Bootloader image path with POSIX or Windows separators.
+    """
+    script = SPSDKUUU().get_uuu_script("spl", FamilyRevision(family), [image_path])
+    commands = [
+        line for line in script.splitlines() if line and not line.startswith(("#", "uuu_version"))
+    ]
+    assert "_flash.bin" not in script
+    assert commands == [
+        "SDP: boot -f images/imx-boot.bin",
+        "SDPS[-t 10000]: boot -f images/imx-boot.bin",
+        "SDPU: delay 1000",
+        "SDPU: write -f images/imx-boot.bin -offset 0x57c00",
+        "SDPU: jump",
+        "SDPU: done",
+        "SDPV: delay 1000",
+        "SDPV: write -f images/imx-boot.bin -skipspl",
+        "SDPV: jump",
+        "SDPV: done",
+    ]
 
 
 def test_progress_bar_flag_is_propagated_to_state() -> None:

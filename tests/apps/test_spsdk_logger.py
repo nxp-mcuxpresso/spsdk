@@ -12,7 +12,8 @@ from pathlib import Path
 
 import pytest
 
-from spsdk.apps.utils.spsdk_logger import install
+from spsdk.apps.utils.spsdk_logger import ColoredFormatter, install
+from spsdk.exceptions import SPSDKVerificationError
 
 
 def test_install_default() -> None:
@@ -110,3 +111,48 @@ def test_install_with_debug_logger(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     install(level=logging.DEBUG, stream=StringIO(), logger=logger, create_debug_logger=True)
     # Clean up handlers
     logger.handlers.clear()
+
+
+def _make_record(msg: object) -> logging.LogRecord:
+    """Create a log record carrying an arbitrary message object."""
+    return logging.LogRecord(
+        name="spsdk_test",
+        level=logging.DEBUG,
+        pathname="p.py",
+        lineno=1,
+        msg=msg,
+        args=None,
+        exc_info=None,
+    )
+
+
+def test_formatter_strips_color_escapes() -> None:
+    """Uncolored formatter must remove the real ANSI escape sequences."""
+    formatted = ColoredFormatter(colored=False).format(_make_record("\x1b[31mred\x1b[39m text"))
+    assert "\x1b" not in formatted
+    assert "red text" in formatted
+
+
+def test_formatter_keeps_color_escapes_when_colored() -> None:
+    """Colored formatter must keep the ANSI escape sequences untouched."""
+    formatted = ColoredFormatter(colored=True).format(_make_record("\x1b[32mgreen\x1b[39m"))
+    assert "\x1b[32m" in formatted
+
+
+def test_formatter_accepts_non_string_message() -> None:
+    """Formatting must not fail when the message is not a string.
+
+    The bootable image parsing logs exception objects directly, which used to raise
+    a TypeError inside the color-stripping code.
+    """
+    exc = SPSDKVerificationError("\x1b[31mverification failed\x1b[39m")
+    formatted = ColoredFormatter(colored=False).format(_make_record(exc))
+    assert "verification failed" in formatted
+    assert "\x1b" not in formatted
+
+
+def test_formatter_does_not_mutate_record() -> None:
+    """The record is shared between handlers, so it must not be modified."""
+    record = _make_record("\x1b[31mred\x1b[39m")
+    ColoredFormatter(colored=False).format(record)
+    assert record.msg == "\x1b[31mred\x1b[39m"

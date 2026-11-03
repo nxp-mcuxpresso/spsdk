@@ -30,6 +30,12 @@ from spsdk.exceptions import SPSDKError
 
 logger = logging.getLogger(__name__)
 
+# Debug mailbox CSW register offset inside the debug mailbox access port
+DBGMLBX_CSW_ADDRESS = 0x00
+# CSW request bits that the ROM code clears by the DM soft reset when it services
+# the resynchronization request: RESYNCH_REQ, REQ_PENDING, SOFT_RESET, CHIP_RESET_REQ
+DBGMLBX_CSW_SELF_CLEARING_BITS = 0x33
+
 
 class DebugProbeVirtual(DebugProbeCoreSightOnly):
     """Virtual debug probe implementation for SPSDK testing and simulation.
@@ -71,6 +77,7 @@ class DebugProbeVirtual(DebugProbeCoreSightOnly):
         self.coresight_dp_write_exception = 0
         self.coresight_mem_read_exception = 0
         self.coresight_dp_substituted: dict[Any, Any] = {}
+        self.core_registers: dict[int, int] = {}
 
         if options is not None:
             if "exc" in options:
@@ -91,7 +98,7 @@ class DebugProbeVirtual(DebugProbeCoreSightOnly):
                 self.mem_read_cause_exception(int(options["mem_read_exp"]))
 
         # setup IDR register of standard AP:
-        self.coresight_ap[DebugProbeCoreSightOnly.get_coresight_ap_address(2, 0xFC)] = 0x002A0000
+        self.coresight_ap[self.get_coresight_ap_address(2, 0xFC)] = 0x002A0000
 
         logger.debug("The SPSDK Virtual Interface has been initialized")
 
@@ -339,12 +346,32 @@ class DebugProbeVirtual(DebugProbeCoreSightOnly):
             if self.coresight_ap_write_exception > 0:
                 self.coresight_ap_write_exception -= 1
                 raise SPSDKDebugProbeTransferError("The Coresight write operation failed.")
-            self.coresight_ap[addr] = data
+            self.coresight_ap[addr] = self._emulate_dbgmlbx_csw_write(addr, data)
         else:
             if self.coresight_dp_write_exception > 0:
                 self.coresight_dp_write_exception -= 1
                 raise SPSDKDebugProbeTransferError("The Coresight write operation failed.")
             self.coresight_dp[addr] = data
+
+    def _emulate_dbgmlbx_csw_write(self, addr: int, data: int) -> int:
+        """Emulate the ROM code servicing a debug mailbox resynchronization request.
+
+        On real hardware the ROM/ELE code answers a RESYNCH_REQ/CHIP_RESET_REQ write by
+        soft-resetting the DM block, which clears all request bits, so the debugger reads
+        back ``0x0`` from CSW. Plain write-through would keep the request bits set forever
+        and the DM-ready poll would never finish. Only the debug mailbox CSW register
+        (offset 0x00 of the mailbox AP) is affected; all other registers write through.
+
+        :param addr: CoreSight register address that is being written.
+        :param data: Data written by the debugger.
+        :return: Value that a subsequent read of the register returns.
+        """
+        if self.dbgmlbx_ap_ix < 0 or addr != self.get_coresight_ap_address(
+            access_port=self.dbgmlbx_ap_ix, address=DBGMLBX_CSW_ADDRESS
+        ):
+            return data
+        # The ROM soft-reset clears the request bits written by the debugger.
+        return data & ~DBGMLBX_CSW_SELF_CLEARING_BITS & 0xFFFF_FFFF
 
     def assert_reset_line(self, assert_reset: bool = False) -> None:
         """Control reset line at a target.
@@ -503,6 +530,22 @@ class DebugProbeVirtual(DebugProbeCoreSightOnly):
     def is_cpu_halted(self) -> bool:
         """Check if ARM Cortex CPU is halted by reading DHCSR."""
         return self.halted
+
+    def write_core_register(self, reg_num: int, value: int) -> None:
+        """Write a value into a simulated ARM core register.
+
+        :param reg_num: Core register number (DCRSR REGSEL field).
+        :param value: 32-bit value to write into the register.
+        """
+        self.core_registers[reg_num] = value
+
+    def read_core_register(self, reg_num: int) -> int:
+        """Read the value of a simulated ARM core register.
+
+        :param reg_num: Core register number (DCRSR REGSEL field).
+        :return: 32-bit value of the register, or 0 if never written.
+        """
+        return self.core_registers.get(reg_num, 0)
 
     def debug_step(self) -> None:
         """Step the CPU execution by one instruction.

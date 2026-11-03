@@ -455,13 +455,17 @@ class ConcreteTrustZoneMandatory(Mbi_MixinTrustZoneMandatory):
 
 
 def test_tz_mandatory_mix_verify_configured(lpc55_family: FamilyRevision) -> None:
-    """Test TrustZoneMandatory mix_verify passes when TrustZone is configured."""
+    """Test TrustZoneMandatory mix_verify passes when TrustZone is configured.
+
+    Regression test for SPSDK-7082/SPSDK-7098: a configured TrustZone must verify
+    as SUCCEEDED, without the generic "Not implemented" warning.
+    """
     obj = ConcreteTrustZoneMandatory()
     obj.family = lpc55_family
     obj.trust_zone = TrustZone(lpc55_family)
     ver = obj.mix_verify()
-    # Mandatory check for TrustZone being configured should be in SUCCEEDED or WARNING (not ERROR)
-    assert ver.result in (VerifierResult.SUCCEEDED, VerifierResult.WARNING)
+    assert ver.result == VerifierResult.SUCCEEDED
+    assert not ver.has_warnings
 
 
 def test_tz_mandatory_mix_verify_not_configured(lpc55_family: FamilyRevision) -> None:

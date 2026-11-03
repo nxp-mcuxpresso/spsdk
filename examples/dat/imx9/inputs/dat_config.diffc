@@ -1,0 +1,14 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/dat_config.yaml
+user_cfg: inputs/dat_config.yaml
+custom_command: "%! nxpdebugmbox dat get-template -f mimx9352 -o workspace/dat_config.yaml --force"
+
+comments:
+  certificate: The debug credential certificate (created in the previous step)
+  beacon: Kept as zero as it's enough for example purposes
+  srk_set: Set to OEM
+  signer: The private key used to sign the DAR. Typically owned by the technician, or an OEM SRK during development.

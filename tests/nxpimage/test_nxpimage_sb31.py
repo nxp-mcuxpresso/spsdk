@@ -52,7 +52,7 @@ def process_config_file(config_path: str, destination: str) -> tuple[str, str, s
     new_binary = f"{destination}/{os.path.basename(ref_binary)}"
     new_config = f"{destination}/{os.path.basename(config_path)}"
     config_data["containerOutputFile"] = new_binary
-    with open(new_config, "w") as f:
+    with open(new_config, "w", encoding="utf-8") as f:
         json.dump(config_data, f, indent=2)
     return ref_binary, new_binary, new_config
 

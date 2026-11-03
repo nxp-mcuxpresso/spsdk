@@ -62,11 +62,10 @@ for pkg in excluded_imports:
 
 hidden_imports = {
     "pkg_resources",
-    "spsdk_pyocd",
     "spsdk_lauterbach",
     "spsdk_mcu_link",
+    "spsdk_pemicro",
     "spsdk_jlink",
-    "pyocd.rtos.threadx",
     "spsdk.image.mbi.mbi_mixin_hse",
 }
 
@@ -157,21 +156,6 @@ except OSError:
 
 datas.extend([("SBOM-spsdk.spdx.json", "./")])
 datas.extend([("spsdk/data", "spsdk/data")])
-
-
-# Additional PyOCD resources
-SEQUENCE_LARK = "sequences.lark"
-
-try:
-    # Python 3.13+ approach
-    package_path = importlib.resources.files("pyocd.debug.sequences")
-    resource_path = package_path / SEQUENCE_LARK
-except TypeError:
-    # Python <3.13 approach
-    with importlib.resources.files("pyocd.debug.sequences") as package_path:
-        resource_path = package_path / SEQUENCE_LARK
-
-datas.extend([(resource_path, "pyocd/debug/sequences")])
 
 
 def analyze(sources: List[str]) -> Analysis:

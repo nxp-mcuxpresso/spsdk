@@ -12,7 +12,6 @@ classes for image description, command handling, and complete image assembly.
 """
 
 import logging
-from datetime import datetime, timezone
 from struct import calcsize, pack, unpack, unpack_from
 from typing import Any, ClassVar, cast
 
@@ -24,7 +23,7 @@ from spsdk.image.ahab.ahab_container import AHABContainerV2
 from spsdk.image.ahab.ahab_data import AHABSignHashAlgorithm, create_chip_config
 from spsdk.image.ahab.ahab_iae import ImageArrayEntryV2
 from spsdk.image.mbi.utils import get_ahab_supported_hashes, get_mbi_ahab_validation_schemas
-from spsdk.sbfile.sb31.images import SecureBinary31Commands
+from spsdk.sbfile.sb31.images import SecureBinary31, SecureBinary31Commands, validate_sb_timestamp
 from spsdk.utils.abstract import BaseClass
 from spsdk.utils.abstract_features import FeatureBaseClass
 from spsdk.utils.binary_image import BinaryImage
@@ -96,7 +95,9 @@ class SecureBinary4Descr(BaseClass):
 
         self.hash_type = EnumHashAlgorithm.SHA384
         self.block_count = 0
-        self.timestamp = timestamp or int(datetime.now(timezone.utc).timestamp())
+        self.timestamp = validate_sb_timestamp(
+            timestamp if timestamp is not None else SecureBinary31.get_current_timestamp()
+        )
         self.original_description = description
         self.description = self._adjust_description(description)
         self.block1_hash = bytes(48)
@@ -254,6 +255,7 @@ class SecureBinary4Descr(BaseClass):
             raise SPSDKError("Invalid SB4.0 header max block size.")
         if self.timestamp is None:
             raise SPSDKError("Invalid SB4.0 header timestamp.")
+        validate_sb_timestamp(self.timestamp)
         if self.description is None or len(self.description) != 16:
             raise SPSDKError("Invalid SB4.0 header image description.")
 

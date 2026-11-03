@@ -737,7 +737,9 @@ def test_load_configuration_error_handling(
     :param file_extension: File extension to use
     :param error_substring: Expected primary error format ("json" or "yaml")
     """
-    with tempfile.NamedTemporaryFile(mode="w", suffix=file_extension, delete=False) as temp_file:
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=file_extension, delete=False, encoding="utf-8"
+    ) as temp_file:
         temp_file.write(file_content)
         temp_file_path = temp_file.name
 

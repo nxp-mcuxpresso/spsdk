@@ -1,0 +1,181 @@
+// Monthly housekeeping job: scans the Jenkins workspace root on every agent
+// and removes job workspaces that have had no file modified for more than
+// MAX_AGE_DAYS days. This catches "forgotten" workspaces left behind by
+// deleted/renamed jobs, failed cleanups, crashed agents, etc. - things that
+// per-job `cleanWs()` calls cannot catch because they only clean up after
+// their own job.
+//
+// It also clears the shared `uv` package cache on each agent. That cache is
+// global (not tied to a single job's workspace) and `uv` repopulates it
+// automatically on next use, so it is safe to wipe entirely every month.
+//
+// Safety:
+//  - A workspace is only deleted if NONE of its files were modified within
+//    MAX_AGE_DAYS. Any actively running build keeps writing to its own
+//    workspace, so it is never a deletion candidate.
+//  - This job's own workspace is always excluded.
+//  - DRY_RUN defaults to true: first runs only print what *would* be
+//    deleted (with sizes) so the behaviour can be verified before enabling
+//    real deletion.
+
+@Library('shared-lib') _
+
+pipeline {
+    agent none
+
+    options {
+        timeout(time: 2, unit: 'HOURS')
+        disableConcurrentBuilds()
+        skipDefaultCheckout()   // this job does not need the SPSDK repo checked out
+    }
+
+    parameters {
+        booleanParam(
+            name: 'DRY_RUN',
+            defaultValue: true,
+            description: 'If true, only list workspaces that would be deleted, without deleting them.'
+        )
+        string(
+            name: 'MAX_AGE_DAYS',
+            defaultValue: '30',
+            description: 'Delete workspace directories with no file modified in the last N days.'
+        )
+    }
+
+    triggers {
+        cron('H 3 1 * *')   // once a month, 1st day of month, ~03:00 (H = Jenkins hash offset)
+    }
+
+    stages {
+        stage('Cleanup stale workspaces') {
+            matrix {
+                axes {
+                    axis {
+                        name 'AGENT_LABEL'
+                        values 'linux-spsdk', 'mac', 'windows-spsdk', 'spsdk-doc'
+                    }
+                }
+                stages {
+                    stage('Cleanup') {
+                        agent { label "${AGENT_LABEL}" }
+                        steps {
+                            script {
+                                def maxAgeDays = params.MAX_AGE_DAYS as int
+
+                                if (isUnix()) {
+                                    def wsRoot = sh(script: 'dirname "$WORKSPACE"', returnStdout: true).trim()
+                                    echo "[${AGENT_LABEL}] Workspace root: ${wsRoot}"
+                                    sh """
+                                        set -eu
+                                        WS_ROOT='${wsRoot}'
+                                        SELF_WS='${env.WORKSPACE}'
+                                        MAX_AGE_DAYS=${maxAgeDays}
+                                        DRY_RUN='${params.DRY_RUN}'
+
+                                        echo "Scanning \$WS_ROOT (max age: \$MAX_AGE_DAYS days, dry_run=\$DRY_RUN)"
+                                        for dir in "\$WS_ROOT"/*/ ; do
+                                            dir="\${dir%/}"
+                                            [ -d "\$dir" ] || continue
+                                            [ "\$dir" = "\$SELF_WS" ] && continue
+
+                                            # Any file modified within MAX_AGE_DAYS days? -> keep.
+                                            recent=\$(find "\$dir" -type f -mtime -"\$MAX_AGE_DAYS" -print -quit 2>/dev/null || true)
+                                            if [ -z "\$recent" ]; then
+                                                size=\$(du -sh "\$dir" 2>/dev/null | cut -f1)
+                                                if [ "\$DRY_RUN" = "true" ]; then
+                                                    echo "[DRY RUN] would delete: \$dir (size: \$size)"
+                                                else
+                                                    echo "Deleting: \$dir (size: \$size)"
+                                                    rm -rf "\$dir"
+                                                fi
+                                            fi
+                                        done
+
+                                        echo "Cleaning uv cache"
+                                        if command -v uv >/dev/null 2>&1; then
+                                            uvCacheDir=\$(uv cache dir 2>/dev/null || true)
+                                            if [ "\$DRY_RUN" = "true" ]; then
+                                                size=\$(du -sh "\$uvCacheDir" 2>/dev/null | cut -f1)
+                                                echo "[DRY RUN] would run: uv cache clean (cache dir: \$uvCacheDir, size: \${size:-unknown})"
+                                            else
+                                                echo "Running: uv cache clean (cache dir: \$uvCacheDir)"
+                                                uv cache clean
+                                            fi
+                                        else
+                                            echo "uv not found on PATH, skipping uv cache cleanup"
+                                        fi
+                                    """
+                                } else {
+                                    def wsRoot = powershell(
+                                        script: '(Get-Item -LiteralPath $env:WORKSPACE).Parent.FullName',
+                                        returnStdout: true
+                                    ).trim()
+                                    echo "[${AGENT_LABEL}] Workspace root: ${wsRoot}"
+                                    powershell """
+                                        \$ErrorActionPreference = 'Stop'
+                                        \$wsRoot    = '${wsRoot}'
+                                        \$selfWs    = '${env.WORKSPACE}'
+                                        \$maxAge    = ${maxAgeDays}
+                                        \$dryRun    = \$${params.DRY_RUN}
+                                        \$cutoff    = (Get-Date).AddDays(-\$maxAge)
+
+                                        Write-Host "Scanning \$wsRoot (cutoff: \$cutoff, dry_run=\$dryRun)"
+                                        Get-ChildItem -LiteralPath \$wsRoot -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+                                            \$dir = \$_.FullName
+                                            if (\$dir -eq \$selfWs) { return }
+
+                                            \$recent = Get-ChildItem -LiteralPath \$dir -Recurse -File -ErrorAction SilentlyContinue |
+                                                Where-Object { \$_.LastWriteTime -gt \$cutoff } |
+                                                Select-Object -First 1
+
+                                            if (-not \$recent) {
+                                                \$sizeMB = [math]::Round(
+                                                    ((Get-ChildItem -LiteralPath \$dir -Recurse -File -ErrorAction SilentlyContinue |
+                                                        Measure-Object -Property Length -Sum).Sum / 1MB), 1)
+                                                if (\$dryRun) {
+                                                    Write-Host "[DRY RUN] would delete: \$dir (size: \$sizeMB MB)"
+                                                } else {
+                                                    Write-Host "Deleting: \$dir (size: \$sizeMB MB)"
+                                                    Remove-Item -LiteralPath \$dir -Recurse -Force -ErrorAction SilentlyContinue
+                                                }
+                                            }
+                                        }
+
+                                        Write-Host "Cleaning uv cache"
+                                        \$uvCmd = Get-Command uv -ErrorAction SilentlyContinue
+                                        if (\$uvCmd) {
+                                            \$uvCacheDir = (uv cache dir 2>\$null)
+                                            if (\$dryRun) {
+                                                \$sizeMB = 'unknown'
+                                                if (\$uvCacheDir -and (Test-Path -LiteralPath \$uvCacheDir)) {
+                                                    \$sizeMB = [math]::Round(
+                                                        ((Get-ChildItem -LiteralPath \$uvCacheDir -Recurse -File -ErrorAction SilentlyContinue |
+                                                            Measure-Object -Property Length -Sum).Sum / 1MB), 1)
+                                                }
+                                                Write-Host "[DRY RUN] would run: uv cache clean (cache dir: \$uvCacheDir, size: \$sizeMB MB)"
+                                            } else {
+                                                Write-Host "Running: uv cache clean (cache dir: \$uvCacheDir)"
+                                                uv cache clean
+                                            }
+                                        } else {
+                                            Write-Host "uv not found on PATH, skipping uv cache cleanup"
+                                        }
+                                    """
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        failure {
+            emailext(body: '${DEFAULT_CONTENT}', mimeType: 'text/html',
+                replyTo: '$DEFAULT_REPLYTO', subject: '${DEFAULT_SUBJECT}',
+                to: emailextrecipients([[$class: 'DevelopersRecipientProvider'],
+                                        [$class: 'RequesterRecipientProvider']]))
+        }
+    }
+}

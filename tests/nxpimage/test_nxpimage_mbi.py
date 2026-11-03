@@ -157,7 +157,7 @@ def process_config_file(config_path: str, destination: str) -> tuple[str, str, s
     config_data["masterBootOutputFile"] = new_binary
     # It doesn't matter that there will be both keys in this temporary config
     config_data["containerOutputFile"] = new_binary
-    with open(new_config, "w") as f:
+    with open(new_config, "w", encoding="utf-8") as f:
         json.dump(config_data, f, indent=2)
     return ref_binary, new_binary, new_config
 
@@ -375,7 +375,7 @@ def test_mbi_misr_config_template(cli_runner: CliRunner, tmpdir: str) -> None:
     assert os.path.isfile(misr_template), "MISR template should be named mcxc151_xip_misr.yaml"
 
     # Load and verify template content
-    with open(misr_template) as f:
+    with open(misr_template, encoding="utf-8") as f:
         template_content = yaml.safe_load(f)
 
     assert "imageVersion" not in template_content, "MISR template should not include imageVersion"
@@ -484,7 +484,7 @@ def test_mbi_misr_alignment_already_aligned(
     config_data["masterBootOutputFile"] = os.path.join(tmpdir, "aligned_misr.bin")
 
     test_config = os.path.join(tmpdir, "test_aligned.yaml")
-    with open(test_config, "w") as f:
+    with open(test_config, "w", encoding="utf-8") as f:
         yaml.dump(config_data, f)
 
     cmd = f"mbi export -c {test_config}"
@@ -560,7 +560,7 @@ def test_mbi_misr_alignment_various_sizes(
         config_data["masterBootOutputFile"] = output_file
 
         test_config = os.path.join(tmpdir, f"test_{input_size}.yaml")
-        with open(test_config, "w") as f:
+        with open(test_config, "w", encoding="utf-8") as f:
             yaml.dump(config_data, f)
 
         # Generate MISR image
@@ -627,7 +627,7 @@ def test_mbi_misr_padding_boundary_cases(
     config_max["masterBootOutputFile"] = os.path.join(tmpdir, "max_padding_misr.bin")
 
     test_config_max = os.path.join(tmpdir, "test_max_padding.yaml")
-    with open(test_config_max, "w") as f:
+    with open(test_config_max, "w", encoding="utf-8") as f:
         yaml.dump(config_max, f)
 
     cmd = f"mbi export -c {test_config_max}"
@@ -657,7 +657,7 @@ def test_mbi_misr_padding_boundary_cases(
     config_min["masterBootOutputFile"] = os.path.join(tmpdir, "min_padding_misr.bin")
 
     test_config_min = os.path.join(tmpdir, "test_min_padding.yaml")
-    with open(test_config_min, "w") as f:
+    with open(test_config_min, "w", encoding="utf-8") as f:
         yaml.dump(config_min, f)
 
     cmd = f"mbi export -c {test_config_min}"
@@ -699,7 +699,7 @@ def test_mbi_misr_padding_preserves_data_integrity(
     config_data["masterBootOutputFile"] = os.path.join(tmpdir, "pattern_misr.bin")
 
     test_config = os.path.join(tmpdir, "test_pattern.yaml")
-    with open(test_config, "w") as f:
+    with open(test_config, "w", encoding="utf-8") as f:
         yaml.dump(config_data, f)
 
     cmd = f"mbi export -c {test_config}"
@@ -1021,8 +1021,10 @@ def test_nxpimage_mbi_ahab_signed(
         ahab_container = parsed_mbi.ahab
         assert isinstance(ahab_container, AHABContainerV2)
 
-        # Get AHAB container offset from IVT
-        ahab_offset = Mbi_MixinIvt.get_cert_block_offset_from_data(new_data)
+        # Get AHAB container offset from IVT. The IVT layout is family specific (DSC based
+        # devices use different offsets), so use the IVT mixin of the parsed image.
+        ivt_cls = getattr(parsed_mbi, "ivt_table", Mbi_MixinIvt)
+        ahab_offset = ivt_cls.get_cert_block_offset_from_data(new_data)
         # Verify hash algorithm matches configuration
         expected_ahab_hash = ImageArrayEntryV2.FLAGS_HASH_ALGORITHM_TYPE.from_label(sign_digest)
         for img_entry in ahab_container.image_array:
@@ -1496,7 +1498,7 @@ def test_nxpimage_mbi_legacy_signed(
         assert len(ref_data) == len(new_data)
 
         # validate signatures
-        with open(new_config) as f:
+        with open(new_config, encoding="utf-8") as f:
             config_data = json.load(f)
 
         signing_key = PrivateKeyRsa.load(config_data["signer"])
@@ -1636,7 +1638,7 @@ def test_nxpimage_mbi_legacy_encrypted(
         assert len(ref_data) == len(new_data)
 
         # validate signatures
-        with open(new_config) as f:
+        with open(new_config, encoding="utf-8") as f:
             config_data = json.load(f)
 
         signing_key = PrivateKeyRsa.load(config_data["signer"])
@@ -1870,7 +1872,7 @@ def test_mbi_export_sign_provider(
     cert_block = os.path.join(mbi_data_dir, config["certBlock"])
     shutil.copyfile(cert_block, os.path.join(tmpdir, config["certBlock"]))
     tmp_config = os.path.join(tmpdir, "config.yaml")
-    with open(tmp_config, "w") as file:
+    with open(tmp_config, "w", encoding="utf-8") as file:
         yaml.dump(config, file)
 
     cmd = f"mbi export -c {tmp_config}"
@@ -1969,7 +1971,7 @@ def test_mbi_export_sign_provider_invalid_configuration(
     cert_block = os.path.join(mbi_data_dir, config["certBlock"])
     shutil.copyfile(cert_block, os.path.join(tmpdir, config["certBlock"]))
     tmp_config = os.path.join(tmpdir, "config.yaml")
-    with open(tmp_config, "w") as file:
+    with open(tmp_config, "w", encoding="utf-8") as file:
         yaml.dump(config, file)
 
     cmd = f"mbi export -c {tmp_config}"
@@ -2028,7 +2030,7 @@ def test_mbi_signature_provider(
     if sign_provider:
         config_data["signer"] = sign_provider
     config_file = os.path.join(tmpdir, "ext_xip_signed_rt5xx.yaml")
-    with open(config_file, "w") as fp:
+    with open(config_file, "w", encoding="utf-8") as fp:
         yaml.dump(config_data, fp)
 
     cert_config_data = load_configuration(os.path.join(data_dir, "mbi", config_data["certBlock"]))
@@ -2037,7 +2039,7 @@ def test_mbi_signature_provider(
     if main_root_cert_id is not None:
         cert_config_data["mainRootCertId"] = main_root_cert_id
     cert_config_file = os.path.join(tmpdir, config_data["certBlock"])
-    with open(cert_config_file, "w") as fp:
+    with open(cert_config_file, "w", encoding="utf-8") as fp:
         yaml.dump(cert_config_data, fp)
     cmd = f"mbi export -c {config_file}"
     cli_runner.invoke(nxpimage.main, cmd.split(), expected_code=exit_code)
@@ -2068,7 +2070,7 @@ def test_lpc55s16_mbi_export_warns_on_chain_cert_rsa4096(
 
     # Load cert-block config from data directory
     cert_block_src = os.path.join(mbi_data_dir, "lpc55s16_cert_block_chain_rsa4096.yaml")
-    with open(cert_block_src) as f:
+    with open(cert_block_src, encoding="utf-8") as f:
         cert_block_cfg = yaml.safe_load(f)
 
     # Update paths to absolute, pointing to files in data directory
@@ -2080,12 +2082,12 @@ def test_lpc55s16_mbi_export_warns_on_chain_cert_rsa4096(
     cert_block_cfg["containerOutputFile"] = os.path.join(tmpdir, "cert_block.bin")
 
     cert_block_tmp = os.path.join(tmpdir, "lpc55s16_cert_block_chain_rsa4096.yaml")
-    with open(cert_block_tmp, "w") as f:
+    with open(cert_block_tmp, "w", encoding="utf-8") as f:
         yaml.dump(cert_block_cfg, f)
 
     # Load MBI config from data directory
     mbi_src = os.path.join(mbi_data_dir, "lpc55s16_xip_signed_chain_rsa4096.yaml")
-    with open(mbi_src) as f:
+    with open(mbi_src, encoding="utf-8") as f:
         mbi_cfg = yaml.safe_load(f)
 
     # Update paths to absolute
@@ -2097,7 +2099,7 @@ def test_lpc55s16_mbi_export_warns_on_chain_cert_rsa4096(
     mbi_cfg["masterBootOutputFile"] = os.path.join(tmpdir, "output.bin")
 
     mbi_yaml_tmp = os.path.join(tmpdir, "lpc55s16_xip_signed_chain_rsa4096.yaml")
-    with open(mbi_yaml_tmp, "w") as f:
+    with open(mbi_yaml_tmp, "w", encoding="utf-8") as f:
         yaml.dump(mbi_cfg, f)
 
     # Run CLI and capture warning

@@ -33,6 +33,7 @@ from spsdk.ele.ele_constants import (
     MessageUnitId,
     ResponseIndication,
     ResponseStatus,
+    SecureBootCryptoMode,
     SocId,
 )
 from spsdk.exceptions import SPSDKError, SPSDKParsingError, SPSDKValueError
@@ -793,6 +794,87 @@ class EleMessageForwardLifeCycleUpdate(EleMessage):
         """
         ret = self.header_export()
         ret += pack(LITTLE_ENDIAN + UINT16 + UINT8 + UINT8, self.lifecycle_update.tag, 0, 0)
+        return ret
+
+
+class EleMessageForwardBootCrypto(EleMessage):
+    """ELE message for forwarding secure boot crypto state requests.
+
+    This class represents a message used to move the secure boot crypto state
+    (Classic, PQC, Hybrid) from one value to another in the EdgeLock Enclave.
+    The operation burns a fuse on success and is non-revertible. Depending on
+    the current secure boot crypto forward policy, the transition may require
+    an accompanying signed message (signed by both PQC and classic keys, with
+    the "Check all signatures" flag set) whose binary must be placed in target
+    memory beforehand; this class transparently loads that signed message via
+    the standard ELE command data mechanism when provided.
+
+    :cvar CMD: Command identifier for forward boot crypto requests.
+    :cvar COMMAND_PAYLOAD_WORDS_COUNT: Number of payload words in the message.
+    """
+
+    CMD = MessageIDs.ELE_FWD_BOOT_CRYPTO_REQ.tag
+    COMMAND_PAYLOAD_WORDS_COUNT = 3
+
+    def __init__(
+        self,
+        secure_boot_crypto_mode: SecureBootCryptoMode,
+        signed_msg: bytes | None = None,
+    ) -> None:
+        """Initialize forward boot crypto message.
+
+        Be aware that this is a non-revertible operation, it burns a fuse on success.
+
+        :param secure_boot_crypto_mode: Target secure boot crypto mode to switch to
+            (HYBRID, PQC or RETURN_TO_CLASSIC).
+        :param signed_msg: Optional binary signed message required by some secure boot
+            crypto forward policy transitions. When provided, it is loaded into target
+            memory and its address is referenced by the command. When not provided,
+            the signed message address fields are set to 0 (only valid for transitions
+            that do not require a signed message per the forward policy table).
+        """
+        super().__init__()
+        self.secure_boot_crypto_mode = secure_boot_crypto_mode
+        self.signed_msg = signed_msg or b""
+
+    @property
+    def command_data(self) -> bytes:
+        """Get command data to be loaded into target memory space.
+
+        :return: Binary data of the signed message, or empty bytes if not used.
+        """
+        return self.signed_msg
+
+    def export(self) -> bytes:
+        """Export message to final bytes array.
+
+        Converts the message object into its binary representation by combining
+        the exported header with the signed message address (MSB/LSB) and the
+        secure boot crypto magic value.
+
+        :return: Binary representation of the message object.
+        """
+        signed_msg_address = self.command_data_address if self.has_command_data else 0
+        ret = self.header_export()
+        ret += pack(
+            LITTLE_ENDIAN + UINT32 + UINT32 + UINT16 + UINT16,
+            0,
+            signed_msg_address,
+            self.secure_boot_crypto_mode.tag,
+            0,
+        )
+        return ret
+
+    def info(self) -> str:
+        """Get message information including live data.
+
+        Extends the base message information with the requested secure boot
+        crypto mode.
+
+        :return: Formatted string with comprehensive message information.
+        """
+        ret = super().info()
+        ret += f"Secure boot crypto mode: {self.secure_boot_crypto_mode.label}\n"
         return ret
 
 
@@ -1730,10 +1812,28 @@ class EleMessageSigned(EleMessage):
     containers, providing functionality to parse, validate, and export signed
     messages for secure communication with the ELE subsystem.
 
+    The actual command executed by EdgeLock Secure Enclave is defined inside the
+    signed message container itself (e.g. WRITE_SEC_FUSE_REQ, RETURN_LIFECYCLE_UPDATE_REQ,
+    ...). Depending on that inner command, the response word size may differ - some
+    commands only return the generic 2-word status response, while others (like
+    WRITE_SEC_FUSE_REQ, mirroring the plain WRITE FUSE command) also return an extra
+    word with a ``Processed_idx`` field. Accept both known variants and only decode
+    the extra word when it is actually present.
+
     :cvar COMMAND_PAYLOAD_WORDS_COUNT: Number of payload words in the command.
+    :cvar VALID_RESPONSE_WORDS_COUNTS: All known valid response word sizes, since the
+        size depends on the signed message's inner command.
+    :cvar PROCESSED_IDX_RESPONSE_WORDS_COUNT: Response word size when a ``Processed_idx``
+        word is present (e.g. for WRITE_SEC_FUSE_REQ).
     """
 
     COMMAND_PAYLOAD_WORDS_COUNT = 2
+    # Read back enough words from target memory to cover the largest known response
+    # (e.g. WRITE_SEC_FUSE_REQ with its extra Processed_idx word). Smaller responses
+    # are still handled correctly, see decode_response().
+    RESPONSE_PAYLOAD_WORDS_COUNT = 1
+    VALID_RESPONSE_WORDS_COUNTS: ClassVar[tuple[int, ...]] = (2, 3)
+    PROCESSED_IDX_RESPONSE_WORDS_COUNT = 3
 
     def __init__(self, signed_msg: bytes, family: FamilyRevision) -> None:
         """Initialize ELE message object from signed message data.
@@ -1747,6 +1847,7 @@ class EleMessageSigned(EleMessage):
         """
         super().__init__()
         self.signed_msg_binary = signed_msg
+        self.processed_idx: int | None = None
 
         # Parse the signed message
         self.signed_msg = SignedMessage.parse(data=signed_msg, family=family)
@@ -1782,6 +1883,48 @@ class EleMessageSigned(EleMessage):
         """
         return self.signed_msg_binary
 
+    @staticmethod
+    def _get_response_words_count(response: bytes) -> int:
+        """Get response word count from the response header.
+
+        :param response: Response data bytes from the target device.
+        :raises SPSDKParsingError: Response header is too short.
+        :return: Response word count from the response header.
+        """
+        if len(response) < 4:
+            raise SPSDKParsingError("Message response is too short to contain header.")
+        _, response_words_count, _, _ = unpack(EleMessage.HEADER_FORMAT, response[:4])
+        return response_words_count
+
+    def decode_response(self, response: bytes) -> None:
+        """Decode response from target.
+
+        The response word size depends on the command carried by the signed message.
+        Most signed message commands only produce the generic 2-word status response,
+        while others (e.g. WRITE_SEC_FUSE_REQ) also return a ``Processed_idx`` word.
+
+        :param response: Raw response data bytes from target device.
+        :raises SPSDKParsingError: Invalid response format or field values detected.
+        """
+        response_words_count = self._get_response_words_count(response)
+        if response_words_count not in self.VALID_RESPONSE_WORDS_COUNTS:
+            valid_sizes = ", ".join(str(size) for size in self.VALID_RESPONSE_WORDS_COUNTS)
+            raise SPSDKParsingError(
+                f"Message SIZE in response is invalid: {hex(response_words_count)}. "
+                f"Expected one of: {valid_sizes}"
+            )
+        if len(response) < response_words_count * 4:
+            raise SPSDKParsingError(
+                f"Message response is too short: {len(response)} bytes, "
+                f"expected at least {response_words_count * 4} bytes"
+            )
+
+        super().decode_response(response)
+
+        self.processed_idx = None
+        if response_words_count == self.PROCESSED_IDX_RESPONSE_WORDS_COUNT:
+            self.processed_idx, _ = unpack(LITTLE_ENDIAN + UINT16 + UINT16, response[8:12])
+
     def info(self) -> str:
         """Get information including live data about the message.
 
@@ -1791,6 +1934,8 @@ class EleMessageSigned(EleMessage):
         :return: Formatted string containing comprehensive message information.
         """
         ret = super().info()
+        if self.processed_idx is not None:
+            ret += f"\nProcessed index: {self.processed_idx}"
         ret += "\n" + self.signed_msg.image_info().draw()
 
         return ret

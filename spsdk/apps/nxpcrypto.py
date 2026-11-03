@@ -18,6 +18,7 @@ import hashlib
 import logging
 import os
 import sys
+from types import SimpleNamespace
 from typing import Any
 
 import click
@@ -40,8 +41,6 @@ from spsdk.crypto.keys import (
     IS_LMS_SUPPORTED,
     PrivateKey,
     PrivateKeyEcc,
-    PrivateKeyRsa,
-    PrivateKeySM2,
     PublicKey,
     PublicKeyEcc,
     PublicKeyMLDSA,
@@ -58,10 +57,13 @@ from spsdk.crypto.utils import (
     generate_srk_keys,
 )
 from spsdk.exceptions import SPSDKError, SPSDKIndexError, SPSDKSyntaxError
-from spsdk.image.cert_block.rot import Rot
+from spsdk.fuses.fuse_registers import FuseRegisters
+from spsdk.fuses.fuses import FuseOperator, FuseScript
+from spsdk.image.ahab.ahab_data import AHABSignAlgorithm
+from spsdk.image.cert_block.rot import Rot, RotSrkTableAhabV2
 from spsdk.utils.config import Config
-from spsdk.utils.database import get_common_data_file_path
-from spsdk.utils.family import FamilyRevision
+from spsdk.utils.database import DatabaseManager, get_common_data_file_path
+from spsdk.utils.family import FamilyRevision, get_db
 from spsdk.utils.misc import (
     Endianness,
     get_printable_path,
@@ -263,6 +265,12 @@ def parse_rot(family: FamilyRevision, binary: str, output: str, encoding: str) -
         EnumHashAlgorithm.from_label(value.lower()) if value is not None else None
     ),
 )
+@click.option(
+    "-fs",
+    "--fuse-script",
+    type=click.Path(dir_okay=False, writable=True),
+    help="Path where a device-specific RoT hash fuse script will be stored.",
+)
 @spsdk_output_option(required=False)
 def calculate_hash(
     family: FamilyRevision,
@@ -271,10 +279,13 @@ def calculate_hash(
     output: str,
     _base64: bool,
     hash_algorithm: EnumHashAlgorithm | None = None,
+    fuse_script: str | None = None,
 ) -> None:
     """Calculate RoT hash."""
     _rot = Rot(family, keys_or_certs=key, password=password, hash_algorithm=hash_algorithm)
     rot_hash = _rot.calculate_hash()
+    if fuse_script:
+        write_rot_hash_fuse_script(_rot, family, rot_hash, fuse_script)
     if _base64:
         rot_hash = base64.b64encode(rot_hash)
         click.echo(f"Base64 encoded RoT hash: '{rot_hash.decode('utf-8')}'")
@@ -283,6 +294,83 @@ def calculate_hash(
     if output:
         write_file(rot_hash, path=output, mode="wb")
         click.echo(f"Result has been stored in: {get_printable_path(output)}")
+
+
+def write_rot_hash_fuse_script(
+    rot: Rot, family: FamilyRevision, rot_hash: bytes, output: str
+) -> None:
+    """Generate a device-specific BCF fuse script for a calculated RoT hash.
+
+    :param rot: Root of Trust object containing the source keys.
+    :param family: Target device family and revision.
+    :param rot_hash: Calculated SRK hash.
+    :param output: Output path for the generated BCF fuse script.
+    :raises SPSDKAppError: If the family has no RoT hash fuse definition.
+    """
+    database = get_db(family)
+    if DatabaseManager.FUSES not in database.features and database.check_key(
+        DatabaseManager.PFR, ["cmpa", "grouped_registers"]
+    ):
+        raise SPSDKAppError(
+            f"The {family.name} RoT hash is stored in PFR CMPA, not OTP fuses; "
+            "BCF fuse-script generation is not supported."
+        )
+
+    if DatabaseManager.MBI in FuseRegisters(family).db.features:
+        try:
+            write_mbi_rot_hash_fuse_script(family, rot_hash, output)
+            return
+        except SPSDKError:
+            pass
+
+    fuse_index = 0
+    if isinstance(rot.rot_obj, RotSrkTableAhabV2):
+        ahab_v2_rot: Any = rot.rot_obj
+        srk_records = ahab_v2_rot.srk.srk_records
+        if srk_records and srk_records[0].signing_algorithm in (
+            AHABSignAlgorithm.DILITHIUM,
+            AHABSignAlgorithm.ML_DSA,
+        ):
+            fuse_index = 1
+    try:
+        script = FuseScript(family, DatabaseManager.AHAB, index=fuse_index)
+        max_hash_length = next(
+            script.fuses.get_reg(register).width // 8
+            for register in script.fuses_db
+            if not register.startswith("_")
+        )
+        attributes = SimpleNamespace(
+            srk_hash=rot_hash[:max_hash_length],
+            srk_hash0=rot_hash[:max_hash_length],
+            srk_hash1=rot_hash[:max_hash_length],
+        )
+        write_file(script.generate_script(attributes), output)
+    except SPSDKError as exc:
+        raise SPSDKAppError(f"Failed to generate RoT hash fuse script: {exc}") from exc
+
+    click.echo(f"Fuse script has been stored in: {get_printable_path(output)}")
+
+
+def write_mbi_rot_hash_fuse_script(family: FamilyRevision, rot_hash: bytes, output: str) -> None:
+    """Generate an MBI-family BCF fuse script for a calculated RKTH.
+
+    :param family: Target device family and revision.
+    :param rot_hash: Calculated Root Key Table Hash.
+    :param output: Output path for the generated BCF fuse script.
+    :raises SPSDKAppError: If the RKTH fuse register cannot be generated.
+    """
+    try:
+        registers = FuseRegisters(family, base_endianness=Endianness.LITTLE)
+        register = registers.get_reg("rkth")
+        register.set_value(rot_hash)
+        operator = FuseOperator.get_operator_type(
+            registers.db.get_str(DatabaseManager.FUSES, "tool", "blhost")
+        )
+        write_file(operator.get_fuse_script(family, register.sub_regs), output)
+    except SPSDKError as exc:
+        raise SPSDKAppError(f"Failed to generate RoT hash fuse script: {exc}") from exc
+
+    click.echo(f"Fuse script has been stored in: {get_printable_path(output)}")
 
 
 @main.group(name="cert", cls=CommandsTreeGroup)
@@ -588,7 +676,7 @@ def key_convert(encoding: str, input_file: str, output: str, puk: bool) -> None:
     """Convert Asymmetric key into various formats."""
     key_data = load_binary(input_file)
     key = reconstruct_key(key_data=key_data)
-    if puk and isinstance(key, (PrivateKeyRsa, PrivateKeyEcc, PrivateKeySM2)):
+    if puk and isinstance(key, PrivateKey):
         key = key.get_public_key()
 
     if encoding in ["PEM", "DER"]:

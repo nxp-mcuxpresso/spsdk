@@ -389,3 +389,28 @@ def test_dsc_virtual_odd_byte_count_program_space() -> None:
     probe.mem_block_write(0x0060, bytes([0xAA, 0xBB, 0xCC]), space=MemorySpace.PROGRAM)
     result = probe.mem_block_read(0x0060, 3, space=MemorySpace.PROGRAM)
     assert result == bytes([0xAA, 0xBB, 0xCC])
+
+
+def test_virtualprobe_core_register_read_write() -> None:
+    """Test the virtual probe's simulated core-register read/write (used by 'tool execute')."""
+    virtual_probe = DebugProbeVirtual("ID", {})
+
+    assert virtual_probe.read_core_register(virtual_probe.CORE_REG_PC) == 0
+
+    virtual_probe.write_core_register(virtual_probe.CORE_REG_PC, 0x2000_0100)
+    virtual_probe.write_core_register(virtual_probe.CORE_REG_SP, 0x2004_0000)
+
+    assert virtual_probe.read_core_register(virtual_probe.CORE_REG_PC) == 0x2000_0100
+    assert virtual_probe.read_core_register(virtual_probe.CORE_REG_SP) == 0x2004_0000
+
+
+def test_virtualprobe_set_registers_and_resume() -> None:
+    """Test set_registers_and_resume() on the virtual probe: halts, sets PC/SP, resumes."""
+    virtual_probe = DebugProbeVirtual("ID", {})
+    assert not virtual_probe.halted
+
+    virtual_probe.set_registers_and_resume(pc=0x2000_0100, sp=0x2004_0000)
+
+    assert not virtual_probe.halted  # resumed at the end
+    assert virtual_probe.read_core_register(virtual_probe.CORE_REG_PC) == 0x2000_0100
+    assert virtual_probe.read_core_register(virtual_probe.CORE_REG_SP) == 0x2004_0000

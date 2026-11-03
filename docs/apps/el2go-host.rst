@@ -81,7 +81,7 @@ A proposed order of *el2go-host* application usage is presented below:
 
     .. code-block:: python
 
-            el2go-host get-template -f [CHIP_FAMILY] -o [PATH_TO_OUTPUT_FILE]
+            el2go-host dev get-template -f [CHIP_FAMILY] -o [PATH_TO_OUTPUT_FILE]
 
     * **Description**: A configuration file template will be generated on the desired path and for the desired chip family.
 
@@ -90,7 +90,7 @@ A proposed order of *el2go-host* application usage is presented below:
 
     .. code-block:: python
 
-            el2go-host test-connection -c [PATH_TO_CONFIG_FILE]
+            el2go-host utils test-connection -c [PATH_TO_CONFIG_FILE]
 
     * **Description**: Given the path to the configuration file, a request to EdgeLock 2GO REST API will be send to establish connection with the service.
 
@@ -99,7 +99,7 @@ A proposed order of *el2go-host* application usage is presented below:
 
     .. code-block:: python
 
-            el2go-host get-secure-objects [INTERFACE_OPTIONS] -c [PATH_TO_CONFIG_FILE] -o [PATH_TO_OUTPUT_BINARY_FILE]
+            el2go-host dev get-secure-objects [INTERFACE_OPTIONS] -c [PATH_TO_CONFIG_FILE] -o [PATH_TO_OUTPUT_BINARY_FILE]
 
     * **Description**: Given the path to the configuration file, with required inputs defined, this command will:
 
@@ -115,18 +115,18 @@ A proposed order of *el2go-host* application usage is presented below:
 
     .. code-block:: python
 
-            el2go-host get-fw-version [INTERFACE_OPTIONS]
+            el2go-host utils get-fw-version [INTERFACE_OPTIONS]
 
     * **Description**: Since EdgeLock 2GO NXP Provisioning Firmware is loaded on the device, with this command Firmware's version can be extracted. Also, user can check if communication have been established between host machine and EdgeLock 2GO NXP Provisioning Firmware.
 
     * **Note**: Device needs to be in FlexSPI boot mode.
 
-* **close-device**
+* **provision-device**
     * **Syntax**:
 
     .. code-block:: python
 
-            el2go-host close-device [INTERFACE_OPTIONS] [ADDRESS]
+            el2go-host dev provision-device [INTERFACE_OPTIONS] [ADDRESS]
 
     * **Description**: This command will provision the device. The FLASH memory address where Secure Objects downloaded using *get-secure-objects* should be passed as argument or else operation will fail.
 

@@ -97,7 +97,7 @@ def test_get_template(cli_runner: CliRunner, tmp_path: str, area_type: str) -> N
         ["get-template", "-f", PFR_FAMILY, "-t", area_type, "-o", output_file],
     )
     assert os.path.isfile(output_file), f"Template file not created: {output_file}"
-    with open(output_file) as f:
+    with open(output_file, encoding="utf-8") as f:
         content = f.read()
     assert len(content) > 0
 

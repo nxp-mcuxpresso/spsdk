@@ -17,7 +17,7 @@ from typing import Any
 
 from typing_extensions import Self
 
-from spsdk.exceptions import SPSDKError, SPSDKKeyError
+from spsdk.exceptions import SPSDKError, SPSDKKeyError, SPSDKNotImplementedError
 from spsdk.image.hab.constants import CmdName, CmdTag
 from spsdk.image.hab.hab_certificate import HabCertificate
 from spsdk.image.hab.hab_header import CmdHeader
@@ -193,10 +193,12 @@ class CmdBase(BaseClass):
         """Convert binary representation into command (deserialization from binary data).
 
         :param data: Binary data to be parsed into command object.
-        :raises NotImplementedError: Derived class has to implement this method.
-        :return: Parsed command object.
+        :raises SPSDKNotImplementedError: The command does not support binary parsing.
         """
-        raise NotImplementedError(f"Derived class {cls.__name__} has to implement this method.")
+        raise SPSDKNotImplementedError(
+            f"Parsing from binary data is not supported for the HAB command '{cls.__name__}'. "
+            "If you need this functionality, please contact the SPSDK team."
+        )
 
     @classmethod
     def load_from_config(cls, config: Config, cmd_index: int | None = None) -> Self:
@@ -206,10 +208,13 @@ class CmdBase(BaseClass):
 
         :param config: Configuration object for loading command.
         :param cmd_index: The index of a command in configuration.
-        :raises NotImplementedError: Derived class has to implement this method.
-        :return: Command instance loaded from configuration.
+        :raises SPSDKNotImplementedError: The command cannot be created from a configuration.
         """
-        raise NotImplementedError(f"Derived class {cls.__name__} has to implement this method.")
+        raise SPSDKNotImplementedError(
+            f"The HAB command '{cls.__name__}' cannot be created from a configuration file. "
+            "Check the HAB configuration template for the list of supported commands, "
+            "or contact the SPSDK team if you need this functionality."
+        )
 
     def get_config(self, data_path: str = "./") -> Config:
         """Create configuration of the command.
@@ -219,11 +224,12 @@ class CmdBase(BaseClass):
 
         :param data_path: Path to store the data files of configuration.
 
-        :raises NotImplementedError: Derived class has to implement this method.
-        :return: Configuration dictionary for this command.
+        :raises SPSDKNotImplementedError: The command does not support configuration export.
         """
-        raise NotImplementedError(
-            f"Derived class {self.__class__.__name__} has to implement this method."
+        raise SPSDKNotImplementedError(
+            f"Configuration export is not supported for the HAB command "
+            f"'{type(self).__name__}'. If you need this functionality, "
+            "please contact the SPSDK team."
         )
 
     @classmethod

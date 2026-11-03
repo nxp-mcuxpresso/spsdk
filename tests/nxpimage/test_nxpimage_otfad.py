@@ -365,7 +365,7 @@ def test_otfad_custom_output(
         config_dict["encrypted_name"] = ""
 
         modified_config = os.path.join(work_dir, "modified_config.yaml")
-        with open(modified_config, "w") as f:
+        with open(modified_config, "w", encoding="utf-8") as f:
             yaml.dump(config_dict, f)
         cmd = f"otfad export -c {modified_config}"
         cli_runner.invoke(nxpimage.main, cmd.split())

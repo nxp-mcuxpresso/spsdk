@@ -38,20 +38,35 @@ def _misr_128(misr: int, data: bytes) -> int:
     return misr_result
 
 
-def calculate_misr_checksum(misr_seed: bytes, data: bytes) -> bytes:
+def calculate_misr_checksum(
+    misr_seed: bytes,
+    data: bytes,
+    data_alignment: int = 128,
+    seed_byte_order: str = "little",
+) -> bytes:
     """Calculate MISR checksum over multiple data blocks.
 
     :param misr_seed: Initial 16-byte bytes object MISR seed value
     :param data: Data to calculate MISR checksum over
+    :param data_alignment: Required input-data alignment in bytes, defaults to 128
+    :param seed_byte_order: Byte order used to interpret the MISR seed, defaults to little
     :returns: Final 16-byte bytes object MISR checksum
     """
     if len(misr_seed) != 16:
         raise SPSDKError("MISR seed must be 16 bytes")
 
-    if len(data) % 128 != 0:
-        raise SPSDKError("Data length must be a multiple of 128 bytes")
+    if data_alignment <= 0 or data_alignment % 16:
+        raise SPSDKError("MISR data alignment must be a positive multiple of 16 bytes")
 
-    cur_misr = int.from_bytes(misr_seed, byteorder="little")
+    if seed_byte_order == "big":
+        cur_misr = int.from_bytes(misr_seed, byteorder="big")
+    elif seed_byte_order == "little":
+        cur_misr = int.from_bytes(misr_seed, byteorder="little")
+    else:
+        raise SPSDKError("MISR seed byte order must be either 'big' or 'little'")
+
+    if len(data) % data_alignment != 0:
+        raise SPSDKError(f"Data length must be a multiple of {data_alignment} bytes")
 
     data_blocks = [data[i : i + 16] for i in range(0, len(data), 16)]
 

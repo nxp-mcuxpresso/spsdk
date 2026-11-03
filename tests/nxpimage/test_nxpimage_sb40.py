@@ -17,7 +17,8 @@ import os
 import pytest
 
 from spsdk.apps import nxpimage
-from spsdk.sbfile.sb4.images import SecureBinary4
+from spsdk.exceptions import SPSDKValueError
+from spsdk.sbfile.sb4.images import SecureBinary4, SecureBinary4Descr
 from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
@@ -222,6 +223,47 @@ def test_nxpimage_sb40_get_template(cli_runner: CliRunner, tmpdir: str) -> None:
     assert "family" in template_content, "Template should contain family field"
     assert "containerOutputFile" in template_content, "Template should contain output file field"
     assert "commands" in template_content, "Template should contain commands section"
+
+
+def test_nxpimage_sb40_timestamp_zero_is_preserved(nxpimage_data_dir: str) -> None:
+    """Verify an explicit YAML timestamp of zero survives an SB4 binary round trip."""
+    with use_working_directory(nxpimage_data_dir):
+        config_path = f"{nxpimage_data_dir}/workspace/cfgs/mcxn556s/sb4_fixed_timestamp.yaml"
+        config = Config.create_from_file(config_path)
+        config["timestamp"] = 0
+
+        sb4 = SecureBinary4.load_from_config(config=config)
+        binary = sb4.export()
+        parsed = SecureBinary4.parse(
+            binary,
+            family=FamilyRevision("mcxn556s"),
+            pck=config.get("containerKeyBlobEncryptionKey"),
+            kdk_access_rights=config.get_int("kdkAccessRights", 0),
+        )
+
+        assert sb4.sb_commands.timestamp == 0
+        assert sb4.sb_descriptor.timestamp == 0
+        assert parsed.sb_commands.timestamp == 0
+        assert len(parsed.sb_commands.commands) == len(sb4.sb_commands.commands)
+
+
+@pytest.mark.parametrize("timestamp", [0, 0x123456, (1 << 64) - 1])
+def test_sb40_timestamp_binary_placement(timestamp: int) -> None:
+    """Verify the uint64 timestamp is stored at descriptor offset 0x18 in little endian."""
+    descriptor = SecureBinary4Descr(timestamp=timestamp)
+
+    binary = descriptor.export()
+    parsed = SecureBinary4Descr.parse(binary)
+
+    assert binary[0x18:0x20] == timestamp.to_bytes(8, byteorder="little")
+    assert parsed.timestamp == timestamp
+
+
+@pytest.mark.parametrize("timestamp", [-1, 1 << 64])
+def test_sb40_timestamp_boundaries(timestamp: int) -> None:
+    """Reject timestamps that cannot be represented by the SB4 uint64 field."""
+    with pytest.raises(SPSDKValueError, match="Invalid SB timestamp"):
+        SecureBinary4Descr(timestamp=timestamp)
 
 
 def test_nxpimage_sb40_signature_validation(

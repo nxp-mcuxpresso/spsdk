@@ -29,7 +29,7 @@ The table bellow shows the list of support plugin types with associated package 
 | Mboot Device Interface | spsdk.device.interface | cookiecutter-spsdk-device-interface-plugin.zip | spsdk.mboot.protocol.base.MbootProtocolBase   |
 | SDP Device Interface   | spsdk.device.interface | cookiecutter-spsdk-device-interface-plugin.zip | spsdk.sdp.protocol.base.SDPProtocolBase       |
 | WPC Service            | spsdk.wpc.service      | cookiecutter-spsdk-wpc-service-plugin.zip      | spsdk.wpc.utils.WPCCertificateService         |
-| Debug probe            | spsdk.debug_probe      | cookiecutter-spsdk-debug-probe-plugin.zip      | spsdk.debuggers.debug_probe.DebugProbeCoreSightOnly    |
+| Debug probe            | spsdk.debug_probe      | cookiecutter-spsdk-debug-probe-plugin.zip      | spsdk.debuggers.debug_probe_arm.DebugProbeCoreSightOnly |
 | SB key derivator       | spsdk.sb31kdp          | cookiecutter-spsdk-sbkd-plugin.zip             | spsdk.sbfile.utils.key_derivator.SB31KeyDerivator      |
 
 

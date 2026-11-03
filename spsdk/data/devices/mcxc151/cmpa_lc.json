@@ -67,6 +67,10 @@
                     "description": "lifecycle dp[31:0]",
                     "offset_int": "0x0004",
                     "default_value_int": "0x9635FC03",
+                    "calculated": {
+                        "method": "duplicate",
+                        "src_register_id": "field000"
+                    },
                     "bitfields": [
                         {
                             "width": 32,

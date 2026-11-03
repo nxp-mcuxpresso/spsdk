@@ -1,0 +1,32 @@
+// Copyright 2026 NXP
+//
+// SPDX-License-Identifier: BSD-3-Clause
+//
+// J-Link Commander script to program the CMPA_PSWD (erase password) and
+// CMPA_LC (lifecycle) binaries onto the MCXC353 target.
+//
+// MCXC353 does not support ISP mode, so CMPA provisioning cannot be done with
+// blhost/pfr write over an ISP connection. Instead, both binaries are written
+// directly to their CMPA addresses over the debug (SWD) interface using
+// J-Link Commander's LoadFile command.
+//
+// Run with (from the mcxc353_erase_with_password example directory):
+//   JLink.exe -NoGui 1 -ExitOnError 1 -CommandFile inputs/program_cmpa.jlink
+device MCXC353
+si SWD          // Select interface
+speed 4000      // Select speed
+connect
+r               // Reset
+h               // Halt
+
+// Write the CMPA_PSWD binary (PASSWORD_HEADER marker + ERASE_PASSWORD) to the
+// CMPA password page.
+LoadFile workspace/cmpa_pswd.bin 0x01002800
+
+// Write the CMPA_LC binary (lifecycle word) to the CMPA lifecycle page. This
+// transition to IN_FIELD1 is irreversible - after the next reset, the ROM
+// will only accept the password-protected mailbox erase, not a plain one.
+LoadFile workspace/cmpa_lc.bin 0x01003000
+
+r               // Reset
+exit

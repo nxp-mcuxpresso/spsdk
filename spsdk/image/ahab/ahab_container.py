@@ -15,7 +15,7 @@ AHABContainerV2 for different container versions and configurations.
 """
 
 import logging
-import traceback
+from abc import ABC
 from struct import pack, unpack
 from types import SimpleNamespace
 from typing import ClassVar, cast
@@ -60,7 +60,7 @@ from spsdk.utils.verifier import Verifier, VerifierResult
 logger = logging.getLogger(__name__)
 
 
-class AHABContainerBase(HeaderContainer):
+class AHABContainerBase(HeaderContainer, ABC):
     """AHAB Container base class for secure boot operations.
 
     This class provides the foundation for all AHAB (Advanced High Assurance Boot)
@@ -134,10 +134,10 @@ class AHABContainerBase(HeaderContainer):
         self.chip_config = AhabChipContainerConfig(
             base=chip_config,
             used_srk_id=self.flag_used_srk_id,
-            srk_set=self.flag_srk_set,
             srk_revoke_keys=self.flag_srk_revoke_keys,
             locked=False,
         )
+        self.chip_config.srk_set = self.flag_srk_set
 
     def __eq__(self, other: object) -> bool:
         """Check equality of AHAB container objects.
@@ -171,13 +171,14 @@ class AHABContainerBase(HeaderContainer):
         :param used_srk_id: Index of the key from SRK set being used
         :param srk_revoke_mask: Bitmask indicating which SRK keys are revoked
         """
-        flags = FlagsSrkSet.from_attr(srk_set.lower()).tag
+        srk_set_enum = self.chip_config.base.srk_sets.from_attr(srk_set.lower())
+        flags = srk_set_enum.tag
         flags |= used_srk_id << 4
         flags |= srk_revoke_mask << 8
         self.flags = flags
 
         # Update also chip configuration accordingly
-        self.chip_config.srk_set = FlagsSrkSet.from_attr(srk_set.lower())
+        self.chip_config.srk_set = cast(FlagsSrkSet, srk_set_enum)
         self.chip_config.srk_revoke_keys = srk_revoke_mask
         self.chip_config.used_srk_id = used_srk_id
 
@@ -192,16 +193,7 @@ class AHABContainerBase(HeaderContainer):
         """
         srk_set = (self.flags >> self.FLAGS_SRK_SET_OFFSET) & ((1 << self.FLAGS_SRK_SET_SIZE) - 1)
 
-        # Try to use chip config enumeration first
-        if hasattr(self, "chip_config") and self.chip_config and hasattr(self.chip_config, "base"):
-            try:
-                return cast(FlagsSrkSet, self.chip_config.base.srk_sets.from_tag(srk_set))
-            except Exception as exc:  # noqa: BLE001
-                logger.debug(f"Chip-specific SRK set lookup failed: {exc}")
-                logger.debug(traceback.format_exc())
-
-        # Fallback to default FlagsSrkSet
-        return cast(FlagsSrkSet, FlagsSrkSet.from_tag(srk_set))
+        return cast(FlagsSrkSet, self.chip_config.base.srk_sets.from_tag(srk_set))
 
     @property
     def flag_used_srk_id(self) -> int:
@@ -1051,6 +1043,12 @@ class AHABContainer(AHABContainerBase):
                                     VerifierResult.WARNING,
                                     "The NXP image can't be verified",
                                 )
+                            elif self.flag_srk_set.label == "iccs":
+                                ver_enc.add_record(
+                                    "Decrypted data",
+                                    VerifierResult.WARNING,
+                                    "The ICCS image cannot be decrypted without its encryption key",
+                                )
                             elif self.flag_srk_set.label not in ("oem", "none"):
                                 ver_enc.add_record(
                                     "Decrypted data",
@@ -1390,6 +1388,7 @@ class AHABContainerV2(AHABContainer):
 
     :cvar VERSION: Container format version identifier (0x02).
     :cvar CONTAINER_SIZE: Standard container size in bytes (0x4000).
+    :cvar FLAGS_SRK_SET_SIZE: SRK set field width (4 bits, including ICCS and Device HSM).
     :cvar START_IMAGE_ADDRESS: Default start address for images (0xC000).
     :cvar START_IMAGE_ADDRESS_NAND: Start address for NAND flash images (0xBC00).
     """
@@ -1399,9 +1398,15 @@ class AHABContainerV2(AHABContainer):
     SIGNATURE_BLOCK = SignatureBlockV2  # type: ignore
     CONTAINER_SIZE = 0x4000
     VERSION = 0x02
+    FLAGS_SRK_SET_SIZE = 4
 
     START_IMAGE_ADDRESS = 0xC000
     START_IMAGE_ADDRESS_NAND = 0xBC00
+
+    # The SRK set field occupies bits 0-3 in AHAB v2 containers. The wider field is needed
+    # to represent the DevHSM key set (0x5), which does not fit into the two bits used by
+    # AHAB v1.
+    FLAGS_SRK_SET_SIZE = 4
 
     # Container special flags:
     FLAGS_CHECK_ALL_SIGNATURES_OFFSET = 15
@@ -1410,6 +1415,9 @@ class AHABContainerV2(AHABContainer):
     # Container special flags for FastBoot:
     FLAGS_FAST_BOOT_OFFSET = 16
     FLAGS_FAST_BOOT_SIZE = 3
+    FLAGS_PARALLEL_VERIFICATION_OFFSET = 16
+    FLAGS_PARALLEL_VERIFICATION_SIZE = 1
+    PARALLEL_VERIFICATION_SUB_FEATURE = "parallel_verification"
 
     class FlagsCheckAllSignatures(SpsdkEnum):
         """AHAB container signature verification flags enumeration.
@@ -1465,6 +1473,25 @@ class AHABContainerV2(AHABContainer):
             "ELE will do hash and copy, and use external accelerator for authentication",
         )
 
+    class FlagsParallelVerification(SpsdkEnum):
+        """Parallel verification configuration flags enumeration.
+
+        This enumeration defines the single-bit parallel verification setting used by
+        devices that expose the AHAB ``parallel_verification`` sub-feature.
+        """
+
+        Disabled = (0x00, "disabled", "Parallel verification is disabled")
+        Enabled = (0x01, "enabled", "Parallel verification is enabled")
+
+    def _supports_parallel_verification(self) -> bool:
+        """Return whether the target device uses the parallel verification flag.
+
+        :return: True when the AHAB database enables parallel verification.
+        """
+        return self.PARALLEL_VERIFICATION_SUB_FEATURE in get_db(
+            self.chip_config.base.family
+        ).get_list(DatabaseManager.AHAB, "sub_features", [])
+
     @property
     def flag_fast_boot(self) -> FlagsFastBoot:
         """Get Fast Boot flags as enumeration.
@@ -1479,17 +1506,31 @@ class AHABContainerV2(AHABContainer):
         )
         return self.FlagsFastBoot.from_tag(fast_boot)
 
+    @property
+    def flag_parallel_verification(self) -> FlagsParallelVerification:
+        """Get parallel verification flag as enumeration.
+
+        :return: Parallel verification flag as FlagsParallelVerification.
+        """
+        parallel_verification = (self.flags >> self.FLAGS_PARALLEL_VERIFICATION_OFFSET) & (
+            (1 << self.FLAGS_PARALLEL_VERIFICATION_SIZE) - 1
+        )
+        return self.FlagsParallelVerification.from_tag(parallel_verification)
+
     def _create_flags_config(self) -> Config:
         """Create configuration of the AHAB container flags.
 
         The method extends the base class flags configuration by adding AHAB-specific
-        flags including signature checking and fast boot options.
+        flags including signature checking and the device-specific boot verification option.
 
         :return: Configuration dictionary with AHAB container flags.
         """
         cfg = super()._create_flags_config()
         cfg["check_all_signatures"] = self.flag_check_all_signatures.label
-        cfg["fast_boot"] = self.flag_fast_boot.label
+        if self._supports_parallel_verification():
+            cfg["parallel_verification"] = self.flag_parallel_verification.label
+        else:
+            cfg["fast_boot"] = self.flag_fast_boot.label
 
         return cfg
 
@@ -1497,7 +1538,8 @@ class AHABContainerV2(AHABContainer):
         """Load AHAB container flags from configuration.
 
         This method processes the configuration to set container-specific flags including
-        check_all_signatures and fast_boot options, combining them with flags from the parent class.
+        check_all_signatures and device-specific boot verification options, combining them
+        with flags from the parent class.
         When a field is absent from the configuration the existing flag bits are preserved unchanged.
 
         :param config: Configuration dictionary containing AHAB container settings.
@@ -1513,6 +1555,26 @@ class AHABContainerV2(AHABContainer):
                 << self.FLAGS_CHECK_ALL_SIGNATURES_OFFSET
             )
             self.flags = (self.flags & ~cas_mask) | cas_value
+        supports_parallel_verification = self._supports_parallel_verification()
+        if supports_parallel_verification and "fast_boot" in config:
+            raise SPSDKValueError(
+                "The fast_boot option is not supported for devices with parallel verification; "
+                "use parallel_verification instead."
+            )
+        if not supports_parallel_verification and "parallel_verification" in config:
+            raise SPSDKValueError(
+                "The parallel_verification option is not supported for this device; "
+                "use fast_boot instead."
+            )
+        if "parallel_verification" in config:
+            pv_mask = (
+                (1 << self.FLAGS_PARALLEL_VERIFICATION_SIZE) - 1
+            ) << self.FLAGS_PARALLEL_VERIFICATION_OFFSET
+            pv_value = (
+                self.FlagsParallelVerification.from_attr(config.get("parallel_verification")).tag
+                << self.FLAGS_PARALLEL_VERIFICATION_OFFSET
+            )
+            self.flags = (self.flags & ~pv_mask) | pv_value
         if "fast_boot" in config:
             fb_mask = ((1 << self.FLAGS_FAST_BOOT_SIZE) - 1) << self.FLAGS_FAST_BOOT_OFFSET
             fb_value = (
@@ -1521,11 +1583,64 @@ class AHABContainerV2(AHABContainer):
             )
             self.flags = (self.flags & ~fb_mask) | fb_value
 
+    def _is_lms_used(self) -> bool:
+        """Return whether LMS is used by the active container signature.
+
+        :return: True when the selected container signing key uses LMS.
+        """
+        if not isinstance(self.signature_block, SignatureBlockV2):
+            return False
+
+        if (
+            self.signature_block.certificate
+            and self.signature_block.certificate.permission_to_sign_container
+        ):
+            certificate_keys = (
+                self.signature_block.certificate.public_key_0,
+                self.signature_block.certificate.public_key_1,
+            )
+            return any(
+                key is not None and key.signing_algorithm.label.upper() == "LMS"
+                for key in certificate_keys
+            )
+
+        srk_assets = self.signature_block.srk_assets
+        if not isinstance(srk_assets, SRKTableArray):
+            return False
+
+        used_srk_id = self.chip_config.used_srk_id
+        return any(
+            used_srk_id < len(srk_table.srk_records)
+            and srk_table.srk_records[used_srk_id].signing_algorithm.label.upper() == "LMS"
+            for srk_table in srk_assets._srk_tables
+        )
+
+    def verify(self) -> Verifier:
+        """Verify AHAB container data and device-specific flag combinations.
+
+        :return: Verifier object containing validation results and status.
+        """
+        ret = super().verify()
+        if self._supports_parallel_verification():
+            parallel_verification = self.flag_parallel_verification
+            ret.add_record_enum(
+                "Flags: Parallel verification",
+                parallel_verification,
+                self.FlagsParallelVerification,
+            )
+            if parallel_verification == self.FlagsParallelVerification.Enabled:
+                ret.add_record(
+                    "Parallel verification with LMS",
+                    not self._is_lms_used(),
+                    "LMS signing is not supported when parallel verification is enabled.",
+                )
+        return ret
+
     def _get_srk_table_fuse_db_index(self, table_ix: int) -> int:
         """Get the device-database fuse index for a given SRK table.
 
         The device database always maps ECC/RSA SRK tables to index 0 (``fuses_0``,
-        ``pfr_hash_0``) and PQC (DILITHIUM/ML-DSA) SRK tables to index 1
+        ``pfr_hash_0``) and PQC (DILITHIUM/ML-DSA/LMS) SRK tables to index 1
         (``fuses_1``, ``pfr_hash_1``).  This mapping is fixed by the database
         schema and is independent of the physical position of the table in the
         SRK table array.
@@ -1535,7 +1650,7 @@ class AHABContainerV2(AHABContainer):
         registers are targeted.
 
         :param table_ix: Position of the SRK table in the array (0 or 1).
-        :return: 0 for ECC/RSA tables, 1 for PQC (DILITHIUM/ML-DSA) tables.
+        :return: 0 for ECC/RSA tables, 1 for PQC (DILITHIUM/ML-DSA/LMS) tables.
         """
         assert self.signature_block is not None
         assert isinstance(self.signature_block.srk_assets, SRKTableArray)
@@ -1543,6 +1658,7 @@ class AHABContainerV2(AHABContainer):
         if srk_table.srk_records and srk_table.srk_records[0].signing_algorithm in (
             AHABSignAlgorithm.DILITHIUM,
             AHABSignAlgorithm.ML_DSA,
+            AHABSignAlgorithm.LMS,
         ):
             return 1
         return 0
@@ -1660,17 +1776,17 @@ class AHABContainerV2(AHABContainer):
     def post_export(self, output_path: str, cnt_ix: int | None = None) -> list[str]:
         """Post-export processing and optional file writing.
 
-        Generates SRK hash files and fuse scripts for AHAB containers. Skips processing for NXP
-        containers and v2x-1 containers. Creates hash files and corresponding fuse scripts for
-        each SRK table in the signature block.
+        Generates SRK hash files and fuse scripts for AHAB containers. Skips processing for
+        NXP, ICCS, and v2x-1 containers. Creates hash files and corresponding fuse scripts
+        for each SRK table in the signature block.
 
         :param output_path: Base path for output files
         :param cnt_ix: Container index for file naming, optional
         :return: List of generated file paths including hash files and fuse scripts
         """
         generated_files: list[str] = []
-        if self.flag_srk_set == FlagsSrkSet.NXP:
-            logger.debug("Skipping generating hashes for NXP container")
+        if self.flag_srk_set.label in ("nxp", "iccs"):
+            logger.debug("Skipping generating hashes for NXP/ICCS container")
             return generated_files
         if self.image_array_len > 0 and self.image_array[0].flags_core_id_name == "v2x-1":
             logger.debug("Skipping generating hashes for v2x-1 container")

@@ -13,6 +13,7 @@ block management.
 
 import logging
 import struct
+from abc import ABC
 from copy import deepcopy
 
 from spsdk.apps.utils.utils import SPSDKError
@@ -454,7 +455,7 @@ def ahab_fix_signature_block_version(
     if supported_containers[0] != 2:
         raise SPSDKError("This fix is only applicable for AHAB v2 containers")
 
-    class DummySignature(HeaderContainer):
+    class DummySignature(HeaderContainer, ABC):
         """AHAB dummy signature container for format validation.
 
         This class provides a lightweight signature container implementation used for

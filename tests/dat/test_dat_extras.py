@@ -7,7 +7,7 @@
 
 import os
 from typing import cast
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -22,8 +22,13 @@ from spsdk.dat.dar_packet import (
 )
 from spsdk.dat.debug_credential import DebugCredentialCertificate as DC
 from spsdk.dat.debug_credential import ProtocolVersion
-from spsdk.dat.debug_mailbox import DebugMailbox
+from spsdk.dat.debug_mailbox import (
+    DEFAULT_DM_READY_CSW_MASK,
+    DEFAULT_DM_READY_TIMEOUT,
+    DebugMailbox,
+)
 from spsdk.dat.dm_commands import (
+    STANDARD_ERROR_CODES,
     DebugAuthenticationStart,
     DebugMailboxCommand,
     DebugMailboxCommandID,
@@ -39,7 +44,7 @@ from spsdk.dat.dm_commands import (
     StartDebugMailbox,
     StartDebugSession,
 )
-from spsdk.exceptions import SPSDKError
+from spsdk.exceptions import SPSDKError, SPSDKIOError
 from spsdk.utils.config import Config
 from spsdk.utils.exceptions import SPSDKTimeoutError
 from spsdk.utils.family import FamilyRevision
@@ -322,6 +327,8 @@ def _make_mailbox_no_init(family_str: str = "lpc55s69") -> DebugMailbox:
     dm.reset = False
     dm.moredelay = 0.0
     dm.op_timeout = 1000
+    dm.dm_ready_csw_mask = DEFAULT_DM_READY_CSW_MASK
+    dm.dm_ready_timeout = DEFAULT_DM_READY_TIMEOUT
     from spsdk.dat.debug_mailbox import REGISTERS
 
     dm.registers = REGISTERS
@@ -358,6 +365,97 @@ class TestDebugMailboxClose:
         dm.debug_probe.close.assert_called_once()  # type: ignore[attr-defined]
 
 
+class TestDebugMailboxWaitForDmReady:
+    """Tests for DebugMailbox.wait_for_dm_ready()."""
+
+    def test_ready_immediately(self) -> None:
+        """A clear CSW value is accepted right away."""
+        dm = _make_mailbox_no_init()
+        dm.reset = True
+        cast(MagicMock, dm.debug_probe).dbgmlbx_reg_read.return_value = 0x00
+        dm.wait_for_dm_ready()
+        assert cast(MagicMock, dm.debug_probe).dbgmlbx_reg_read.call_count == 1
+
+    def test_polls_until_csw_clears(self) -> None:
+        """Busy CSW 0x61 (ELE hybrid boot) is polled until the ROM clears it.
+
+        This is the i.MX943 hybrid key regression: the first CSW sample returns
+        RESYNCH_REQ | CHIP_RESET_REQ | RETURN_PENDING because ELE has not finished the
+        dbg_auth_init DM soft reset yet. The poll must not proceed on such a value.
+        """
+        dm = _make_mailbox_no_init()
+        dm.reset = True
+        cast(MagicMock, dm.debug_probe).dbgmlbx_reg_read.side_effect = [0x61, 0x61, 0x21, 0x00]
+        dm.wait_for_dm_ready()
+        assert cast(MagicMock, dm.debug_probe).dbgmlbx_reg_read.call_count == 4
+
+    def test_timeout_reports_pending_bits(self) -> None:
+        """A permanently busy CSW ends with SPSDKIOError naming the pending bits."""
+        dm = _make_mailbox_no_init()
+        dm.reset = True
+        dm.dm_ready_timeout = 1
+        cast(MagicMock, dm.debug_probe).dbgmlbx_reg_read.return_value = 0x61
+        with pytest.raises(SPSDKIOError, match="RESYNCH_REQ"):
+            dm.wait_for_dm_ready()
+
+    def test_timeout_on_unreadable_csw(self) -> None:
+        """Read failures are retried and reported as an unreadable CSW on timeout."""
+        dm = _make_mailbox_no_init()
+        dm.reset = True
+        dm.dm_ready_timeout = 1
+        cast(MagicMock, dm.debug_probe).dbgmlbx_reg_read.side_effect = SPSDKError("stall")
+        with pytest.raises(SPSDKIOError, match="not readable"):
+            dm.wait_for_dm_ready()
+
+    def test_no_reset_checks_only_req_pending(self) -> None:
+        """Without a reset no handshake is pending, so only REQ_PENDING is awaited."""
+        dm = _make_mailbox_no_init()
+        dm.reset = False
+        cast(MagicMock, dm.debug_probe).dbgmlbx_reg_read.return_value = 0x61
+        dm.wait_for_dm_ready()
+        assert cast(MagicMock, dm.debug_probe).dbgmlbx_reg_read.call_count == 1
+
+    def test_decode_csw_bits(self) -> None:
+        """CSW values are decoded into readable bit names."""
+        dm = _make_mailbox_no_init()
+        assert dm.decode_csw_bits(0x00) == "none"
+        assert dm.decode_csw_bits(0x61) == "RESYNCH_REQ, CHIP_RESET_REQ, RETURN_PENDING"
+
+
+class TestDebugMailboxMoreDelay:
+    """Tests for the extra delay applied after the debug mailbox reset sequence."""
+
+    @staticmethod
+    def _create(moredelay: float | None) -> MagicMock:
+        """Create DebugMailbox with database 'more_delay' of 0.5s and return patched sleep."""
+        db = MagicMock()
+        db.get_value.side_effect = lambda _f, key, default=None: (
+            0.5 if key == "more_delay" else default
+        )
+        db.get_int.side_effect = lambda _f, _k, default=None: default
+        db.get_dict.side_effect = lambda _f, _k, default=None: default
+        db.get_bool.side_effect = lambda _f, _k, default=None: default
+        probe = MagicMock()
+        probe.dbgmlbx_reg_read.return_value = 0
+        probe.dbgmlbx_ap_ix = 2
+        with (
+            patch("spsdk.dat.debug_mailbox.get_db", return_value=db),
+            patch("spsdk.dat.debug_mailbox.sleep") as sleep_mock,
+        ):
+            DebugMailbox(probe, FamilyRevision("mimx9437"), moredelay=moredelay)
+        return sleep_mock
+
+    def test_database_default_used(self) -> None:
+        """Without the user value the family 'more_delay' from the database is used."""
+        self._create(None).assert_any_call(0.5)
+
+    def test_user_value_overrides_database(self) -> None:
+        """User supplied '--timing' value replaces the database default."""
+        sleep_mock = self._create(0.2)
+        sleep_mock.assert_any_call(0.2)
+        assert 0.5 not in [c.args[0] for c in sleep_mock.call_args_list]
+
+
 class TestDebugMailboxSpinRead:
     """Tests for DebugMailbox.spin_read()."""
 
@@ -369,8 +467,6 @@ class TestDebugMailboxSpinRead:
 
     def test_spin_read_timeout(self) -> None:
         """spin_read should raise SPSDKTimeoutError when all reads fail."""
-        from spsdk.exceptions import SPSDKError
-
         dm = _make_mailbox_no_init()
         dm.op_timeout = 1  # very short timeout
         dm.debug_probe.dbgmlbx_reg_read.side_effect = SPSDKError("read fail")  # type: ignore[attr-defined]
@@ -558,3 +654,93 @@ class TestDebugMailboxCommandRun:
         ]
         result = cmd.run([0x1000])
         assert result == [0x11111111, 0x22222222, 0x33333333, 0x44444444]
+
+
+# ---------------------------------------------------------------------------
+# dm_commands  – STANDARD_ERROR_CODES (SPSDK-7114)
+# ---------------------------------------------------------------------------
+
+
+class TestStandardErrorCodes:
+    """Tests verifying STANDARD_ERROR_CODES is keyed by the 16-bit status.
+
+    The real device encodes the status in the lower 16 bits of the RETURN
+    word (``ret & 0xFFFF``); the upper bits carry the new-protocol flag
+    (bit 31) and the error indication (bit 20). STANDARD_ERROR_CODES must be
+    keyed by that 16-bit value, not by the whole 32-bit RETURN word.
+    """
+
+    def test_keys_are_16_bit(self) -> None:
+        """All STANDARD_ERROR_CODES keys fit in 16 bits."""
+        for code in STANDARD_ERROR_CODES:
+            assert 0 <= code <= 0xFFFF
+
+    def test_known_codes_and_messages(self) -> None:
+        """Error descriptions match the reference manual table."""
+        assert STANDARD_ERROR_CODES[0x0001] == (
+            "Debug mode not entered. This is returned if other commands are sent "
+            "prior to the 'Enter DM-AP' command"
+        )
+        assert STANDARD_ERROR_CODES[0x0002] == "Command is not supported"
+        assert (
+            STANDARD_ERROR_CODES[0x0003]
+            == "Communication failure. ACK_TOKEN is missing during data transactions"
+        )
+
+    def test_run_decodes_known_error_new_protocol(self) -> None:
+        """run() raises a human readable message for a known new-protocol error.
+
+        Reproduces the exact example from SPSDK-7114: device returns
+        0x8000_0001 (bit 31 new-protocol flag, bit 20 error indication,
+        status 0x0001 in the lower 16 bits).
+        """
+        dm = _make_mock_dm()
+        cmd = GetCRPLevel(dm)
+        dm.read_return.return_value = 0x8000_0001  # type: ignore[has-type]
+        dm.spin_write.return_value = None  # type: ignore[has-type]
+        with pytest.raises(SPSDKError, match="Debug mode not entered"):
+            cmd.run()
+
+    def test_run_decodes_known_error_command_not_supported(self) -> None:
+        """run() decodes status 0x0002 as 'Command is not supported'."""
+        dm = _make_mock_dm()
+        cmd = GetCRPLevel(dm)
+        dm.read_return.return_value = 0x8000_0002  # type: ignore[has-type]
+        dm.spin_write.return_value = None  # type: ignore[has-type]
+        with pytest.raises(SPSDKError, match="Command is not supported"):
+            cmd.run()
+
+    def test_run_decodes_known_error_comm_failure(self) -> None:
+        """run() decodes status 0x0003 as the ACK_TOKEN communication failure."""
+        dm = _make_mock_dm()
+        cmd = GetCRPLevel(dm)
+        dm.read_return.return_value = 0x8000_0003  # type: ignore[has-type]
+        dm.spin_write.return_value = None  # type: ignore[has-type]
+        with pytest.raises(SPSDKError, match="ACK_TOKEN"):
+            cmd.run()
+
+    def test_run_unknown_error_falls_back_to_generic_message(self) -> None:
+        """run() falls back to the generic message for an unmapped status code."""
+        dm = _make_mock_dm()
+        cmd = GetCRPLevel(dm)
+        dm.read_return.return_value = 0x8000_00FF  # type: ignore[has-type]
+        dm.spin_write.return_value = None  # type: ignore[has-type]
+        with pytest.raises(SPSDKError, match="Status code is not success"):
+            cmd.run()
+
+    def test_run_short_response_not_misinterpreted_as_error(self) -> None:
+        """A legitimate short response (e.g. CRP level) is not mistaken for an error.
+
+        When bit 20 is not set, the lower 16 bits of the response header plus
+        the actual data word carry valid response data (e.g. the CRP level),
+        not an error code, even if the low bits match a known error code value.
+        """
+        dm = _make_mock_dm()
+        cmd = GetCRPLevel(dm)
+        cmd.resplen = 1
+        # header: new-protocol bit set, resplen=1, status=0 -> no error indication
+        # because resplen is non-zero.
+        dm.read_return.side_effect = [0x8001_0000, 0x0000_0001]  # type: ignore[has-type]
+        dm.spin_write.return_value = None  # type: ignore[has-type]
+        result = cmd.run()
+        assert result == [0x0000_0001]

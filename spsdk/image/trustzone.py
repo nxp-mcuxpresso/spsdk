@@ -26,6 +26,7 @@ from spsdk.utils.family import FamilyRevision, get_db, get_families, update_vali
 from spsdk.utils.misc import Endianness
 from spsdk.utils.registers import Registers, RegistersPreValidationHook
 from spsdk.utils.spsdk_enum import SpsdkEnum
+from spsdk.utils.verifier import Verifier
 
 logger = logging.getLogger(__name__)
 
@@ -152,6 +153,38 @@ class TrustZone(FeatureBaseClass):
         :return: True if the TrustZone is customized, False otherwise.
         """
         return not self.regs.has_reset_value
+
+    def verify(self) -> Verifier:
+        """Verify the TrustZone configuration.
+
+        Reports whether the TrustZone preset uses default or customized values and, in
+        case of a customized configuration, lists the effective register/bitfield values.
+
+        :return: Verifier object containing TrustZone verification results.
+        """
+        ret = Verifier(f"TrustZone preset for {self.family}")
+        ret.add_record(
+            name="Configuration type",
+            result=True,
+            value="Customized" if self.is_customized else "Default values",
+        )
+        if self.is_customized:
+            for register in self.regs.get_registers(include_group_regs=True):
+                ret.add_record(
+                    name=register.name,
+                    result=True,
+                    value=register.get_hex_value(),
+                    important=False,
+                )
+                for bitfield in register.get_bitfields():
+                    if bitfield.has_enums():
+                        ret.add_record(
+                            name=bitfield.name,
+                            result=True,
+                            value=bitfield.get_enum_value(),
+                            important=False,
+                        )
+        return ret
 
     def __len__(self) -> int:
         """Get the total size of TrustZone registers in bytes.
@@ -422,6 +455,33 @@ class TrustZoneV2(FeatureBaseClass):
         :return: True if the TrustZone has custom configuration records, False otherwise.
         """
         return bool(len(self.records) > 0)
+
+    def verify(self) -> Verifier:
+        """Verify the TrustZone V2 configuration.
+
+        Reports the number of configured records and, when present, lists each record's
+        address, value, mask, and write/readback flags.
+
+        :return: Verifier object containing TrustZone V2 verification results.
+        """
+        ret = Verifier(f"TrustZone v2 preset for {self.family.name}")
+        ret.add_record(
+            name="Configuration type",
+            result=True,
+            value="Customized" if self.is_customized else "Default values",
+        )
+        for idx, record in enumerate(self.records):
+            ret.add_record(
+                name=f"Record {idx}",
+                result=True,
+                value=(
+                    f"address=0x{record.address:08X}, value=0x{record.value:08X}, "
+                    f"mask=0x{record.mask:08X}, skip_write={record.skip_write}, "
+                    f"skip_readback={record.skip_readback}"
+                ),
+                important=False,
+            )
+        return ret
 
     def __len__(self) -> int:
         """Get the total length of the TrustZone data structure in bytes.

@@ -441,7 +441,7 @@ def test_generate_template(cli_runner: CliRunner, tmpdir: Any) -> None:
     with use_working_directory(tmpdir):
         cli_runner.invoke(main, f"cert get-template -o {template}")
         assert os.path.isfile(template)
-        with open(template) as f:
+        with open(template, encoding="utf-8") as f:
             data = yaml.safe_load(f)
         # there should be at least 5 items in the template
         assert len(data) > 5

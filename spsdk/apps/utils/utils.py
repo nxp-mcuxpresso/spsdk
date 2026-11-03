@@ -174,7 +174,7 @@ def catch_spsdk_error(function: Callable) -> Callable:
         except SPSDKAppError as app_exc:
             if app_exc.description:
                 click.echo(f"{app_exc.__class__.__name__}: {app_exc}", err=True)
-            if app_exc.error_code > 0 and app_exc.error_code < 256:
+            if 0 < app_exc.error_code < 256:
                 sys.exit(app_exc.error_code)
             sys.exit(1)
         except (AssertionError, SPSDKError) as spsdk_exc:

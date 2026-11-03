@@ -153,6 +153,16 @@ whole_ahab_image:
                         hash_and_copy_with_external_accelerator,
                       ]
                     template_value: disabled
+                  parallel_verification:
+                    type: string
+                    title: Parallel verification
+                    description: "This option enables parallel verification.\n
+                      If omitted, the existing flag value in the parsed container is preserved (no override applied).\n
+                      - disabled: Parallel verification disabled.\n
+                      - enabled: Parallel verification enabled."
+                    enum: [disabled, enabled]
+                    template_value: disabled
+                    skip_in_template: True
                   fuse_version:
                     type: [number, string]
                     title: Fuse version

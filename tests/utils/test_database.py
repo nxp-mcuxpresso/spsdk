@@ -1635,14 +1635,14 @@ def test_cleanup_stale_version_caches_preserves_siblings(monkeypatch: Any, tmp_p
     # Unrelated sibling folder next to the cache dir must survive.
     sibling = tmp_path / "important_user_data"
     sibling.mkdir()
-    (sibling / "keep.txt").write_text("keep")
+    (sibling / "keep.txt").write_text("keep", encoding="utf-8")
     # Stale cache files (other version) and current-version cache files.
-    (cache_dir / "db_quick_info_9.9.9.cache").write_text("current")
-    (cache_dir / "db_data_abc123_9.9.9.cache").write_text("current")
-    (cache_dir / "db_quick_info_1.0.0.cache").write_text("stale")
-    (cache_dir / "db_data_abc123_1.0.0.cache").write_text("stale")
-    (cache_dir / "db_data_abc123_1.0.0.cache.lock").write_text("")
-    (cache_dir / "unrelated.txt").write_text("keep")
+    (cache_dir / "db_quick_info_9.9.9.cache").write_text("current", encoding="utf-8")
+    (cache_dir / "db_data_abc123_9.9.9.cache").write_text("current", encoding="utf-8")
+    (cache_dir / "db_quick_info_1.0.0.cache").write_text("stale", encoding="utf-8")
+    (cache_dir / "db_data_abc123_1.0.0.cache").write_text("stale", encoding="utf-8")
+    (cache_dir / "db_data_abc123_1.0.0.cache.lock").write_text("", encoding="utf-8")
+    (cache_dir / "unrelated.txt").write_text("keep", encoding="utf-8")
 
     _cleanup_stale_version_caches()
 
@@ -1663,9 +1663,9 @@ def test_clear_cache_only_removes_cache_files(monkeypatch: Any, tmp_path: Path) 
     monkeypatch.setattr(database, "get_spsdk_cache_dirname", lambda: str(cache_dir))
     sibling = tmp_path / "important_user_data"
     sibling.mkdir()
-    (cache_dir / "db_quick_info_9.9.9.cache").write_text("x")
-    (cache_dir / "db_data_abc123_1.0.0.cache").write_text("x")
-    (cache_dir / "unrelated.txt").write_text("keep")
+    (cache_dir / "db_quick_info_9.9.9.cache").write_text("x", encoding="utf-8")
+    (cache_dir / "db_data_abc123_1.0.0.cache").write_text("x", encoding="utf-8")
+    (cache_dir / "unrelated.txt").write_text("keep", encoding="utf-8")
 
     DatabaseManager.clear_cache()
 

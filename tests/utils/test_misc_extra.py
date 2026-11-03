@@ -538,6 +538,18 @@ def test_load_hex_string_invalid_string_source() -> None:
         load_hex_string("ZZZZZZ", 4)
 
 
+def test_load_hex_string_missing_file_error_preserves_original_source() -> None:
+    """Test load_hex_string error message reports the original source, not a mutated value.
+
+    Regression test: previously, when a file path could not be found, the code
+    prepended "0x" to the source string while attempting a hex-value fallback,
+    and the final error message reported this mutated value (e.g. "0xoem_seed.bin")
+    instead of the original, unmodified source (e.g. "oem_seed.bin").
+    """
+    with pytest.raises(SPSDKError, match=r"^SPSDK: Invalid key input: oem_seed\.bin$"):
+        load_hex_string("oem_seed.bin", 16)
+
+
 def test_load_hex_string_size_mismatch_file(tmpdir: Any) -> None:
     """Test load_hex_string raises SPSDKError when file content produces wrong size.
 

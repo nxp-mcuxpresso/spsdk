@@ -12,6 +12,7 @@ payload types, authentication methods, and data entry management.
 """
 
 import struct
+from abc import ABC
 from collections.abc import Mapping
 
 import hexdump
@@ -101,7 +102,7 @@ class DestinationType(SpsdkEnum):
     OTP     = (2, "otp", "Index in OTP")
 
 
-class BaseElement(BaseClass):
+class BaseElement(BaseClass, ABC):
     """Base class for DICE data container elements.
 
     This class provides a foundation for all elements that can be used within

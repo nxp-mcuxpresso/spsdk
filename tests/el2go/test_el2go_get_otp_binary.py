@@ -46,7 +46,7 @@ def test_el2go_otp_binary_sec_config(
     ref_file = os.path.join(data_dir, ref_binary)
     out_file = os.path.join(tmpdir, "el2go_otp.bin")
 
-    cmd = f"get-otp-binary -c {config} -o {out_file}"
+    cmd = f"utils get-otp-binary -c {config} -o {out_file}"
 
     cli_runner.invoke(el2go.main, cmd.split(), expected_code=0)
     assert os.path.isfile(out_file)

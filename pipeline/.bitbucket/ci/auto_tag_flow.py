@@ -96,6 +96,7 @@ def run_git(*args: str, check: bool = True) -> str:
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
+        encoding="utf-8",
         check=False,
     )
     if check and process.returncode != 0:

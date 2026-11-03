@@ -1,0 +1,21 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/dc_config_95.yaml
+user_cfg: inputs/dc_config_95.yaml
+custom_command: "%! nxpdebugmbox dat dc get-template -f mimx9596 -o workspace/dc_config_95.yaml --force"
+
+comments:
+  public_key_0: The developer's DCK public key. It is embedded in the DC to identify who is authorized to debug. If double signing is enabled, this corresponds to a classic signing key.
+  signer_0: The ORM SRK private key. Used to sign the DC. If double signing is enabled, this corresponds to a classic signing key.
+  hash_algorithm_0: If not specified, the default algorithm based on key type will be used.
+  flag_ca_0: CA Flag could be removed in case that the keys are not CA, the default value is also False.
+  public_key_1: The developer's second DCK public key. It is embedded in the DC to identify who is authorized to debug. If double signing is enabled, this corresponds to a PQC public key.
+  signer_1: The ORM SRK private key. Used to sign the DC. If double signing is enabled, this corresponds to a PQC signing key.
+  hash_algorithm_1: If not specified, the default algorithm based on key type will be used.
+  flag_ca_1: CA Flag could be removed in case that the keys are not CA, the default value is also False.
+  cc_socu: Provides the debug domains to be enabled and the trace/debug enables. Set to 0x00FFFFF0 to enable all OEM debug domains with trace and debug. For more information consult the corresponding ELE User Guide.
+  uuid: The template file uses zeroized UUID - in this case the secure debug will be enabled for all devices in the chip family. To create a debug credential file for a specific part run the "get-uuid" command and update the UUID field with the returned UUID value.
+  

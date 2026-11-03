@@ -24,7 +24,7 @@ import click
 import colorama
 from click_command_tree import _build_command_tree, _CommandWrapper
 
-from spsdk import SPSDK_LOG_LEVEL_TRACE
+from spsdk import SPSDK_DEPRECATED_STRICT, SPSDK_LOG_LEVEL_TRACE
 from spsdk import __version__ as spsdk_version
 from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.interface_helper import load_interface_config
@@ -888,9 +888,12 @@ def spsdk_output_option_to_config(
                 # Get existing override-config tuple (if any)
                 existing_overrides = kwargs.get("override_config", ())
                 # Warn user about change
-                logger.warning(
+                message = (
                     "The --output option is deprecated. Define 'output' in the configuration file."
                 )
+                if SPSDK_DEPRECATED_STRICT:
+                    raise SPSDKError(message)
+                logger.warning(message)
                 # Append the new override to the tuple
                 kwargs["override_config"] = (*existing_overrides, f"{key_output}={output}")
 
@@ -904,9 +907,13 @@ def spsdk_output_option_to_config(
                     # Get existing override-config tuple (if any)
                     existing_overrides = kwargs.get("override_config", ())
                     # Warn user about change
-                    logger.warning(
-                        "The --output_format option is deprecated. Define 'output_format' in the configuration file."
+                    message = (
+                        "The --output_format option is deprecated. "
+                        "Define 'output_format' in the configuration file."
                     )
+                    if SPSDK_DEPRECATED_STRICT:
+                        raise SPSDKError(message)
+                    logger.warning(message)
                     # Append the new override to the tuple
                     kwargs["override_config"] = (
                         *existing_overrides,
@@ -916,7 +923,10 @@ def spsdk_output_option_to_config(
             force = kwargs.pop("force", None)
             if force:
                 kwargs.pop("force", None)
-                logger.warning("The --force option is deprecated.")
+                message = "The --force option is deprecated."
+                if SPSDK_DEPRECATED_STRICT:
+                    raise SPSDKError(message)
+                logger.warning(message)
 
             return func(*args, **kwargs)
 

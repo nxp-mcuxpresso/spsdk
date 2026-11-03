@@ -23,7 +23,7 @@ from typing_extensions import Self
 from spsdk import SPSDK_LOG_LEVEL_TRACE
 from spsdk import __version__ as spsdk_version
 from spsdk import get_logger
-from spsdk.exceptions import SPSDKError
+from spsdk.exceptions import SPSDKError, SPSDKNotImplementedError
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
 from spsdk.utils.schema_validator import CommentedConfig
@@ -229,11 +229,17 @@ class HTTPClientBase(abc.ABC):
     def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
         """Get JSON schema for validating configuration data.
 
+        HTTP clients are not configurable from a YAML configuration file by default.
+        Subclasses that support configuration have to provide their own schemas.
+
         :param family: Family revision to get validation schemas for.
-        :raises NotImplementedError: Method must be implemented by subclasses.
-        :return: List of JSON schema dictionaries for configuration validation.
+        :raises SPSDKNotImplementedError: The client does not provide validation schemas.
         """
-        raise NotImplementedError()
+        raise SPSDKNotImplementedError(
+            f"The '{cls.__name__}' HTTP client does not provide configuration validation "
+            "schemas. If you need to configure this client from a configuration file, "
+            "please contact the SPSDK team."
+        )
 
     @classmethod
     def validate_config(cls, config: Config) -> None:

@@ -593,7 +593,7 @@ def test_ram_signed_keystore(data_dir: str, image_file_name: str, ram_addr: int)
 
     key_store = get_keystore(data_dir)
 
-    with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "userkey.txt")) as f:
+    with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "userkey.txt"), encoding="utf-8") as f:
         hmac_user_key = f.readline()
 
     family = FamilyRevision("rt5xx")
@@ -676,7 +676,7 @@ def test_ram_encrypted_otp(data_dir: str, image_file_name: str, ram_addr: int) -
     cert_block = create_cert_block(data_dir)
     signature_provider = create_signature_provider(data_dir)
 
-    with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "userkey.txt")) as f:
+    with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "userkey.txt"), encoding="utf-8") as f:
         hmac_user_key = f.readline()
 
     family = FamilyRevision("rt5xx")
@@ -725,7 +725,7 @@ def test_ram_encrypted_keystore(data_dir: str, image_file_name: str, ram_addr: i
     cert_block = create_cert_block(data_dir)
     signature_provider = create_signature_provider(data_dir)
 
-    with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "userkey.txt")) as f:
+    with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "userkey.txt"), encoding="utf-8") as f:
         hmac_user_key = f.readline()
 
     family = FamilyRevision("rt5xx")
@@ -780,7 +780,7 @@ def test_sb_unsigned_keystore(data_dir: str, subdir: str, image_name: str) -> No
     if not TEST_IMG_CONTENT:
         write_shadow_regis(data_dir, [(0x40130194, 0x00000080)])  # BOOT_CFG[5]: USE_PUF = 1
 
-    with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "SBkek_PUF.txt")) as f:
+    with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "SBkek_PUF.txt"), encoding="utf-8") as f:
         sbkek_str = f.readline()
 
     adv_params = SBV2xAdvancedParams(
@@ -955,7 +955,7 @@ def test_sb_signed_encr_keystore(data_dir: str, subdir: str, image_name: str) ->
             ],
         )
 
-    with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "SBkek_PUF.txt")) as f:
+    with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "SBkek_PUF.txt"), encoding="utf-8") as f:
         sbkek_str = f.readline()
 
     adv_params = SBV2xAdvancedParams(
@@ -1040,7 +1040,7 @@ def test_sb_otfad_keystore(data_dir: str, subdir: str, image_name: str, secure: 
             ],
         )
 
-    with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "SBkek_PUF.txt")) as f:
+    with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "SBkek_PUF.txt"), encoding="utf-8") as f:
         sbkek_str = f.readline()
 
     key_store = get_keystore(data_dir)
@@ -1094,7 +1094,7 @@ def test_sb_otfad_keystore(data_dir: str, subdir: str, image_name: str, secure: 
     otfad[3] = KeyBlob(0x8FFF000, 0x8FFFFFF, key, counter, zero_fill=bytes(4), crc=bytes(4))
     # zero_fill and crc should be used only for testing !
     encr_image_data = otfad.encrypt_image(align_block(plain_image_data, 512), 0x8001000, False)
-    with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "OTFADKek_PUF.txt")) as f:
+    with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "OTFADKek_PUF.txt"), encoding="utf-8") as f:
         otfad_kek = f.readline()
 
     # create boot section 0

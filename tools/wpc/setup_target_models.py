@@ -60,7 +60,7 @@ def main() -> None:
         prk = PrivateKeyEcc.generate_key(EccCurve.SECP256R1)
         prk.save(os.path.join(model_dir, "wpc_prk.pem"))
 
-        with open(os.path.join(model_dir, "config.yaml"), "w") as f:
+        with open(os.path.join(model_dir, "config.yaml"), "w", encoding="utf-8") as f:
             YAML().dump(
                 {
                     "uuid": secrets.token_hex(16),

@@ -15,10 +15,12 @@ import contextlib
 import os
 import struct
 from collections.abc import Iterator
+from unittest.mock import MagicMock
 
 import pytest
 from typing_extensions import Never
 
+import spsdk.apps.nxpdebugmbox as nxpdebugmbox
 from spsdk.apps.nxpdebugmbox import (
     DebugMailboxParams,
     DebugProbeParams,
@@ -136,6 +138,38 @@ def test_dat_auth_debug_artifacts_option(cli_runner: CliRunner) -> None:
     result = cli_runner.invoke(main, ["dat", "auth", "--help"])
     assert "--debug-artifacts" in result.output
     assert "-da" in result.output
+    assert "DAC and signed DAR binaries" in result.output
+
+
+def test_dat_export_dar_help(cli_runner: CliRunner) -> None:
+    """The dat export-dar command exposes its required input options."""
+    result = cli_runner.invoke(main, ["dat", "export-dar", "--help"])
+    assert "--config" in result.output
+    assert "--dac" in result.output
+    assert "--output" in result.output
+
+
+def test_dat_export_dar(monkeypatch: pytest.MonkeyPatch, tmp_path: str) -> None:
+    """The DAR export helper writes the generated binary without a debug probe."""
+    config = MagicMock()
+    family = MagicMock()
+    dac = MagicMock()
+    dar = MagicMock()
+    verifier = MagicMock(has_errors=False)
+    dar.verify.return_value = verifier
+    dar.export.return_value = b"dar-data"
+    output_path = os.path.join(str(tmp_path), "dar.bin")
+
+    monkeypatch.setattr(nxpdebugmbox.FamilyRevision, "load_from_config", lambda _: family)
+    monkeypatch.setattr(nxpdebugmbox.DebugAuthenticationChallenge, "parse", lambda *_, **__: dac)
+    dar_class = MagicMock(load_from_config=lambda **_: dar)
+    monkeypatch.setattr(nxpdebugmbox.DebugAuthenticateResponse, "_get_class", lambda *_: dar_class)
+    monkeypatch.setattr(nxpdebugmbox, "load_binary", lambda _: b"dac-data")
+    nxpdebugmbox.export_dar(config=config, dac_path="dac.bin", output=output_path)
+
+    assert os.path.isfile(output_path)
+    with open(output_path, "rb") as output_file:
+        assert output_file.read() == b"dar-data"
 
 
 def test_dat_auth_missing_file_fails(cli_runner: CliRunner) -> None:
@@ -269,6 +303,153 @@ def test_mem_tool_test_connection_command_failure_has_nonzero_exit(
     cli_runner.invoke(main, cmd, expected_code=1)
 
 
+def test_mem_tool_test_connection_shows_debug_access_status_table_on_failure(
+    cli_runner: CliRunner,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """mem-tool test-connection always prints the gating status table on failure."""
+    monkeypatch.setattr("spsdk.apps.nxpdebugmbox.test_ahb_access", lambda probe: False)
+    cmd = [
+        "-i",
+        "virtual",
+        "-s",
+        DebugProbeVirtual.UNIQUE_SERIAL,
+        "mem-tool",
+        "test-connection",
+        "-f",
+        DAT_FAMILY,
+    ]
+
+    result = cli_runner.invoke(main, cmd, expected_code=1)
+
+    assert "System bus (AHB) access" in result.output
+    assert "Debug Port IDR readable" in result.output
+
+
+def test_mem_tool_test_connection_debug_port_destination_limits_table_depth(
+    cli_runner: CliRunner,
+) -> None:
+    """mem-tool test-connection -d debug_port only shows the first two gates."""
+    cmd = [
+        "-i",
+        "virtual",
+        "-s",
+        DebugProbeVirtual.UNIQUE_SERIAL,
+        "mem-tool",
+        "test-connection",
+        "-f",
+        DAT_FAMILY,
+        "-d",
+        "debug_port",
+    ]
+
+    result = cli_runner.invoke(main, cmd)
+
+    assert "successfully" in result.output
+
+
+def test_connection_logs_table_on_success(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """test_connection() logs the debug-access status table at INFO level on success."""
+    fake_probe = MagicMock(
+        spec=[
+            "connect_safe",
+            "debug_access_status",
+            "DEBUG_ACCESS_STATUS_LABELS",
+            "get_not_applicable_debug_access_gates",
+            "get_never_tested_debug_access_gates",
+        ]
+    )
+    fake_probe.debug_access_status = {
+        "probe_opened": True,
+        "probe_connected": True,
+        "dp_idr_ok": True,
+    }
+    fake_probe.DEBUG_ACCESS_STATUS_LABELS = {
+        "probe_opened": "Debug probe opened",
+        "probe_connected": "Probe attached to target",
+        "dp_idr_ok": "Debug Port IDR readable",
+    }
+    fake_probe.get_not_applicable_debug_access_gates.return_value = set()
+    fake_probe.get_never_tested_debug_access_gates.return_value = set()
+
+    @contextlib.contextmanager
+    def fake_open_debug_probe(*args: object, **kwargs: object) -> Iterator[MagicMock]:
+        yield fake_probe
+
+    monkeypatch.setattr("spsdk.apps.nxpdebugmbox.open_debug_probe", fake_open_debug_probe)
+    monkeypatch.setattr("spsdk.apps.nxpdebugmbox.test_ahb_access", lambda probe: True)
+    debug_probe_params = DebugProbeParams(
+        interface="virtual", serial_no=DebugProbeVirtual.UNIQUE_SERIAL, debug_probe_user_params={}
+    )
+
+    caplog.set_level("INFO", logger="spsdk.apps.nxpdebugmbox")
+    result = nxpdebugmbox_test_connection(
+        family=FamilyRevision(name=DAT_FAMILY),
+        debug_probe_params=debug_probe_params,
+        destination="cpu_mem",
+    )
+
+    assert result is True
+    assert any("Debug-access gating status" in record.message for record in caplog.records)
+
+
+def test_connection_shows_table_when_connect_safe_raises(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """test_connection() still prints the gating table when connect_safe() itself fails.
+
+    Regression test: on real hardware, unplugging the SWD/JTAG connector before running
+    ``mem-tool test-connection`` made ``connect_safe()`` raise before the inner try/finally
+    that renders the table was entered, so the table was silently skipped even though
+    ``debug_access_status["probe_connected"]`` was already correctly recorded as False.
+    """
+    fake_probe = MagicMock(
+        spec=[
+            "connect_safe",
+            "debug_access_status",
+            "DEBUG_ACCESS_STATUS_LABELS",
+            "get_not_applicable_debug_access_gates",
+            "get_never_tested_debug_access_gates",
+        ]
+    )
+    fake_probe.debug_access_status = {
+        "probe_opened": True,
+        "probe_connected": False,
+        "dp_idr_ok": None,
+    }
+    fake_probe.DEBUG_ACCESS_STATUS_LABELS = {
+        "probe_opened": "Debug probe opened",
+        "probe_connected": "Probe attached to target",
+        "dp_idr_ok": "Debug Port IDR readable",
+    }
+    fake_probe.connect_safe.side_effect = SPSDKError("SWD connector disconnected")
+    fake_probe.get_not_applicable_debug_access_gates.return_value = set()
+    fake_probe.get_never_tested_debug_access_gates.return_value = set()
+
+    @contextlib.contextmanager
+    def fake_open_debug_probe(*args: object, **kwargs: object) -> Iterator[MagicMock]:
+        yield fake_probe
+
+    monkeypatch.setattr("spsdk.apps.nxpdebugmbox.open_debug_probe", fake_open_debug_probe)
+    echoed: list[str] = []
+    monkeypatch.setattr("spsdk.apps.nxpdebugmbox.click.echo", echoed.append)
+    debug_probe_params = DebugProbeParams(
+        interface="virtual", serial_no=DebugProbeVirtual.UNIQUE_SERIAL, debug_probe_user_params={}
+    )
+
+    result = nxpdebugmbox_test_connection(
+        family=FamilyRevision(name=DAT_FAMILY),
+        debug_probe_params=debug_probe_params,
+        destination="cpu_mem",
+    )
+
+    assert result is False
+    assert any("Probe attached to target" in text for text in echoed)
+
+
 # ---------------------------------------------------------------------------
 # tool group
 # ---------------------------------------------------------------------------
@@ -280,7 +461,9 @@ def test_tool_help(cli_runner: CliRunner) -> None:
     assert "Show this message and exit." in result.output
 
 
-@pytest.mark.parametrize("subcommand", ["reset", "get-uuid", "halt", "resume", "list-probes"])
+@pytest.mark.parametrize(
+    "subcommand", ["reset", "get-uuid", "halt", "resume", "execute", "list-probes"]
+)
 def test_tool_subcommands_help(cli_runner: CliRunner, subcommand: str) -> None:
     """Test tool subcommand --help."""
     result = cli_runner.invoke(main, ["tool", subcommand, "--help"])
@@ -373,6 +556,175 @@ def test_tool_reset_forces_requested_reset_type(
     assert calls == [expected_nvic]
 
 
+def _make_vector_table(sp: int, pc: int, padding: bytes = b"\x00" * 8) -> bytes:
+    """Build a minimal fake Cortex-M vector table (offset 0=SP, offset 4=PC/Reset_Handler)."""
+    return struct.pack("<II", sp, pc) + padding
+
+
+def test_tool_execute_writes_binary_sets_registers_and_resumes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """execute() writes the binary, sets PC/SP from the vector table, and resumes the core."""
+    binary = _make_vector_table(sp=0x2004_0000, pc=0x2000_0101)
+
+    fake_probe = MagicMock(spec=nxpdebugmbox.DebugProbeCoreSightOnly)
+
+    @contextlib.contextmanager
+    def fake_open_debug_probe(*args: object, **kwargs: object) -> Iterator[MagicMock]:
+        yield fake_probe
+
+    monkeypatch.setattr("spsdk.apps.nxpdebugmbox.open_debug_probe", fake_open_debug_probe)
+    debug_probe_params = DebugProbeParams(
+        interface="virtual", serial_no=DebugProbeVirtual.UNIQUE_SERIAL, debug_probe_user_params={}
+    )
+
+    nxpdebugmbox.execute(
+        family=FamilyRevision(name=DAT_FAMILY),
+        debug_probe_params=debug_probe_params,
+        address=0x2000_0000,
+        data=binary,
+    )
+
+    fake_probe.mem_block_write.assert_called_once_with(addr=0x2000_0000, data=binary)
+    fake_probe.set_registers_and_resume.assert_called_once_with(pc=0x2000_0101, sp=0x2004_0000)
+
+
+def test_tool_execute_without_binary_reads_vector_table_from_target(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """execute() with no binary reads the existing vector table from ADDRESS on the target.
+
+    This covers the "restart an already-flashed bootable image" use case, e.g. reissuing
+    execution from a boot address such as 0x0 on LPC devices, without writing anything.
+    """
+    existing_vector_table = _make_vector_table(sp=0x2000_8000, pc=0x0000_0201)
+
+    fake_probe = MagicMock(spec=nxpdebugmbox.DebugProbeCoreSightOnly)
+    fake_probe.mem_block_read.return_value = existing_vector_table
+
+    @contextlib.contextmanager
+    def fake_open_debug_probe(*args: object, **kwargs: object) -> Iterator[MagicMock]:
+        yield fake_probe
+
+    monkeypatch.setattr("spsdk.apps.nxpdebugmbox.open_debug_probe", fake_open_debug_probe)
+    debug_probe_params = DebugProbeParams(
+        interface="virtual", serial_no=DebugProbeVirtual.UNIQUE_SERIAL, debug_probe_user_params={}
+    )
+
+    nxpdebugmbox.execute(
+        family=FamilyRevision(name=DAT_FAMILY),
+        debug_probe_params=debug_probe_params,
+        address=0x0,
+    )
+
+    fake_probe.mem_block_read.assert_called_once_with(addr=0x0, size=8)
+    fake_probe.mem_block_write.assert_not_called()
+    fake_probe.set_registers_and_resume.assert_called_once_with(pc=0x0000_0201, sp=0x2000_8000)
+
+
+def test_tool_execute_explicit_pc_sp_override_binary_vector_table(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """execute() prefers explicit --pc/--sp over the binary's vector table (with a warning)."""
+    binary = _make_vector_table(sp=0x2004_0000, pc=0x2000_0101)
+
+    fake_probe = MagicMock(spec=nxpdebugmbox.DebugProbeCoreSightOnly)
+
+    @contextlib.contextmanager
+    def fake_open_debug_probe(*args: object, **kwargs: object) -> Iterator[MagicMock]:
+        yield fake_probe
+
+    monkeypatch.setattr("spsdk.apps.nxpdebugmbox.open_debug_probe", fake_open_debug_probe)
+    debug_probe_params = DebugProbeParams(
+        interface="virtual", serial_no=DebugProbeVirtual.UNIQUE_SERIAL, debug_probe_user_params={}
+    )
+
+    nxpdebugmbox.execute(
+        family=FamilyRevision(name=DAT_FAMILY),
+        debug_probe_params=debug_probe_params,
+        address=0x2000_0000,
+        data=binary,
+        pc=0x2000_0200,
+        sp=0x2004_8000,
+    )
+
+    fake_probe.set_registers_and_resume.assert_called_once_with(pc=0x2000_0200, sp=0x2004_8000)
+
+
+def test_tool_execute_requires_pc_sp_when_binary_too_small(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """execute() raises SPSDKAppError if the binary has no vector table and --pc/--sp are missing."""
+    fake_probe = MagicMock(spec=nxpdebugmbox.DebugProbeCoreSightOnly)
+
+    @contextlib.contextmanager
+    def fake_open_debug_probe(*args: object, **kwargs: object) -> Iterator[MagicMock]:
+        yield fake_probe
+
+    monkeypatch.setattr("spsdk.apps.nxpdebugmbox.open_debug_probe", fake_open_debug_probe)
+    debug_probe_params = DebugProbeParams(
+        interface="virtual", serial_no=DebugProbeVirtual.UNIQUE_SERIAL, debug_probe_user_params={}
+    )
+
+    with pytest.raises(SPSDKAppError):
+        nxpdebugmbox.execute(
+            family=FamilyRevision(name=DAT_FAMILY),
+            debug_probe_params=debug_probe_params,
+            address=0x2000_0000,
+            data=b"\x01\x02",  # too small to contain a vector table
+        )
+
+
+def test_tool_execute_rejects_non_coresight_probe(monkeypatch: pytest.MonkeyPatch) -> None:
+    """execute() raises SPSDKAppError for debug probes without CoreSight core-register access."""
+
+    class NotCoreSightProbe:
+        """Stand-in for a probe that isn't a DebugProbeCoreSightOnly (e.g. DSC)."""
+
+        def connect_safe(self) -> None:
+            pass
+
+    @contextlib.contextmanager
+    def fake_open_debug_probe(*args: object, **kwargs: object) -> Iterator[NotCoreSightProbe]:
+        yield NotCoreSightProbe()
+
+    monkeypatch.setattr("spsdk.apps.nxpdebugmbox.open_debug_probe", fake_open_debug_probe)
+    debug_probe_params = DebugProbeParams(
+        interface="virtual", serial_no=DebugProbeVirtual.UNIQUE_SERIAL, debug_probe_user_params={}
+    )
+
+    with pytest.raises(SPSDKAppError):
+        nxpdebugmbox.execute(
+            family=FamilyRevision(name=DAT_FAMILY),
+            debug_probe_params=debug_probe_params,
+            address=0x2000_0000,
+            data=_make_vector_table(sp=0x2004_0000, pc=0x2000_0101),
+        )
+
+
+def test_tool_execute_command_end_to_end_with_virtual_probe(cli_runner: CliRunner) -> None:
+    """tool execute command runs end-to-end against the virtual probe without error."""
+    binary = _make_vector_table(sp=0x2004_0000, pc=0x2000_0101)
+
+    cmd = [
+        "-i",
+        "virtual",
+        "-s",
+        DebugProbeVirtual.UNIQUE_SERIAL,
+        "tool",
+        "execute",
+        "-f",
+        DAT_FAMILY,
+        "-a",
+        "0x20000000",
+        "-h",
+        binary.hex(),
+    ]
+    result = cli_runner.invoke(main, cmd)
+
+    assert "loaded" in result.output.lower() or "started" in result.output.lower()
+
+
 def test_list_probes_filters_by_debug_probe_family(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test list-probes uses family-derived architecture and debug probe options."""
     captured: dict[str, object] = {}
@@ -394,6 +746,51 @@ def test_list_probes_filters_by_debug_probe_family(monkeypatch: pytest.MonkeyPat
     assert captured["hardware_id"] == "dummy"
     assert captured["architecture"] == "arm-cortex"
     assert captured["options"] == debug_probe_params.debug_probe_user_params
+
+
+def test_list_probes_without_family_does_not_filter_by_architecture(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test list-probes without family lists probes for all architectures."""
+    captured: dict[str, object] = {}
+
+    def fake_get_connected_probes(**kwargs: object) -> list[object]:
+        captured.update(kwargs)
+        return []
+
+    monkeypatch.setattr("spsdk.apps.nxpdebugmbox.get_connected_probes", fake_get_connected_probes)
+    debug_probe_params = DebugProbeParams(
+        interface="virtual",
+        serial_no="dummy",
+        debug_probe_user_params={"protocol": "jtag"},
+    )
+
+    list_probes(None, debug_probe_params)
+
+    assert captured["interface"] == "virtual"
+    assert captured["hardware_id"] == "dummy"
+    assert captured["architecture"] is None
+    # No family was supplied, so no family/revision/test_address should be injected.
+    assert "family" not in debug_probe_params.debug_probe_user_params
+    assert "revision" not in debug_probe_params.debug_probe_user_params
+    assert captured["options"] == debug_probe_params.debug_probe_user_params
+
+
+def test_tool_list_probes_cli_without_family(
+    cli_runner: CliRunner, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test 'tool list-probes' CLI command works without the --family option."""
+
+    def fake_get_connected_probes(**kwargs: object) -> list[object]:
+        assert kwargs["architecture"] is None
+        return []
+
+    monkeypatch.setattr("spsdk.apps.nxpdebugmbox.get_connected_probes", fake_get_connected_probes)
+
+    # cli_runner.invoke() asserts exit_code == 0; previously this failed with
+    # "Missing option '-f' / '--family'" because --family was mandatory.
+    result = cli_runner.invoke(main, ["tool", "list-probes"])
+    assert "No debug probes found in the system." in result.output
 
 
 # ---------------------------------------------------------------------------
@@ -447,6 +844,7 @@ def test_cmd_help(cli_runner: CliRunner) -> None:
         "get-dac",
         "send-dar",
         "set-bricked-mode",
+        "program-lifecycle",
         "nxp-ssf-insert-duk",
         "nxp-exec-prov-fw",
         "nxp-ssf-insert-cert",
@@ -463,6 +861,151 @@ def test_cmd_get_families(cli_runner: CliRunner) -> None:
     """Test cmd get-families lists supported families."""
     result = cli_runner.invoke(main, ["cmd", "-f", DAT_FAMILY, "get-families"])
     assert result.output
+
+
+# ---------------------------------------------------------------------------
+# program-lifecycle command tests
+# ---------------------------------------------------------------------------
+
+
+PL_FAMILY = "mcxc353"
+
+
+def test_program_lifecycle_help(cli_runner: CliRunner) -> None:
+    """Test program-lifecycle --help output."""
+    result = cli_runner.invoke(main, ["cmd", "-f", DAT_FAMILY, "program-lifecycle", "--help"])
+    assert "Show this message and exit." in result.output
+    assert "--lifecycle" in result.output or "-l" in result.output
+
+
+def test_program_lifecycle_for_mcxc353(
+    cli_runner: CliRunner, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """MCXC353 forwards the requested lifecycle to the mailbox helper."""
+    captured: dict[str, int] = {}
+
+    def fake_program_lifecycle(
+        _family: FamilyRevision,
+        _debug_probe_params: DebugProbeParams,
+        _debug_mailbox_params: DebugMailboxParams,
+        lifecycle: int,
+    ) -> None:
+        captured["lifecycle"] = lifecycle
+
+    monkeypatch.setattr("spsdk.apps.nxpdebugmbox.program_lifecycle", fake_program_lifecycle)
+
+    result = cli_runner.invoke(
+        main,
+        ["cmd", "-f", PL_FAMILY, "program-lifecycle", "-l", "IN_FIELD1", "-y"],
+    )
+
+    assert captured["lifecycle"] == 0x9635_F807
+    assert "Program lifecycle IN_FIELD1 (0x9635f807) succeeded" in result.output
+
+
+def test_program_lifecycle_confirmation(
+    cli_runner: CliRunner, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """MCXC353 lifecycle programming asks for confirmation after validation."""
+    captured: list[int] = []
+    monkeypatch.setattr(
+        "spsdk.apps.nxpdebugmbox.program_lifecycle",
+        lambda _family, _probe, _mailbox, lifecycle: captured.append(lifecycle),
+    )
+
+    result = cli_runner.invoke(
+        main,
+        ["cmd", "-f", PL_FAMILY, "program-lifecycle", "-l", "IN_FIELD2"],
+        input="y\n",
+    )
+
+    assert "Continue?" in result.output
+    assert captured == [0x9635_F00F]
+
+
+def test_program_lifecycle_bricked_requires_force(cli_runner: CliRunner) -> None:
+    """The destructive BRICKED target requires explicit force."""
+    result = cli_runner.invoke(
+        main,
+        ["cmd", "-f", PL_FAMILY, "program-lifecycle", "-l", "BRICKED", "-y"],
+        expected_code=1,
+    )
+    assert "requires --force" in str(result.exception)
+
+
+def test_program_lifecycle_bricked_with_force(
+    cli_runner: CliRunner, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """BRICKED may be programmed only with force and confirmation bypass."""
+    captured: list[int] = []
+    monkeypatch.setattr(
+        "spsdk.apps.nxpdebugmbox.program_lifecycle",
+        lambda _family, _probe, _mailbox, lifecycle: captured.append(lifecycle),
+    )
+
+    cli_runner.invoke(
+        main,
+        [
+            "cmd",
+            "-f",
+            PL_FAMILY,
+            "program-lifecycle",
+            "-l",
+            "BRICKED",
+            "--force",
+            "-y",
+        ],
+    )
+
+    assert captured == [0x9635_A55A]
+
+
+def test_program_lifecycle_rejects_nxp_field_return(cli_runner: CliRunner) -> None:
+    """NXP field return is not a symbolic name the device database defines.
+
+    The current MCXC353 ROM IFR map does not expose an NXP_FIELD_RETURN enum
+    value for the lifecycle bitfield, so the name cannot be resolved at all
+    (regardless of --force).
+    """
+    result = cli_runner.invoke(
+        main,
+        [
+            "cmd",
+            "-f",
+            PL_FAMILY,
+            "program-lifecycle",
+            "-l",
+            "NXP_FIELD_RETURN",
+            "--force",
+            "-y",
+        ],
+        expected_code=1,
+    )
+    assert "Cannot resolve lifecycle" in str(result.exception)
+    assert "NXP_FIELD_RETURN" in str(result.exception)
+
+
+def test_program_lifecycle_rejects_unknown_state(cli_runner: CliRunner) -> None:
+    """An invalid lifecycle string is rejected before mailbox traffic."""
+    cmd = ["cmd", "-f", PL_FAMILY, "program-lifecycle", "-l", "NOT_A_STATE"]
+    result = cli_runner.invoke(main, cmd, expected_code=1)
+    err = str(result.exception)
+    assert PL_FAMILY in err
+    assert "NOT_A_STATE" in err
+
+
+def test_program_lifecycle_rejects_out_of_range(cli_runner: CliRunner) -> None:
+    """A value larger than 32 bits is rejected before any mailbox traffic."""
+    cmd = ["cmd", "-f", PL_FAMILY, "program-lifecycle", "-l", "0x1_0000_0000"]
+    result = cli_runner.invoke(main, cmd, expected_code=1)
+    assert "32-bit" in str(result.exception)
+
+
+def test_program_lifecycle_unsupported_family(cli_runner: CliRunner) -> None:
+    """Families without the program_lifecycle sub-feature are rejected."""
+    cmd = ["cmd", "-f", DAT_FAMILY, "program-lifecycle", "-l", "0x9635f807"]
+    result = cli_runner.invoke(main, cmd, expected_code=1)
+    assert "not supported" in str(result.exception)
 
 
 # ---------------------------------------------------------------------------

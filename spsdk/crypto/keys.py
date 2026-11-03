@@ -933,7 +933,7 @@ class PublicKey(BaseClass, abc.ABC):
         raise SPSDKInvalidKeyType(f"Unsupported key type: {key!s}")
 
 
-class NonSupportingPublicKey(PublicKey):
+class NonSupportingPublicKey(PublicKey):  # pylint: disable=abstract-method
     """Placeholder class for unsupported public key types.
 
     This class serves as a fallback implementation that raises an exception
@@ -953,7 +953,7 @@ class NonSupportingPublicKey(PublicKey):
         raise SPSDKNotImplementedError("The key is not supported.")
 
 
-class NonSupportingPrivateKey(PrivateKey):
+class NonSupportingPrivateKey(PrivateKey):  # pylint: disable=abstract-method
     """Placeholder class for unsupported private key types.
 
     This class serves as a fallback implementation that raises an exception
@@ -2563,7 +2563,7 @@ if IS_DILITHIUM_SUPPORTED:
                 return False
             return self.key.public_data == obj.key.public_data
 
-    class PQCPrivateKey(PQCKey, PrivateKey):
+    class PQCPrivateKey(PQCKey, PrivateKey):  # pylint: disable=abstract-method
         """SPSDK Post-Quantum Cryptography private key wrapper.
 
         This class provides a unified interface for PQC private key operations including

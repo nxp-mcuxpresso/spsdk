@@ -1457,6 +1457,23 @@ def test_register_deprecated_bitfields(
     assert bf == bf_old
 
 
+@patch("spsdk.utils.registers.SPSDK_DEPRECATED_STRICT", True)
+def test_deprecated_register_data_strict_mode() -> None:
+    """Deprecated register, bitfield, and enum names fail in strict mode."""
+    regs = create_simple_regs()
+    with pytest.raises(SPSDKError, match="Register name is deprecated"):
+        regs.find_reg(TEST_REG_DEPRECATED_NAMES[0])
+
+    reg = regs.find_reg(TEST_REG_NAME + "_2")
+    with pytest.raises(SPSDKError, match="Bitfield name is deprecated"):
+        reg.find_bitfield(TEST_BITFIELD_DEPRECATED_NAMES[0])
+
+    bitfield = reg.find_bitfield(TEST_BITFIELD_NAME + "_2")
+    bitfield.add_enum(RegsEnum("CurrentEnum", 1, "", deprecated_names=["LegacyEnum"]))
+    with pytest.raises(SPSDKError, match="Using deprecated enum name"):
+        bitfield.get_enum_constant("LegacyEnum")
+
+
 @pytest.mark.parametrize(
     "config,result",
     [

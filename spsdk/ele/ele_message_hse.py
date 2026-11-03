@@ -371,11 +371,14 @@ class EleMessageHseGetAttr(EleMessageHseAttr):
     def decode_response_data(self, response: bytes) -> None:
         """Decode the response data for this attribute.
 
-        Sets the response data in the attribute handler and triggers decoding.
+        Sets the response data in the attribute handler and triggers decoding. The response
+        buffer read back from target memory is aligned to :attr:`ELE_MSG_ALIGN` (8 bytes) and
+        may therefore be larger than the attribute's exact byte size, so it is truncated to the
+        exact size expected by the attribute handler before parsing.
 
         :param response: Response data to decode.
         """
-        self.attr_value = self.attr_handler_cls.parse(response)
+        self.attr_value = self.attr_handler_cls.parse(response[: self.attr_handler_cls.get_size()])
 
     def info(self) -> str:
         """Get formatted information about the response.

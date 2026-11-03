@@ -42,9 +42,9 @@ examples = ["flask", "requests", "ipython", "notebook", "ipywidgets"]
 dk6 = ["pyftdi", "pylibftdi", "ftd2xx"]
 oscca = ["gmssl<4,>=3.2"]
 can = ["python-can<5,>=4.5"]
-jlink = ["spsdk-jlink<1,>=0.3.4"]
-lauterbach = ["spsdk-lauterbach<1,>=0.5.2"]
-pemicro = ["spsdk-pemicro<1,>=0.3.1"]
+jlink = ["spsdk-jlink<1,>=0.3.12"]
+lauterbach = ["spsdk-lauterbach<1,>=0.5.9"]
+pemicro = ["spsdk-pemicro<1,>=0.3.12"]
 pkcs11 = ["spsdk-pkcs11<1,>=0.3.1"]
 pqc = ["spsdk-pqc<1.0,>=0.6.1", "pyhsslms>=2.0.0,<3"]
 rblhost = ["pymboot-rs<1"]
@@ -266,7 +266,7 @@ checkers = [
         "spsdk",
         "tests",
     ] } },
-    { "cspell" = { info_only = false, timeout = 300 } },
+    { "cspell" = { info_only = false, timeout = 600 } },
     { "bandit" = { info_only = true } },
     { "black_nb" = { timeout = 120 } },
     "isort_nb",
@@ -317,6 +317,5 @@ ignore = "W002" # Wheel contains duplicate files
 extra_requirements = ["requirements-develop.txt", "docs/requirements.txt"]
 keep_unbound = true
 strategy = "next-major"
-# click, chardet: remove when 3.10 is dropped alongside 3.10 restriction in requirements.txt
-# platformdirs, pylint: capped for 3.12.0 release, see comments in requirements files
-ignore = ["click", "chardet", "platformdirs", "pylint"]
+# Remove this when 3.10 is dropped alongside 3.10 restriction in requirements.txt
+ignore = ["click", "chardet"]

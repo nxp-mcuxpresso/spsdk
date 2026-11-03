@@ -54,13 +54,11 @@ architecture:
     :class:`~spsdk.exceptions.SPSDKError` immediately, making unintended
     cross-architecture use a hard error rather than silent data corruption.
 
-Concrete implementations live in separate modules:
+Concrete implementations live in separate modules; import them directly from
+their home module:
 
 * :mod:`spsdk.debuggers.debug_probe_arm` — ARM CoreSight (``DebugProbeCoreSightOnly``)
-* :mod:`spsdk.debuggers.debug_probe_dsc` — DSC56800EX (``DebugProbeDsc``)
-
-Both names are also re-exported from this module for backward compatibility
-with existing plugins and third-party code.
+* :mod:`spsdk.debuggers.debug_probe_dsc` — DSC56800EX (``DebugProbeDsc``, ``TapConfig``)
 """
 
 from abc import ABC, abstractmethod
@@ -170,6 +168,27 @@ class DebugProbe(ABC):
     RESET_TIME = 0.1
     AFTER_RESET_TIME = 0.05
 
+    # Human-readable labels for the debug_access_status gates, in the order they are
+    # expected to be evaluated. Base gates apply to every architecture: first the
+    # probe hardware itself (PC <-> debug-probe box, e.g. P&E Multilink, over USB),
+    # then the SWD/JTAG attach from the probe to the target MCU, then Debug Port /
+    # chip-ID readability. Subclasses extend this dict with architecture-specific
+    # gates (e.g. DebugProbeCoreSightOnly adds MEM-AP / DBGEN / DHCSR / AHB gates).
+    # Used by spsdk.debuggers.utils.render_debug_access_status_table() for rendering.
+    #
+    # Each label pairs the technical name with a short plain-language explanation in
+    # parentheses, so the diagnostic table is useful to users who are not ARM
+    # CoreSight experts (e.g. field engineers debugging a "device not detected" issue).
+    #
+    # Chain being diagnosed: PC --USB--> debug probe --SWD/JTAG--> target MCU --...
+    DEBUG_ACCESS_STATUS_LABELS: dict[str, str] = {
+        "probe_opened": "Debug probe opened (PC is correctly connected to the debug probe hardware)",
+        "probe_connected": (
+            "Probe attached to target (debug probe is correctly connected to the board via SWD/JTAG)"
+        ),
+        "dp_idr_ok": "Debug Port IDR readable (target chip responds on the debug port)",
+    }
+
     def __init__(self, hardware_id: str, options: dict | None = None) -> None:
         """Initialize debug probe with hardware ID and configuration options.
 
@@ -187,6 +206,55 @@ class DebugProbe(ABC):
         revision = self.options.pop("revision", "latest")
         if family:
             self.family = FamilyRevision(family, revision)
+
+        # Diagnostic bookkeeping of the debug-access gating chain (probe connection,
+        # Debug Port / chip-ID readability, and any architecture-specific gates added
+        # by subclasses, e.g. DebugProbeCoreSightOnly). Each gate is recorded (True/False)
+        # as soon as the corresponding code path discovers its result; None means the
+        # gate was never exercised during this session. This dict always exists — for
+        # every architecture, including DSC — so callers can render a diagnostic status
+        # table without needing to check whether the probe supports it. See
+        # spsdk.debuggers.utils.render_debug_access_status_table() for the rendering.
+        self.debug_access_status: dict[str, bool | None] = {
+            "probe_opened": None,
+            "probe_connected": None,
+            "dp_idr_ok": None,
+        }
+
+    def get_not_applicable_debug_access_gates(self) -> set[str]:
+        """Get gate keys that can never apply to this probe/family combination.
+
+        Some gates in :attr:`DEBUG_ACCESS_STATUS_LABELS` are mutually exclusive at
+        the device-database level (e.g. the SDA-AP secure-debug-unlock gate only
+        applies to families with ``dat.sub_features: [sda]``, while the Debug
+        Mailbox AP gate only applies to families with ``dat.dmbox_ap_ix`` set — no
+        family currently has both). Such gates would otherwise always render as a
+        misleading "NOT TESTED" even though they are, by design, never exercised
+        for this particular chip. Subclasses (e.g. ``DebugProbeCoreSightOnly``)
+        override this to compute the actual set from the device database.
+
+        :return: Set of gate keys to omit entirely from the rendered diagnostic
+            table for this probe instance. Empty for the base (architecture with
+            no such mutually-exclusive gates).
+        """
+        return set()
+
+    def get_never_tested_debug_access_gates(self) -> set[str]:
+        """Get gate keys that will never be exercised due to a device-database shortcut.
+
+        Some gates *could* be tested in principle, but a device-database
+        configuration shortcut (e.g. a fixed MEM-AP index skipping the AP-scan
+        loop on ``DebugProbeCoreSightOnly``) means the corresponding code path is
+        never exercised for this family. Such gates are still shown in the
+        diagnostic table (unlike :meth:`get_not_applicable_debug_access_gates`),
+        but rendered as "N/A" instead of "NOT TESTED" to avoid implying a real
+        test was skipped or failed. Subclasses override this to compute the actual
+        set from the device database.
+
+        :return: Set of gate keys to render as N/A. Empty for the base
+            (architecture with no such shortcuts).
+        """
+        return set()
 
     @classmethod
     def get_requested_protocol(
@@ -583,35 +651,3 @@ class DebugProbes(list[ProbeDescription]):
                 ]
             )
         return table.get_string() + colorama.Style.RESET_ALL
-
-
-from spsdk.debuggers.debug_probe_arm import (  # noqa: E402  # pylint: disable=wrong-import-position
-    DebugProbeCoreSightOnly,
-)
-
-# ---------------------------------------------------------------------------
-# Backward-compatibility re-exports.
-# Concrete probe classes were moved to their own modules to keep this file
-# within the pylint too-many-lines limit.  Existing code that imports these
-# names from ``spsdk.debuggers.debug_probe`` continues to work unchanged.
-# ---------------------------------------------------------------------------
-from spsdk.debuggers.debug_probe_dsc import (  # noqa: E402  # pylint: disable=wrong-import-position
-    DebugProbeDsc,
-    TapConfig,
-)
-
-__all__ = [
-    "DebugProbe",
-    "DebugProbeCoreSightOnly",
-    "DebugProbeDsc",
-    "DebugProbeProtocol",
-    "DebugProbes",
-    "MemorySpace",
-    "ProbeDescription",
-    "SPSDKDebugProbeError",
-    "SPSDKDebugProbeNotOpenError",
-    "SPSDKDebugProbeTransferError",
-    "SPSDKMultipleProbesError",
-    "SPSDKProbeNotFoundError",
-    "TapConfig",
-]

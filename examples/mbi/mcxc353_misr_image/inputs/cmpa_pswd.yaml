@@ -1,0 +1,31 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ========================  PFR CMPA_PSWD configuration template for mcxc353, Revision: latest  ========================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mcxc353
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, latest>
+revision: latest
+# ------------------------------------===== Configuration area type [Required] =====------------------------------------
+# Description: PFR / IFR type
+# Possible options: <CMPA_PSWD, cmpa_pswd>
+type: CMPA_PSWD
+# --------------------------------------------===== mcxc353 [Required] =====--------------------------------------------
+settings:
+  # --------------------------------------===== DBG_AUTH_PASSWORD [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000010, Width: 128b; DBG_AUTH_PASSWORD[127:0]
+  DBG_AUTH_PASSWORD: '00000000000000000000000000000000'
+  # ----------------------------------------===== IMG_MISR_SEED [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000020, Width: 128b; IMG_MISR_SEED[127:0]
+  IMG_MISR_SEED: '12345678123456781234567812345678'
+  # ---------------------------------------===== ERASE_PASSWORD [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000030, Width: 128b; ERASE_PASSWORD[127:0]
+  ERASE_PASSWORD: '00000000000000000000000000000000'

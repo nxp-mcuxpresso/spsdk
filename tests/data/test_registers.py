@@ -1212,6 +1212,80 @@ def validate_calculated_register_constraints(data: dict) -> dict:
     return errors
 
 
+def validate_duplicate_register_calculation(data: dict) -> dict:
+    """Validate calculation metadata for duplicate registers.
+
+    Registers with names ending in ``_DP`` must use the ``duplicate`` calculation method
+    and reference an existing source register from the same data file.
+
+    :param data: Dictionary containing register groups and their register definitions.
+    :return: Dictionary mapping error identifiers to error descriptions, empty if no errors found.
+    """
+    errors: dict[str, str] = {}
+
+    if not isinstance(data, dict) or not isinstance(data.get("groups"), list):
+        return errors
+
+    registers = [
+        register
+        for group in data["groups"]
+        if isinstance(group, dict) and isinstance(group.get("registers"), list)
+        for register in group["registers"]
+        if isinstance(register, dict)
+    ]
+    register_ids = {register.get("id") for register in registers}
+
+    for register in registers:
+        reg_name = register.get("name")
+        if not isinstance(reg_name, str) or not reg_name.endswith("_DP"):
+            continue
+
+        calculated = register.get("calculated")
+        if not isinstance(calculated, dict):
+            errors[f"duplicate_missing_calculation_{reg_name}"] = (
+                f"Duplicate register '{reg_name}' must define calculation metadata"
+            )
+            continue
+
+        if calculated.get("method") != "duplicate":
+            errors[f"duplicate_invalid_method_{reg_name}"] = (
+                f"Duplicate register '{reg_name}' must use the 'duplicate' calculation method"
+            )
+
+        source_id = calculated.get("src_register_id")
+        if source_id not in register_ids or source_id == register.get("id"):
+            errors[f"duplicate_invalid_source_{reg_name}"] = (
+                f"Duplicate register '{reg_name}' references invalid source register '{source_id}'"
+            )
+
+    return errors
+
+
+def test_validate_duplicate_register_calculation() -> None:
+    """Test validation of duplicate register calculation metadata."""
+    source = {"id": "field000", "name": "VALUE"}
+    duplicate = {
+        "id": "field004",
+        "name": "VALUE_DP",
+        "calculated": {"method": "duplicate", "src_register_id": "field000"},
+    }
+    data = {"groups": [{"registers": [source, duplicate]}]}
+
+    assert validate_duplicate_register_calculation(data) == {}
+
+    duplicate.pop("calculated")
+    result = validate_duplicate_register_calculation(data)
+    assert "duplicate_missing_calculation_VALUE_DP" in result
+
+    duplicate["calculated"] = {"method": "inverse", "src_register_id": "field000"}
+    result = validate_duplicate_register_calculation(data)
+    assert "duplicate_invalid_method_VALUE_DP" in result
+
+    duplicate["calculated"] = {"method": "duplicate", "src_register_id": "field008"}
+    result = validate_duplicate_register_calculation(data)
+    assert "duplicate_invalid_source_VALUE_DP" in result
+
+
 def validate_reserved_register_constraints(data: dict) -> dict:
     """Validate constraints for reserved registers.
 

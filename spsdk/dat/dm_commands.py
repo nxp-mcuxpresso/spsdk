@@ -92,13 +92,15 @@ class DebugMailboxCommandID2(SpsdkEnum):
 
 
 STANDARD_ERROR_CODES = {
-    # 0x0000_0000: "Command succeeded",
-    0x0010_0001: "Debug mode not entered. This is returned if other commands are sent prior to the 'Enter DM-AP'",
-    0x0010_0002: (
-        "Command not recognized. A command was received other than is "
-        "supported by device in current life cycle"
+    # Keyed by the 16-bit status code carried in bits [15:0] of the RETURN word
+    # (ret & 0xFFFF). 0x0000 ("Command succeeded") is not listed as it is not
+    # an error.
+    0x0001: (
+        "Debug mode not entered. This is returned if other commands are sent "
+        "prior to the 'Enter DM-AP' command"
     ),
-    0x0010_0003: "Command failed",
+    0x0002: "Command is not supported",
+    0x0003: "Communication failure. ACK_TOKEN is missing during data transactions",
 }
 
 
@@ -178,8 +180,8 @@ class DebugMailboxCommand:
                 ret = self.dm.read_return()
                 logger.debug(f"-> spin_read:  {format_value(ret, 32)}")
                 if (ret & 0xFFFF) != 0xA5A5:
-                    if ret in STANDARD_ERROR_CODES:
-                        error_msg = STANDARD_ERROR_CODES[ret]
+                    if ret & 0xFFFF in STANDARD_ERROR_CODES:
+                        error_msg = STANDARD_ERROR_CODES[ret & 0xFFFF]
                         raise SPSDKError(f"Debug Mailbox Command Error: {error_msg}")
                     raise SPSDKError(
                         f"Device did not send correct ACK answer! Unexpected response: {hex(ret)}"
@@ -215,8 +217,8 @@ class DebugMailboxCommand:
         status = ret & 0xFFFF
 
         if status != 0:
-            if ret in STANDARD_ERROR_CODES:
-                error_msg = STANDARD_ERROR_CODES[ret]
+            if status in STANDARD_ERROR_CODES:
+                error_msg = STANDARD_ERROR_CODES[status]
                 raise SPSDKError(f"Debug Mailbox Command Error: {error_msg}")
             raise SPSDKError(f"Status code is not success: {hex(status)} !")
 
@@ -301,19 +303,22 @@ class EraseFlash(DebugMailboxCommand):
 
     This command provides functionality to erase flash memory through the debug
     mailbox interface, allowing secure provisioning operations to clear flash
-    content before programming new data.
+    content before programming new data. Optionally supports password-protected
+    erase by passing a 128-bit password as four 32-bit parameter words.
 
     :cvar CMD: Command identifier for erase flash operation.
     """
 
     CMD = DebugMailboxCommandID.ERASE_FLASH  # Cmd ID: 0x03
 
-    def __init__(self, dm: DebugMailbox) -> None:
+    def __init__(self, dm: DebugMailbox, paramlen: int = 0) -> None:
         """Initialize the debug mailbox command.
 
         :param dm: Debug mailbox instance to be used for command execution.
+        :param paramlen: Length of command parameters in 32-bit words. Use 0 for
+            unauthenticated erase or 4 to transfer a 128-bit password.
         """
-        super().__init__(dm)
+        super().__init__(dm, paramlen=paramlen)
 
 
 class ExitDebugMailbox(DebugMailboxCommand):
@@ -461,9 +466,9 @@ class ProgramLifecycle(DebugMailboxCommand):
     ``LIFECYCLE_STATE_DP`` words in the CMPA via ``FLASH_CMD_ProgramPhrase``,
     then triggers a system reset. The command is only honored while the device
     is in the ``DEVELOP`` lifecycle and requires the CMPA integrity check
-    (markers + CRCs) to pass; otherwise the device returns
-    ``ERR_DM_UNKNOWN_CMD`` (``0x00100002``) or ``ERR_DM_COMM_FAIL``
-    (``0x00100003``) respectively.
+    (markers + CRCs) to pass; otherwise the device returns status code
+    ``0x0002`` (command not supported) or ``0x0003`` (communication failure)
+    respectively.
 
     :cvar CMD: Command identifier for program lifecycle operation.
     """

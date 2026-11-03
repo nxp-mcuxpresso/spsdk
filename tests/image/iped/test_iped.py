@@ -532,9 +532,15 @@ def test_iped_v2_rt266x_rom_config_matches_reference(data_dir: str) -> None:
     """Test RT266x derivation and ROM configuration match the supplied reference artifacts."""
     config = Config.create_from_file(os.path.join(data_dir, "rt2660_reference.yaml"))
     iped = IpedV2.load_from_config(config)
-    reference = bytes.fromhex(Path(data_dir, "rt2660_table.hex").read_text().strip())
-    plaintext = bytes.fromhex(Path(data_dir, "rt2660_plaintext.hex").read_text().strip())
-    ciphertext = bytes.fromhex(Path(data_dir, "rt2660_ciphertext.hex").read_text().strip())
+    reference = bytes.fromhex(
+        Path(data_dir, "rt2660_table.hex").read_text(encoding="utf-8").strip()
+    )
+    plaintext = bytes.fromhex(
+        Path(data_dir, "rt2660_plaintext.hex").read_text(encoding="utf-8").strip()
+    )
+    ciphertext = bytes.fromhex(
+        Path(data_dir, "rt2660_ciphertext.hex").read_text(encoding="utf-8").strip()
+    )
 
     assert iped.contexts[0].key == bytes.fromhex("b938104c9a597f0caecca7a525ea7263")
     assert iped.contexts[0].iv == [0xE0D7BC70, 0xC290FFEC]
@@ -1428,7 +1434,7 @@ def test_iped_v1_load_from_config_and_export(tmp_path: Path) -> None:
         '    address: "0x28001000"\n'
     )
     cfg_file = tmp_path / "iped_config.yaml"
-    cfg_file.write_text(cfg_content)
+    cfg_file.write_text(cfg_content, encoding="utf-8")
 
     cfg = Config.create_from_file(str(cfg_file))
     iped = IpedV1.load_from_config(cfg)
@@ -1464,7 +1470,7 @@ def test_iped_v1_load_from_config_without_encryption(tmp_path: Path) -> None:
         '    nonce: "0x0011223344556677"\n'
     )
     cfg_file = tmp_path / "iped_config.yaml"
-    cfg_file.write_text(cfg_content)
+    cfg_file.write_text(cfg_content, encoding="utf-8")
 
     cfg = Config.create_from_file(str(cfg_file))
     iped = IpedV1.load_from_config(cfg)

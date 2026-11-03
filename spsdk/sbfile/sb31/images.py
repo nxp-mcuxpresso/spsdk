@@ -41,6 +41,20 @@ from spsdk.utils.misc import align_block, load_hex_string, write_file
 
 logger = logging.getLogger(__name__)
 
+SB_TIMESTAMP_MAX = (1 << 64) - 1
+
+
+def validate_sb_timestamp(timestamp: int) -> int:
+    """Validate an SB timestamp represented as an unsigned 64-bit value.
+
+    :param timestamp: Timestamp used as the cryptographic nonce for key derivation.
+    :raises SPSDKValueError: Timestamp is outside the unsigned 64-bit range.
+    :return: Validated timestamp.
+    """
+    if timestamp < 0 or timestamp > SB_TIMESTAMP_MAX:
+        raise SPSDKValueError(f"Invalid SB timestamp {timestamp}; expected 0..{SB_TIMESTAMP_MAX}")
+    return timestamp
+
 
 ########################################################################################################################
 # Secure Binary Image Class (Version 3.1)
@@ -92,7 +106,9 @@ class SecureBinary31Header(BaseClass):
         self.block_count = 0
         self.image_type = 7 if is_nxp_container else 6
         self.firmware_version = firmware_version
-        self.timestamp = timestamp or SecureBinary31.get_current_timestamp()
+        self.timestamp = validate_sb_timestamp(
+            timestamp if timestamp is not None else SecureBinary31.get_current_timestamp()
+        )
         self.image_total_length = self.HEADER_SIZE
         self.description = self._adjust_description(description)
 
@@ -347,6 +363,7 @@ class SecureBinary31Header(BaseClass):
             raise SPSDKError("Invalid SB3.1 header firmware version.")
         if self.timestamp is None:
             raise SPSDKError("Invalid SB3.1 header timestamp.")
+        validate_sb_timestamp(self.timestamp)
         if self.image_total_length is None or self.image_total_length < self.HEADER_SIZE:
             raise SPSDKError("Invalid SB3.1 header image total length.")
         if self.cert_block_offset is None:
@@ -408,7 +425,9 @@ class SecureBinary31Commands(BaseClass):
         self.final_hash = bytes(get_hash_length(hash_type))
         self.block1_size = 0
         self.commands: list[BaseCmd] = []
-        self.timestamp = timestamp or SecureBinary31.get_current_timestamp()
+        self.timestamp = validate_sb_timestamp(
+            timestamp if timestamp is not None else SecureBinary31.get_current_timestamp()
+        )
         self.encryption_provider = (
             encryption_provider if encryption_provider is not None else NoEncryption()
         )
@@ -771,7 +790,7 @@ class SecureBinary31Commands(BaseClass):
         :raises SPSDKError: When parsing fails, data is invalid, or required parameters missing.
         :raises SPSDKValueError: When an invalid hash type is provided.
         """
-        if not (family and block1_hash and hash_type and timestamp):
+        if family is None or not block1_hash or hash_type is None or timestamp is None:
             raise SPSDKError("Missing required parameters for parsing encrypted commands")
 
         # Validate hash type

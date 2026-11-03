@@ -431,7 +431,7 @@ class TestNxpimageUtilsCli:
         """Test nxpimage utils convert hex2bin converts hex text to binary."""
         in_file = os.path.join(str(tmp_path), "input.txt")
         out_file = os.path.join(str(tmp_path), "output.bin")
-        with open(in_file, "w") as f:
+        with open(in_file, "w", encoding="utf-8") as f:
             f.write("DEADBEEF\n")
         cli_runner.invoke(
             nxpimage_main,

@@ -37,3 +37,10 @@ info:
       size_int: "0x2_8000"
       external: false
       non_xip_type: int_ram
+
+features:
+  # ======== Hardware Security Engine ===  =====
+  hse:
+    core_ids:
+      - "M7_0"
+      - "M7_1"

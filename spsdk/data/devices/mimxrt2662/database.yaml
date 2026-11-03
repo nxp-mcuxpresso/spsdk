@@ -75,8 +75,14 @@ features:
 
   # ======== AHAB section ========
   ahab:
-    sub_features: [ahab_image, certificate_supported, offline_keyblob]
+    sub_features: [ahab_image, certificate_supported, offline_keyblob, parallel_verification]
     container_types: [2] # Supported container types
+    fuses_0:
+      _name: "AHAB SRKH"
+      srkh: "__srk_hash0" # SRK hash fuse
+    fuses_1:
+      _name: "AHAB SRKH PQC"
+      pqc_srkh: "__srk_hash1" # SRK PQC hash fuse
     core_ids:
       CORTEX_M85: [1, "cortex-m85", "Cortex M85"]
       ELE: [6, "ele", "EdgeLock Enclave"]
@@ -85,7 +91,8 @@ features:
         EXECUTABLE: [0x03, executable, Executable Image]
         DATA: [0x04, data, Data Image]
         PROVISIONING_IMAGE: [0x07, provisioning_image, Provisioning Image]
-        PROVISIONING_DATA: [0x09, provisioning_data, Provisioning data Image]
+        PROVISIONING_DATA: [0x08, provisioning_data, Provisioning data Image]
+        INFIELD_PATCH_DATA: [0x09, infield_patch_data, Infield Patch data Image]
       ele:
         ELE_AS_IMAGE: [0x05, ele_as_image, EdgeLock Enclave Image in OEM Image]
         ELE: [0x06, ele, EdgeLock Enclave Image]
@@ -100,14 +107,27 @@ features:
     start_image_address: 0x9000
 
     signature_algorithms:
-      RSA: [0x21, "RSA", "RSA signature algorithm"]
-      RSA_PSS: [0x22, "RSA_PSS", "RSA PSS signature algorithm"]
       ECDSA: [0x27, "ECDSA", "ECDSA signature algorithm"]
-      SM2: [0x28, "SM2", "SM2 signature algorithm"]
       # V2 only
-      DILITHIUM: [0xD1, "DILITHIUM", "Dilithium PQC algorithm"]
       ML_DSA: [0xD2, "ML-DSA", "ML-DSA PQC algorithm"]
       LMS: [0xD3, "LMS", "Leighton-Micali Signature scheme"]
+
+    hash_algorithms:
+      SHA256: [0x00, "SHA256", "SHA-256 hash algorithm"]
+      SHA384: [0x01, "SHA384", "SHA-384 hash algorithm"]
+      SHA512: [0x02, "SHA512", "SHA-512 hash algorithm"]
+      # V2 only
+      SHA3_256: [0x04, "SHA3_256", "SHA3-256 hash algorithm"]
+      SHA3_384: [0x05, "SHA3_384", "SHA3-384 hash algorithm"]
+      SHA3_512: [0x06, "SHA3_512", "SHA3-512 hash algorithm"]
+
+    srk_sets:
+      NONE: [0x00, "none", "Image is not signed"]
+      NXP: [0x01, "nxp", "Signed by NXP keys"]
+      OEM: [0x02, "oem", "Signed by OEM keys"]
+      DEV: [0x03, "dev", "Development keys"]
+      ICCS: [0x04, "iccs", "ICCS key set"]
+
 
   # ======== IPED section ========
   iped:
@@ -243,12 +263,12 @@ features:
           ahab_container: 0x400
       emmc:
         segments:
-          #secondary_image_table: 0x200 (not used)
+          secondary_image_table: 0x200
           xmcd: 0x400
           ahab_container: 0x800
       sd:
         segments:
-          #secondary_image_table: 0x200 (not used)
+          secondary_image_table: 0x200
           xmcd: 0x400
           ahab_container: 0x800
 
@@ -263,6 +283,57 @@ features:
   # ======== Fuses description section ========
   fuses:
     tool: blhost
+    grouped_registers:
+      - uid: srkh
+        name: SRKH
+        width: 512
+        reversed: True
+        config_as_hexstring: True
+        description: "SHA512 hash digest of hash of four SRK keys"
+        sub_regs:
+          [
+            "fuse696",
+            "fuse697",
+            "fuse698",
+            "fuse699",
+            "fuse700",
+            "fuse701",
+            "fuse702",
+            "fuse703",
+            "fuse704",
+            "fuse705",
+            "fuse706",
+            "fuse707",
+            "fuse708",
+            "fuse709",
+            "fuse710",
+            "fuse711",
+          ]
+      - uid: pqc_srkh
+        name: PQC_SRKH
+        width: 512
+        reversed: True
+        config_as_hexstring: True
+        description: "SHA512 hash digest of hash of four SRK keys"
+        sub_regs:
+          [
+            "fuse712",
+            "fuse713",
+            "fuse714",
+            "fuse715",
+            "fuse716",
+            "fuse717",
+            "fuse718",
+            "fuse719",
+            "fuse720",
+            "fuse721",
+            "fuse722",
+            "fuse723",
+            "fuse724",
+            "fuse725",
+            "fuse726",
+            "fuse727",
+          ]
 
   # ======== Memory configuration ========
   memcfg:

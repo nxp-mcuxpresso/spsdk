@@ -117,6 +117,38 @@ bee_header_1:
       description: BEE encryption header 1 path
       template_value: bee_header_1.bin
 
+secondary_image_table:
+  title: Bootable Segments definition
+  properties:
+    secondary_image_table:
+      title: SD/eMMC secondary-image table
+      template_value: ""
+      description: >-
+        Optional redundant-boot table at media offset 0x200. Omit or leave empty
+        for primary-only boot. Supply a binary table or an inline first_sector_number.
+        The secondary image must be placed separately on the media.
+      oneOf:
+        - type: string
+          title: Binary table path
+          format: optional_file
+          template_value: ""
+        - type: object
+          title: Secondary image location
+          skip_in_template: True
+          additionalProperties: false
+          required: [first_sector_number]
+          properties:
+            first_sector_number:
+              type: [integer, string]
+              format: number
+              minimum: 1
+              maximum: 4294967295
+              title: First sector number
+              description: >-
+                Absolute start of the secondary bootable image in 512-byte sectors,
+                not bytes and not the location of a second AHAB container.
+              template_value: 4096
+
 xmcd:
   title: Bootable Segments definition
   properties:
@@ -298,4 +330,3 @@ image_pattern:
         pattern are emitted as DONT_CARE blocks (not written to flash).
       template_value: ones
       skip_in_template: True
-

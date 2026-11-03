@@ -708,9 +708,8 @@ def load_hex_string(
     except Exception as exc:  # noqa: BLE001
         logger.debug(f"Key file loading failed, trying direct value parsing: {exc}")
         try:
-            if not source.startswith(("0x", "0X")):
-                source = "0x" + source
-            key = value_to_bytes(source, byte_cnt=expected_size)
+            hex_source = source if source.startswith(("0x", "0X")) else "0x" + source
+            key = value_to_bytes(hex_source, byte_cnt=expected_size)
         except SPSDKError:
             pass
 

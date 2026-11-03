@@ -135,6 +135,7 @@ class DebugProbeCoreSightOnly(DebugProbe):
     ARCHITECTURE = "arm-cortex"
     NAME = "base-arm"
     SUPPORTED_PROTOCOLS: tuple[DebugProbeProtocol, ...] = (DebugProbeProtocol.SWD,)
+    SUPPORTED_VERSIONS: tuple[int, ...] = (5,)  # ADIv5 is natively supported
 
     # Constants to detect the debug mailbox access port
     APBANKSEL = 0x000000F0
@@ -144,11 +145,76 @@ class DebugProbeCoreSightOnly(DebugProbe):
     APSEL_SHIFT = 24
     APSEL_APBANKSEL = APSEL | APBANKSEL
 
+    # ADIv6 (CoreSight 600 / DPv3) constants
+    SELECT_APADDR_MASK = 0xFFFFFFF0  # ADIv6 AP address mask (bits [31:4])
+    SELECT_DPBANKSEL_MASK = 0x0000000F  # ADIv6 DP bank select mask (bits [3:0])
+    DPVER_MASK = 0x0000F000  # DP version field in DP_IDR (bits [15:12])
+    DPVER_SHIFT = 12
+    DPVER_ADIv6 = 3  # DP version value for ADIv6 (DPv3)
+    AP_IDR_REG_ADIv6 = 0xDFC  # APv2 IDR register address (ADIv6)
+
+    # ADIv6 DP address size autodetection. DPIDR1 (DP bank 1) reports the address size
+    # of the DP address bus in its ASIZE field; when ASIZE > 32 the SELECT1 register
+    # (upper 32 bits of the AP address) is implemented and 64-bit AP addresses are used.
+    ADIV6_DPIDR1_REG = 0x00  # DPIDR1 register offset within DP bank 1
+    ADIV6_DPBANKSEL_MASK = 0x0000000F  # DP SELECT bits [3:0]: DP bank select
+    ADIV6_DPIDR1_ASIZE_MASK = 0x0000007F  # DPIDR1 ASIZE field (bits [6:0])
+    ADIV6_SELECT_REG = 0x08  # DP SELECT register (holds AP address bits [31:4] + DPBANKSEL)
+    ADIV6_SELECT1_REG = 0x14  # DP SELECT1 register (upper AP address bits [63:32])
+    ADIV6_ADDR_SIZE_32 = 32  # Address size threshold; > 32 implies SELECT1 is present
+
+    # Default ADIv5 AP indices to probe when auto-detecting the memory access port.
+    ADIV5_MEM_AP_INDICES = [0, 1, 3]
+
+    # Default ADIv5 AP indices to probe when auto-detecting the debug mailbox access port.
+    ADIV5_DBGMLBX_AP_INDICES = [2, 0, 1, 3, 8]
+
+    # ADIv6 CoreSight component enumeration constants. In ADIv6 the access ports are
+    # memory-mapped and discovered by walking the ROM table hierarchy rooted at the
+    # DP BASEPTR, instead of probing a fixed 0-255 index range.
+    # ADIv6 BASEPTR0/1 live at DP register offset 0x0 in DP banks 2 and 3
+    # respectively (like DPIDR1 at offset 0x0 in bank 1). DPBANKSEL (SELECT
+    # bits [3:0]) must be set to the bank before reading offset 0x0; reading a
+    # fixed offset 0x08/0x0C in bank 0 returns SELECT/RDBUFF readback, not the
+    # base pointer.
+    ADIV6_DP_BASEPTR_REG = 0x00  # BASEPTR0/1 register offset within their DP banks
+    ADIV6_DP_BASEPTR0_BANK = 0x2  # DPBANKSEL value exposing BASEPTR0
+    ADIV6_DP_BASEPTR1_BANK = 0x3  # DPBANKSEL value exposing BASEPTR1
+
+    ADIV6_BASEPTR_VALID_MASK = 0x1  # BASEPTR0 bit0: 1 = valid base pointer
+    ADIV6_BASEPTR_ADDR_MASK = 0xFFFFFFFFFFFFF000  # 4KB-aligned base address mask
+
+    # CoreSight component ID / ROM table register offsets (relative to the 4KB block).
+    # These are common CoreSight architecture definitions (not ADIv6-specific).
+    CIDR1_OFFSET = 0xFF4  # Component ID Register 1 (holds component class)
+    DEVTYPE_OFFSET = 0xFCC  # Device Type register
+    DEVARCH_OFFSET = 0xFBC  # Device Architecture register
+
+    CIDR1_CLASS_MASK = 0xF0  # Component class field in CIDR1
+    CIDR1_CLASS_ROM = 0x10  # Class 0x1: ROM table
+    CIDR1_CLASS_CORESIGHT = 0x90  # Class 0x9: CoreSight component (may be an AP)
+
+    DEVTYPE_MEM_AP = 0x11  # Device Type value for a Memory Access Port
+    DEVARCH_ARCHID_MASK = 0xFFF  # ARCHID field mask in DEVARCH
+    DEVARCH_MEM_AP = 0x0A17  # CoreSight architecture ID for a generic MEM-AP
+    # CoreSight SoC-600 (ADIv6) ROM tables are Class 0x9 components identified by
+    # their DEVARCH ARCHID rather than the legacy Class 0x1 CIDR1 encoding.
+    DEVARCH_CLASS9_ROM = 0x0AF7  # CoreSight architecture ID for a Class 9 ROM table
+
+    DBGMLBX_IDR_VALUE = 0x002A0000  # Known IDR value of the NXP Debug Mailbox AP
+
+    ROM_ENTRY_PRESENT_MASK = 0x1  # ROM table entry bit0: 1 = present
+    ROM_ENTRY_OFFSET_MASK = 0xFFFFF000  # ROM entry address offset field (4KB aligned)
+    ROM_ENTRY_SIGN_BIT = 0x80000000  # Sign bit of the 32-bit relative offset
+    ROM_ENTRY_SIGN_EXTEND = 0x100000000  # Value subtracted for negative offsets
+
+    ADIV6_MAX_ROM_DEPTH = 8  # Recursion guard for pathological/looping ROM tables
+
     DP_IDR_REG = 0x00  # Read access
     DP_ABORT_REG = 0x00  # Write Access
     DP_CTRL_STAT_REG = 0x04
 
-    AP_IDR_REG = 0xFC
+    AP_IDR_REG = 0xFC  # APv1 IDR register address (ADIv5)
 
     CSYSPWRUPACK = 0x80 << 24
     CSYSPWRUPREQ = 0x40 << 24
@@ -162,6 +228,24 @@ class DebugProbeCoreSightOnly(DebugProbe):
     DHCSR_C_DEBUGEN = 0x1
     DHCSR_C_HALT = 0x2
     DHCSR_C_STEP = 0x4
+    DHCSR_S_REGRDY = 0x00010000  # Register R/W transfer via DCRSR/DCRDR has completed
+    DHCSR_S_HALT = 0x00020000
+
+    # Constants for DCRSR/DCRDR, Debug Core Register Selector/Data Register.
+    # These addresses and the core-register numbering below are part of the fixed
+    # ARMv6-M/v7-M/v8-M Private Peripheral Bus (PPB) memory map, i.e. identical across
+    # all Cortex-M based devices regardless of family/vendor.
+    DCRSR_REG = 0xE000EDF4
+    DCRDR_REG = 0xE000EDF8
+    DCRSR_REGWNR = 0x00010000  # Direction bit: 1 = write core register, 0 = read
+
+    # Core register numbers as defined by the ARM debug architecture (DCRSR REGSEL field).
+    CORE_REG_SP = 13  # R13, current Stack Pointer (alias of MSP/PSP based on CONTROL.SPSEL)
+    CORE_REG_LR = 14  # R14, Link Register
+    CORE_REG_PC = 15  # R15, Program Counter (DebugReturnAddress)
+    CORE_REG_XPSR = 16
+    CORE_REG_MSP = 17  # Main Stack Pointer (banked, independent of CONTROL.SPSEL)
+    CORE_REG_PSP = 18  # Process Stack Pointer (banked, independent of CONTROL.SPSEL)
 
     # Add these class constants
     # Control/Status Word (CSW) bit definitions for size
@@ -222,8 +306,31 @@ class DebugProbeCoreSightOnly(DebugProbe):
         self.mem_ap_ix = -1
         self.dbgmlbx_ap_ix = -1
         self.dbgmlbx_ap_validated = False
+        self.adi_version = 5  # Default to ADIv5 (will be detected after connect)
+        # ADIv6 AP address size in bits (detected from DPIDR1.ASIZE after connect).
+        # When > 32 the SELECT1 register is used to carry the upper AP address bits.
+        self.adiv6_addr_size = 32
 
         self.last_accessed_ap = -1
+
+        # Extend the base debug_access_status dict (probe_connected, dp_idr_ok) with
+        # ARM CoreSight specific gates. Each gate is recorded (True/False) as soon as
+        # the corresponding code path discovers its result; None means the gate was
+        # never exercised during this session (e.g. SDA-AP is only present on some
+        # families). See spsdk.debuggers.utils.render_debug_access_status_table() for
+        # the human-readable rendering.
+        self.debug_access_status.update(
+            {
+                "dp_power_domains_ok": None,
+                "ap_idr_ok": None,
+                "ap_dbgswenable": None,
+                "sda_dbgenctrl_written": None,
+                "core_dhcsr_ok": None,
+                "ahb_system_bus_ok": None,
+                "dbgmlbx_ap_idr_ok": None,
+            }
+        )
+
         self.enable_power_domains_after_connect = False
         self.enable_sda_debug_paths_after_connect = False
         self.preserve_csw_ro_bits = False
@@ -231,6 +338,12 @@ class DebugProbeCoreSightOnly(DebugProbe):
         self.disable_reinit = (
             False  # Keep it here to backward compatibility with debug probe plugins
         )
+        # True when the device database pins a fixed MEM-AP index, meaning the AP-scan
+        # loop in get_mem_ap() is skipped entirely and its associated diagnostic gates
+        # (ap_idr_ok, ap_dbgswenable) can therefore never be exercised. Used by
+        # get_never_tested_debug_access_gates() below to render those gates as "N/A"
+        # instead of the misleading "NOT TESTED" in the diagnostic table.
+        self.mem_ap_fixed_from_db = False
         if self.family:
             db = get_db(self.family)
             self.enable_power_domains_after_connect = db.get_bool(
@@ -246,7 +359,8 @@ class DebugProbeCoreSightOnly(DebugProbe):
                 DatabaseManager.DEBUG_PROBE, "mem_ap_scan_write_before_read", False
             )
             self.mem_ap_ix = db.get_int(DatabaseManager.DEBUG_PROBE, "mem_ap_index", -1)
-            if self.mem_ap_ix >= 0:
+            self.mem_ap_fixed_from_db = self.mem_ap_ix >= 0
+            if self.mem_ap_fixed_from_db:
                 logger.debug(
                     f"Using fixed mem_ap_index={self.mem_ap_ix} from device database "
                     "(skipping AP scan)."
@@ -280,11 +394,14 @@ class DebugProbeCoreSightOnly(DebugProbe):
         try:
             self.connect()
         except Exception:
+            self.debug_access_status["probe_connected"] = False
             if self.recover_debug_connection():
                 self.connect()
+                self.debug_access_status["probe_connected"] = True
                 return
             raise
 
+        self.debug_access_status["probe_connected"] = True
         self._init_debug_access_after_connect()
 
     @abstractmethod
@@ -311,22 +428,46 @@ class DebugProbeCoreSightOnly(DebugProbe):
         :param data: the data to be written into register.
         """
 
-    @staticmethod
-    def get_coresight_ap_address(access_port: int, address: int) -> int:
-        """Compute the coresight access port register address.
+    def get_coresight_ap_address(self, access_port: int, address: int) -> int:
+        """Compute the coresight access port register address (ADIv5/ADIv6 aware).
 
-        The method combines the access port index with the register address using
-        bit shifting to create the final coresight address for debug operations.
+        For ADIv5 the access port is an AP index (0-255) shifted to bits [31:24]
+        and combined with the register offset.
+        For ADIv6 the access port is already a real AP base address, so it is only
+        ORed with the register offset.
 
-        :param access_port: Index of access port (0-255).
+        :param access_port: AP index (ADIv5) or AP base address (ADIv6).
         :param address: Register address offset.
         :return: Computed coresight address.
-        :raises SPSDKValueError: If access port index exceeds 255.
+        :raises SPSDKValueError: If access port index exceeds 255 (ADIv5 only).
         """
+        if self.adi_version == 6:
+            # ADIv6: access_port is already a real AP address (e.g., 0x00002000).
+            # Just OR with the register offset.
+            return access_port | address
+        # ADIv5: access_port is an index (0-255), shift to bits [31:24].
         if access_port > 255:
             raise SPSDKValueError("Invalid value of access port")
+        return access_port << self.APSEL_SHIFT | address
 
-        return access_port << DebugProbeCoreSightOnly.APSEL_SHIFT | address
+    def _trace_port_label(self, access_port: bool, addr: int) -> str:
+        """Build the port label for a CoreSight trace line (ADIv5/ADIv6 aware).
+
+        For the Debug Port the label is always "DP". For the Access Port the label
+        depends on the detected ADI version: on ADIv5 the AP is selected by an index
+        encoded in bits [31:24], while on ADIv6 the AP is a memory-mapped base address
+        carried in the DP SELECT register (self.last_accessed_ap).
+
+        :param access_port: True if the Access Port (AP) is targeted, False for Debug Port (DP).
+        :param addr: The CoreSight register address of the transaction.
+        :return: Human-readable port label used in the unified trace stream.
+        """
+        if not access_port:
+            return "DP"
+        if self.adi_version == 6:
+            # In ADIv6 the AP is not indexed; report the currently selected base address.
+            return f"AP@0x{self.last_accessed_ap & self.SELECT_APADDR_MASK:08X}"
+        return f"AP{(addr & self.APSEL) >> self.APSEL_SHIFT}"
 
     def trace_cs_read(self, access_port: bool, addr: int, data: int) -> None:
         """Trace a completed high-level CoreSight register read in a unified format.
@@ -338,7 +479,7 @@ class DebugProbeCoreSightOnly(DebugProbe):
         :param addr: The CoreSight register address that was read.
         :param data: The 32-bit value that was read.
         """
-        port = f"AP{(addr & self.APSEL) >> self.APSEL_SHIFT}" if access_port else "DP"
+        port = self._trace_port_label(access_port, addr)
         cs_trace_logger.trace(f"CS RD {port} addr=0x{addr:08X} data=0x{data:08X}")
 
     def trace_cs_write(self, access_port: bool, addr: int, data: int) -> None:
@@ -366,6 +507,9 @@ class DebugProbeCoreSightOnly(DebugProbe):
 
     def _init_debug_access_after_connect(self) -> None:
         """Initialize optional device-specific debug access after connect."""
+        # Detect ADI version (ADIv5 vs ADIv6) from DP_IDR
+        self._detect_adi_version()
+
         if self.enable_power_domains_after_connect:
             try:
                 self.power_up_target()
@@ -383,11 +527,13 @@ class DebugProbeCoreSightOnly(DebugProbe):
                         addr=self.get_coresight_ap_address(sda_ap_ix, 0x80),
                         data=0x10000010,  # DBGENCTRL: GDBGEN (bit28) | CDBGEN (bit4)
                     )
+                    self.debug_access_status["sda_dbgenctrl_written"] = True
                     logger.debug(
                         f"Written DBGENCTRL (GDBGEN|CDBGEN) to SDA-AP {sda_ap_ix} "
                         "to enable debug paths."
                     )
             except Exception as e:  # noqa: BLE001
+                self.debug_access_status["sda_dbgenctrl_written"] = False
                 logger.debug(f"SDA-AP DBGENCTRL init skipped: {e}")
 
     def coresight_reg_write_safe(
@@ -514,7 +660,6 @@ class DebugProbeCoreSightOnly(DebugProbe):
         :return: Decorated function wrapper.
         :raises SPSDKDebugProbeError: When no valid memory access port is found.
         """
-        POSSIBLE_MEM_AP_IX = [0, 1, 3]
         DEFAULT_TEST_MEM_AP_ADDRESS = 0x2000_0000
 
         @functools.wraps(func)
@@ -539,15 +684,20 @@ class DebugProbeCoreSightOnly(DebugProbe):
             if self.mem_ap_ix < 0:
                 logger.debug(f"Trying MEM AP on address {hex(test_address)}")
                 # Try to find MEM AP
-                for i in POSSIBLE_MEM_AP_IX:
+                for i, known_idr in self._ap_scan_candidates(self.ADIV5_MEM_AP_INDICES):
                     try:
-                        logger.debug(f"Testing AP{i} for memory access")
-                        idr = self.coresight_reg_read(
-                            access_port=True,
-                            addr=self.get_coresight_ap_address(
-                                access_port=i, address=self.AP_IDR_REG
-                            ),
-                        )
+                        logger.debug(f"Testing AP {hex(i)} for memory access")
+                        # Reuse the IDR already read during ADIv6 enumeration when known
+                        # (non-zero); otherwise read it now (always the case for ADIv5).
+                        if known_idr:
+                            idr = known_idr
+                        else:
+                            idr = self.coresight_reg_read(
+                                access_port=True,
+                                addr=self.get_coresight_ap_address(
+                                    access_port=i, address=self._ap_idr_reg()
+                                ),
+                            )
                         logger.debug(f"AP{i} IDR: 0x{idr:08X}")
                         # Extract IDR fields used for lookup. TODO solve that
                         ap_class = (idr & 0x1E000) >> 13
@@ -568,6 +718,7 @@ class DebugProbeCoreSightOnly(DebugProbe):
                                 if self.preserve_csw_ro_bits:
                                     ap_csw = self._safe_csw_value(i, single_increment=True)
                                     dbgswenable = bool(ap_csw & 0x80000000)
+                                    self.debug_access_status["ap_dbgswenable"] = dbgswenable
                                 try:
                                     if dbgswenable:
                                         # Enter debug state and halt (requires DHCSR on APB/PPB)
@@ -575,6 +726,7 @@ class DebugProbeCoreSightOnly(DebugProbe):
                                             mem_ap_ix=i, addr=self.DHCSR_REG
                                         )
                                         logger.debug(f"Value of DHCSR register = {hex(dhcsr_reg)}")
+                                        self.debug_access_status["core_dhcsr_ok"] = True
                                         self._mem_reg_write(
                                             mem_ap_ix=i,
                                             addr=self.DHCSR_REG,
@@ -592,6 +744,7 @@ class DebugProbeCoreSightOnly(DebugProbe):
                                     # DHCSR not accessible via this AP (e.g., AHB-AP on
                                     # devices where debug registers are on a separate APB bus).
                                     # Proceed with memory test without CPU halt.
+                                    self.debug_access_status["core_dhcsr_ok"] = False
                                     logger.debug(
                                         f"DHCSR not accessible via AP{i} "
                                         "(trying memory test without CPU halt)"
@@ -634,7 +787,9 @@ class DebugProbeCoreSightOnly(DebugProbe):
                                     else:
                                         self._mem_reg_read(mem_ap_ix=i, addr=test_address)
                                     status = True
+                                    self.debug_access_status["ahb_system_bus_ok"] = True
                                 except SPSDKError:
+                                    self.debug_access_status["ahb_system_bus_ok"] = False
                                     logger.debug(
                                         f"Read operation on AP{i} fails at {hex(test_address)} address"
                                     )
@@ -669,6 +824,7 @@ class DebugProbeCoreSightOnly(DebugProbe):
                                 continue
 
                             self.mem_ap_ix = i
+                            self.debug_access_status["ap_idr_ok"] = True
                             logger.debug(f"Found memory access port at AP{i}, IDR: 0x{idr:08X}")
                             break
                     except SPSDKError as e:
@@ -685,6 +841,7 @@ class DebugProbeCoreSightOnly(DebugProbe):
                             logger.debug(f"Failed to clear AP sticky errors: {exc}", exc_info=True)
 
                 if self.mem_ap_ix < 0:
+                    self.debug_access_status["ap_idr_ok"] = False
                     raise SPSDKDebugProbeError("The memory access port is not found!")
             return func(self, *args, **kwargs)  # pylint: disable=not-callable
 
@@ -981,7 +1138,6 @@ class DebugProbeCoreSightOnly(DebugProbe):
         :raises SPSDKError: When debug mailbox access port cannot be found.
         :return: Decorated function wrapper.
         """
-        POSSIBLE_DBGMLBX_AP_IX = [2, 0, 1, 3, 8]
         IDR_ADDRESS = 0xFC
         IDR_VALUE = 0x002A0000
 
@@ -1004,15 +1160,23 @@ class DebugProbeCoreSightOnly(DebugProbe):
                 logger.warning(
                     "The debug mailbox access port index is not specified, trying autodetection."
                 )
-                for i in POSSIBLE_DBGMLBX_AP_IX:
+                for i, known_idr in self._ap_scan_candidates(self.ADIV5_DBGMLBX_AP_INDICES):
                     try:
-                        idr = self.coresight_reg_read_safe(
-                            access_port=True,
-                            addr=self.get_coresight_ap_address(access_port=i, address=IDR_ADDRESS),
-                        )
+                        # Reuse the IDR already read during ADIv6 enumeration when known
+                        # (non-zero); otherwise read it now (always the case for ADIv5).
+                        if known_idr:
+                            idr = known_idr
+                        else:
+                            idr = self.coresight_reg_read_safe(
+                                access_port=True,
+                                addr=self.get_coresight_ap_address(
+                                    access_port=i, address=self._dbgmlbx_idr_address(IDR_ADDRESS)
+                                ),
+                            )
                         if idr == IDR_VALUE:
                             self.dbgmlbx_ap_ix = i
                             self.dbgmlbx_ap_validated = True
+                            self.debug_access_status["dbgmlbx_ap_idr_ok"] = True
                             logger.debug(
                                 f"Found debug mailbox access port at AP{i}, IDR: 0x{idr:08X}"
                             )
@@ -1021,21 +1185,25 @@ class DebugProbeCoreSightOnly(DebugProbe):
                         pass
 
                 if self.dbgmlbx_ap_ix < 0:
+                    self.debug_access_status["dbgmlbx_ap_idr_ok"] = False
                     raise SPSDKError("The debug mailbox access port is not found!")
 
             if not self.dbgmlbx_ap_validated:
                 idr = self.coresight_reg_read_safe(
                     access_port=True,
                     addr=self.get_coresight_ap_address(
-                        access_port=self.dbgmlbx_ap_ix, address=IDR_ADDRESS
+                        access_port=self.dbgmlbx_ap_ix,
+                        address=self._dbgmlbx_idr_address(IDR_ADDRESS),
                     ),
                 )
                 if idr != IDR_VALUE:
+                    self.debug_access_status["dbgmlbx_ap_idr_ok"] = False
                     raise SPSDKError(
                         f"The debug mailbox AP{self.dbgmlbx_ap_ix} IDR value({hex(idr)}) "
                         f"doesn't match the expected value: {hex(IDR_VALUE)}"
                     )
                 self.dbgmlbx_ap_validated = True
+                self.debug_access_status["dbgmlbx_ap_idr_ok"] = True
 
             return func(self, *args, **kwargs)  # pylint: disable=not-callable
 
@@ -1148,10 +1316,13 @@ class DebugProbeCoreSightOnly(DebugProbe):
         timeout = Timeout(1, units="s")
         while (ret & (self.CDBGPWRUPACK | self.CSYSPWRUPACK)) != check_status:
             if timeout.overflow():
+                self.debug_access_status["dp_power_domains_ok"] = False
                 raise SPSDKTimeoutError(
                     "The Debug Mailbox power control operation ends on timeout."
                 )
             ret = self.coresight_reg_read(access_port=False, addr=self.DP_CTRL_STAT_REG)
+        if sys_power or debug_power:
+            self.debug_access_status["dp_power_domains_ok"] = True
         self.last_accessed_ap = -1
 
     def power_up_target(self) -> None:
@@ -1204,6 +1375,26 @@ class DebugProbeCoreSightOnly(DebugProbe):
 
         :param addr: Requested AP access address containing AP selection and bank information.
         """
+        if self.adi_version == 6:
+            # ADIv6: SELECT holds the AP base address (bits [31:4]) plus DP bank
+            # select (bits [3:0]). There is no APSEL index field. On DPs with an
+            # address size > 32 bits the upper AP address bits [63:32] are carried
+            # in the SELECT1 register.
+            select = addr & self.SELECT_APADDR_MASK
+            # Cache the full 64-bit address so a differing upper half is not masked out.
+            if self.last_accessed_ap != addr or DISABLE_AP_SELECT_CACHING:
+                self.last_accessed_ap = addr
+                if self.adiv6_addr_size > self.ADIV6_ADDR_SIZE_32:
+                    select_high = (addr >> 32) & 0xFFFFFFFF
+                    self.coresight_reg_write_safe(
+                        access_port=False, addr=self.ADIV6_SELECT1_REG, data=select_high
+                    )
+                    logger.debug(f"Selected AP SELECT1 (upper address): 0x{select_high:08X}")
+                self.coresight_reg_write_safe(
+                    access_port=False, addr=self.ADIV6_SELECT_REG, data=select
+                )
+                logger.debug(f"Selected AP address: 0x{select:08X}")
+            return
         if self.last_accessed_ap != addr & self.APSEL_APBANKSEL or DISABLE_AP_SELECT_CACHING:
             addr = addr & self.APSEL_APBANKSEL
             self.last_accessed_ap = addr
@@ -1218,7 +1409,415 @@ class DebugProbeCoreSightOnly(DebugProbe):
 
         :return: Debug port identification register value.
         """
-        return self.coresight_reg_read_safe(access_port=False, addr=self.DP_IDR_REG)
+        try:
+            idr = self.coresight_reg_read_safe(access_port=False, addr=self.DP_IDR_REG)
+        except SPSDKError:
+            self.debug_access_status["dp_idr_ok"] = False
+            raise
+        self.debug_access_status["dp_idr_ok"] = True
+        return idr
+
+    # Human-readable labels for the ARM CoreSight specific debug_access_status gates,
+    # extending the base DebugProbe.DEBUG_ACCESS_STATUS_LABELS (probe_connected,
+    # dp_idr_ok). Order reflects the expected evaluation sequence: Debug Port power
+    # domains -> Access Port -> DBGEN/SPIDEN signals -> core PPB -> AHB system bus ->
+    # Debug Mailbox AP (only relevant for DAT-capable families).
+    #
+    # Each label pairs the technical name with a short plain-language explanation in
+    # parentheses, so the diagnostic table is useful to users who are not ARM
+    # CoreSight experts (e.g. field engineers debugging a "read via debug probe
+    # failed" issue like SPSDK-7081/SPSDK-6704).
+    DEBUG_ACCESS_STATUS_LABELS: dict[str, str] = {
+        **DebugProbe.DEBUG_ACCESS_STATUS_LABELS,
+        "dp_power_domains_ok": (
+            "DP power domains up / CDBGPWRUPACK+CSYSPWRUPACK "
+            "(target power supply and clocks are on)"
+        ),
+        "ap_idr_ok": (
+            "Access Port IDR readable / MEM-AP found (a memory access channel to the chip exists)"
+        ),
+        "ap_dbgswenable": (
+            "AP CSW.DbgSwEnable (core debug is enabled - DBGEN signal asserted on the chip)"
+        ),
+        "sda_dbgenctrl_written": (
+            "SDA-AP DBGENCTRL written / GDBGEN+CDBGEN "
+            "(secure debug authentication unlocked the debug paths)"
+        ),
+        "core_dhcsr_ok": ("Core PPB access / DHCSR readable (CPU debug registers are reachable)"),
+        "ahb_system_bus_ok": (
+            "System bus (AHB) access (the debug probe can read/write chip RAM/registers)"
+        ),
+        "dbgmlbx_ap_idr_ok": (
+            "Debug Mailbox AP IDR valid (secure debug authentication channel is available)"
+        ),
+    }
+
+    def get_not_applicable_debug_access_gates(self) -> set[str]:
+        """Get CoreSight gate keys that can never apply to this family.
+
+        The SDA-AP secure-debug-unlock gate (``sda_dbgenctrl_written``) and the
+        Debug Mailbox AP gate (``dbgmlbx_ap_idr_ok``) are mutually exclusive at the
+        device-database level: a family either sets ``dat.sub_features: [sda]``
+        (SDA-AP) or ``dat.dmbox_ap_ix`` (Debug Mailbox), never both. The gate that
+        does not apply to the current family is entirely omitted from the
+        diagnostic table instead of being shown as a misleading "NOT TESTED".
+
+        :return: Set of gate keys to omit for this probe's family. Empty when the
+            family is unknown (no filtering possible) so the table falls back to
+            showing every gate, as before.
+        """
+        not_applicable: set[str] = set()
+        if self.family is None:
+            # Family unknown - DB-driven mutual exclusivity cannot be determined,
+            # show every gate rather than guessing.
+            return not_applicable
+        if not self.enable_sda_debug_paths_after_connect:
+            not_applicable.add("sda_dbgenctrl_written")
+        if self.dbgmlbx_ap_ix < 0:
+            not_applicable.add("dbgmlbx_ap_idr_ok")
+        return not_applicable
+
+    def get_never_tested_debug_access_gates(self) -> set[str]:
+        """Get CoreSight gate keys that will never be exercised due to a DB shortcut.
+
+        When the device database pins a fixed MEM-AP index (``debug_probe.mem_ap_index``),
+        the AP-scan loop in the ``get_mem_ap`` decorator is skipped entirely for
+        performance, so ``ap_idr_ok`` and ``ap_dbgswenable`` are never actually
+        exercised for this family. Unlike :meth:`get_not_applicable_debug_access_gates`
+        (gates that are architecturally impossible), these gates *could* be tested
+        but simply are not, by design, on this DB-configured shortcut path — the
+        diagnostic table renders them as "N/A" rather than "NOT TESTED" to avoid
+        implying a real test was skipped/failed.
+
+        :return: Set of gate keys that are never exercised due to a fixed MEM-AP
+            index. Empty when the MEM-AP index is auto-detected (normal AP scan).
+        """
+        return {"ap_idr_ok", "ap_dbgswenable"} if self.mem_ap_fixed_from_db else set()
+
+    def _detect_adi_version(self) -> None:
+        """Detect ARM Debug Interface version (ADIv5 vs ADIv6) from DP_IDR.
+
+        Reads the DP_IDR register and extracts the DP version field (bits [15:12]).
+        Sets self.adi_version to 5 for ADIv5 or 6 for ADIv6 (when DPVER == 3).
+
+        :raises SPSDKError: If DP_IDR read fails.
+        :raises SPSDKDebugProbeError: The detected ADI version is not supported by this
+            debug probe (see ``SUPPORTED_VERSIONS``).
+        """
+        try:
+            dp_idr = self.read_dp_idr()
+            dp_version = (dp_idr & self.DPVER_MASK) >> self.DPVER_SHIFT
+            if dp_version == self.DPVER_ADIv6:
+                self.adi_version = 6
+                logger.debug(f"Detected ADIv6 (DPv3): DP_IDR=0x{dp_idr:08X}")
+                self.trace_cs_event(f"ADI version detected: ADIv6 (DPv3) DP_IDR=0x{dp_idr:08X}")
+                self._detect_adiv6_addr_size()
+            else:
+                self.adi_version = 5
+                logger.debug(
+                    f"Detected ADIv5 (DPv{dp_version}): DP_IDR=0x{dp_idr:08X}, DPVER={dp_version}"
+                )
+                self.trace_cs_event(
+                    f"ADI version detected: ADIv5 (DPv{dp_version}) DP_IDR=0x{dp_idr:08X}"
+                )
+        except SPSDKError as exc:
+            logger.warning(f"Failed to detect ADI version: {exc}, defaulting to ADIv5")
+            self.trace_cs_event(f"ADI version detection FAILED ({exc}), defaulting to ADIv5")
+            self.adi_version = 5
+
+        # Raised outside the try/except above: SPSDKDebugProbeError is a subclass of
+        # SPSDKError, so raising it inside the try block would be swallowed by the
+        # "default to ADIv5" fallback instead of being reported to the caller.
+        if self.adi_version not in self.SUPPORTED_VERSIONS:
+            supported = ", ".join(f"ADIv{version}" for version in self.SUPPORTED_VERSIONS)
+            raise SPSDKDebugProbeError(
+                f"Debug probe '{self.NAME}' does not support ADIv{self.adi_version} "
+                f"targets. Supported ADI versions: {supported}. "
+                f"Use a different debug probe or update the firmware of this probe "
+                f"to support ADIv{self.adi_version}."
+            )
+
+    def _detect_adiv6_addr_size(self) -> None:
+        """Detect the ADIv6 AP address size from DPIDR1.ASIZE.
+
+        DPIDR1 is located in DP bank 1, so DPBANKSEL (SELECT bits [3:0]) must be set
+        to 1 before reading DPIDR1 at offset 0x00, and restored to 0 afterwards.
+        The ASIZE field (bits [6:0]) reports the DP address bus width in bits; when
+        it exceeds 32, the SELECT1 register carries the upper AP address bits and
+        64-bit AP addresses are used. On any error the size falls back to 32 bits.
+        """
+        try:
+            # Switch to DP bank 1 to expose DPIDR1, then restore bank 0.
+            self.coresight_reg_write_safe(access_port=False, addr=self.ADIV6_SELECT_REG, data=0x1)
+            try:
+                dpidr1 = self.coresight_reg_read_safe(access_port=False, addr=self.ADIV6_DPIDR1_REG)
+            finally:
+                self.coresight_reg_write_safe(
+                    access_port=False, addr=self.ADIV6_SELECT_REG, data=0x0
+                )
+                self.last_accessed_ap = -1
+            asize = dpidr1 & self.ADIV6_DPIDR1_ASIZE_MASK
+            if asize:
+                self.adiv6_addr_size = asize
+            select1_used = self.adiv6_addr_size > self.ADIV6_ADDR_SIZE_32
+            logger.debug(
+                f"ADIv6 DPIDR1=0x{dpidr1:08X}, AP address size={self.adiv6_addr_size} bits "
+                f"(SELECT1 {'used' if select1_used else 'not used'})"
+            )
+            self.trace_cs_event(
+                f"ADIv6 AP address size={self.adiv6_addr_size} bits, "
+                f"SELECT1 {'used' if select1_used else 'not used'} (DPIDR1=0x{dpidr1:08X})"
+            )
+        except SPSDKError as exc:
+            logger.debug(f"Failed to detect ADIv6 address size: {exc}, defaulting to 32 bits")
+            self.trace_cs_event(
+                f"ADIv6 AP address size detection FAILED ({exc}), defaulting to 32 bits"
+            )
+            self.adiv6_addr_size = 32
+
+    def _ap_idr_reg(self) -> int:
+        """Return the AP IDR register offset for the detected ADI version.
+
+        :return: 0xDFC for ADIv6 (APv2 IDR) or 0xFC for ADIv5 (APv1 IDR).
+        """
+        return self.AP_IDR_REG_ADIv6 if self.adi_version == 6 else self.AP_IDR_REG
+
+    def _dbgmlbx_idr_address(self, adiv5_idr_offset: int) -> int:
+        """Return the debug mailbox IDR register offset for the detected ADI version.
+
+        :param adiv5_idr_offset: IDR offset used on ADIv5 (typically 0xFC).
+        :return: 0xDFC for ADIv6 (APv2 IDR) or the provided ADIv5 offset otherwise.
+        """
+        return self.AP_IDR_REG_ADIv6 if self.adi_version == 6 else adiv5_idr_offset
+
+    def _ap_scan_candidates(self, adiv5_indices: list[int]) -> list[tuple[int, int]]:
+        """Return the AP scan domain for the detected ADI version.
+
+        Each returned item is a (candidate, idr) pair, where 'candidate' is an AP
+        index (ADIv5) or an AP base address (ADIv6), and 'idr' is the already-known
+        AP IDR value or 0 when the IDR is not known yet. For ADIv5 the IDR is always
+        0 (unknown, the caller must read it). For ADIv6 the APs are discovered by
+        walking the CoreSight ROM table hierarchy, which reads the IDR anyway, so it
+        is returned alongside the address to avoid a redundant read in the caller.
+        The ADIv6 enumeration can be overridden by the 'adiv6_ap_addresses' option
+        (comma-separated hex or decimal values); overridden entries have an unknown
+        (0) IDR.
+
+        :param adiv5_indices: Candidate AP indices used for ADIv5 scanning.
+        :return: List of (candidate, idr) pairs to probe.
+        """
+        if self.adi_version != 6:
+            return [(index, 0) for index in adiv5_indices]
+        override = self.options.get("adiv6_ap_addresses")
+        if override:
+            return [(value_to_int(part), 0) for part in str(override).split(",") if part.strip()]
+        return self._enumerate_adiv6_aps()
+
+    def _read_dp_baseptr(self) -> int:
+        """Read and validate the 64-bit ADIv6 ROM table base pointer from the DP.
+
+        BASEPTR0 and BASEPTR1 are DP bank-switched registers: BASEPTR0 lives at
+        DP register offset 0x0 in DP bank 2 and BASEPTR1 at offset 0x0 in DP bank 3
+        (the same scheme DPIDR1 uses in bank 1). DPBANKSEL (SELECT bits [3:0]) must
+        therefore be programmed to the target bank before reading offset 0x0, and
+        restored to bank 0 afterwards. Reading a fixed offset 0x08/0x0C in bank 0
+        instead returns the SELECT/RDBUFF readback, not the base pointer.
+
+        BASEPTR0 bit0 is the valid flag; the combined address is 4KB aligned.
+        BASEPTR1 (bits [63:32]) is only relevant when the DP address size > 32 bits.
+
+        :return: 4KB-aligned root ROM table address, or -1 if BASEPTR is not valid.
+        :raises SPSDKDebugProbeError: If the DP BASEPTR registers cannot be read.
+        """
+        try:
+            # Select DP bank 2 to expose BASEPTR0 at offset 0x0.
+            self.coresight_reg_write_safe(
+                access_port=False,
+                addr=self.ADIV6_SELECT_REG,
+                data=self.ADIV6_DP_BASEPTR0_BANK,
+            )
+            baseptr_low = self.coresight_reg_read_safe(
+                access_port=False, addr=self.ADIV6_DP_BASEPTR_REG
+            )
+            # Read BASEPTR1 (upper 32 bits) only when the AP address space exceeds
+            # 32 bits; otherwise the whole base pointer fits in BASEPTR0.
+            baseptr_high = 0
+            if self.adiv6_addr_size > self.ADIV6_ADDR_SIZE_32:
+                self.coresight_reg_write_safe(
+                    access_port=False,
+                    addr=self.ADIV6_SELECT_REG,
+                    data=self.ADIV6_DP_BASEPTR1_BANK,
+                )
+                baseptr_high = self.coresight_reg_read_safe(
+                    access_port=False, addr=self.ADIV6_DP_BASEPTR_REG
+                )
+        except SPSDKError as exc:
+            raise SPSDKDebugProbeError(f"Failed to read ADIv6 DP BASEPTR registers: {exc}") from exc
+        finally:
+            # Always restore DP bank 0 and invalidate the AP-select cache.
+            self.coresight_reg_write_safe(access_port=False, addr=self.ADIV6_SELECT_REG, data=0x0)
+            self.last_accessed_ap = -1
+
+        if not baseptr_low & self.ADIV6_BASEPTR_VALID_MASK:
+            logger.debug("ADIv6 DP BASEPTR is not valid, no ROM table available")
+            return -1
+
+        baseptr = ((baseptr_high << 32) | baseptr_low) & self.ADIV6_BASEPTR_ADDR_MASK
+        logger.debug(f"ADIv6 root ROM table base address: 0x{baseptr:X}")
+        return baseptr
+
+    def _adiv6_component_read(self, base_address: int, offset: int) -> int:
+        """Read a CoreSight component register directly in the ADIv6 AP address space.
+
+        On ADIv6 (CoreSight SoC-600 / DPv3) the ROM tables and AP register banks are
+        directly addressable: the absolute address (component base + register offset)
+        is programmed into DP SELECT (bits [31:4] via select_ap) and the low word
+        offset bits [3:2] are carried by the AP transaction itself. This is a plain
+        AP read, NOT the ADIv5 MEM-AP CSW/TAR/DRW memory indirection used by
+        _mem_reg_read - applying that indirection here returns the SELECT/RDBUFF
+        readback instead of the real component register value.
+
+        :param base_address: 4KB-aligned base address of the CoreSight component.
+        :param offset: Register offset within the component (e.g. 0xFF4 for CIDR1).
+        :return: The 32-bit register value.
+        :raises SPSDKDebugProbeTransferError: If the AP read fails.
+        """
+        return self.coresight_reg_read_safe(access_port=True, addr=base_address | offset)
+
+    def _enumerate_adiv6_aps(self) -> list[tuple[int, int]]:
+        """Enumerate ADIv6 APs by walking the CoreSight ROM tables.
+
+        Reads the DP BASEPTR to locate the root ROM table, then recursively walks the
+        ROM table hierarchy. Each present entry is resolved to an absolute component
+        address; ROM tables are descended into and AP components (MEM-AP and the NXP
+        Debug Mailbox AP) are collected together with their already-read IDR value.
+
+        :return: List of (ap_base_address, ap_idr) pairs (may be empty).
+        """
+        root = self._read_dp_baseptr()
+        if root < 0:
+            logger.warning("ADIv6 ROM table enumeration skipped, no valid BASEPTR")
+            return []
+
+        found_aps: list[tuple[int, int]] = []
+        visited: set[int] = set()
+        self._scan_coresight_component(root, found_aps, visited, depth=0)
+        logger.debug(
+            f"ADIv6 enumeration found {len(found_aps)} AP(s): "
+            f"{[(hex(addr), hex(idr)) for addr, idr in found_aps]}"
+        )
+        return found_aps
+
+    def _scan_coresight_component(
+        self, address: int, found_aps: list[tuple[int, int]], visited: set[int], depth: int
+    ) -> None:
+        """Identify a single CoreSight component and recurse into ROM tables.
+
+        Reads CIDR1 to classify the component. ROM tables (class 0x1) are walked
+        recursively; CoreSight components (class 0x9) are checked via their AP IDR
+        (Debug Mailbox) or DEVTYPE/DEVARCH (MEM-AP) and, when identified as an AP,
+        appended to the result list as an (address, idr) pair.
+
+        :param address: 4KB-aligned base address of the component to inspect.
+        :param found_aps: Accumulator list for discovered (address, idr) AP pairs.
+        :param visited: Set of already-visited component addresses (loop guard).
+        :param depth: Current recursion depth (bounded by ADIV6_MAX_ROM_DEPTH).
+        """
+        if depth > self.ADIV6_MAX_ROM_DEPTH:
+            logger.debug(f"ADIv6 ROM walk depth limit reached at 0x{address:X}")
+            return
+        if address in visited:
+            return
+        visited.add(address)
+
+        try:
+            cidr1 = self._adiv6_component_read(address, self.CIDR1_OFFSET)
+        except SPSDKError as exc:
+            logger.debug(f"Failed to read CIDR1 at 0x{address:X}: {exc}")
+            return
+
+        comp_class = cidr1 & self.CIDR1_CLASS_MASK
+        if comp_class == self.CIDR1_CLASS_ROM:
+            # Legacy Class 0x1 ROM table.
+            logger.debug(f"Walking ADIv6 (Class 1) ROM table at 0x{address:X}")
+            self._walk_rom_table(address, found_aps, visited, depth)
+        elif comp_class == self.CIDR1_CLASS_CORESIGHT:
+            # A Class 0x9 CoreSight component is either a CoreSight SoC-600 ROM
+            # table (DEVARCH ARCHID == 0xAF7) or an actual component/AP. Read
+            # DEVARCH first so a Class 9 ROM table is descended into rather than
+            # being mistaken for a leaf component (which would find no APs).
+            try:
+                devarch = self._adiv6_component_read(address, self.DEVARCH_OFFSET)
+            except SPSDKError as exc:
+                logger.debug(f"Failed to read DEVARCH at 0x{address:X}: {exc}")
+                devarch = 0
+            if (devarch & self.DEVARCH_ARCHID_MASK) == self.DEVARCH_CLASS9_ROM:
+                logger.debug(f"Walking ADIv6 (Class 9) ROM table at 0x{address:X}")
+                self._walk_rom_table(address, found_aps, visited, depth)
+                return
+            # Read the APv2 IDR once here; the value is stored with the address so
+            # the caller does not have to read it again.
+            try:
+                ap_idr = self._adiv6_component_read(address, self.AP_IDR_REG_ADIv6)
+            except SPSDKError as exc:
+                logger.debug(f"Failed to read AP IDR at 0x{address:X}: {exc}")
+                ap_idr = 0
+            # Check the NXP Debug Mailbox AP first: it is identified by its known
+            # APv2 IDR value rather than by the generic DEVTYPE/DEVARCH signature.
+            if ap_idr == self.DBGMLBX_IDR_VALUE:
+                logger.debug(f"Identified Debug Mailbox AP at 0x{address:X}")
+                found_aps.append((address, ap_idr))
+                return
+            try:
+                devtype = self._adiv6_component_read(address, self.DEVTYPE_OFFSET)
+            except SPSDKError as exc:
+                logger.debug(f"Failed to read DEVTYPE at 0x{address:X}: {exc}")
+                return
+            if (
+                devtype == self.DEVTYPE_MEM_AP
+                or (devarch & self.DEVARCH_ARCHID_MASK) == self.DEVARCH_MEM_AP
+            ):
+                logger.debug(f"Identified MEM-AP at 0x{address:X}")
+                found_aps.append((address, ap_idr))
+
+    def _walk_rom_table(
+        self, base_address: int, found_aps: list[tuple[int, int]], visited: set[int], depth: int
+    ) -> None:
+        """Iterate the entries of a single ADIv6 ROM table.
+
+        Reads consecutive 32-bit ROM entries until a terminating (zero) entry is
+        found. Present entries are resolved to absolute addresses using the
+        sign-extended 4KB-aligned relative offset and scanned recursively.
+
+        :param base_address: Base address of the ROM table being walked.
+        :param found_aps: Accumulator list for discovered MEM-AP base addresses.
+        :param visited: Set of already-visited component addresses (loop guard).
+        :param depth: Current recursion depth of the enclosing component scan.
+        """
+        entry_offset = 0x0
+        while True:
+            try:
+                rom_entry = self._adiv6_component_read(base_address, entry_offset)
+            except SPSDKError as exc:
+
+                logger.debug(
+                    f"Failed to read ROM entry at 0x{base_address:X}+0x{entry_offset:X}: {exc}"
+                )
+                return
+
+            # A zero entry terminates the ROM table.
+            if rom_entry == 0x0:
+                break
+
+            if rom_entry & self.ROM_ENTRY_PRESENT_MASK:
+                relative_offset = rom_entry & self.ROM_ENTRY_OFFSET_MASK
+                # Sign-extend the 32-bit relative offset (offsets may be negative).
+                if relative_offset & self.ROM_ENTRY_SIGN_BIT:
+                    relative_offset -= self.ROM_ENTRY_SIGN_EXTEND
+                component_address = (base_address + relative_offset) & self.ADIV6_BASEPTR_ADDR_MASK
+                self._scan_coresight_component(component_address, found_aps, visited, depth + 1)
+
+            entry_offset += 4
 
     def recover_debug_connection(self) -> bool:
         """Recover debug connection using progressive recovery strategy.
@@ -1459,10 +2058,88 @@ class DebugProbeCoreSightOnly(DebugProbe):
     @get_mem_ap
     def is_cpu_halted(self) -> bool:
         """Check if ARM Cortex CPU is halted by reading DHCSR."""
-        dhcsr = self._mem_reg_read(mem_ap_ix=self.mem_ap_ix, addr=self.DHCSR_REG)
-        is_halted = bool(dhcsr & 0x00020000)  # S_HALT bit
+        try:
+            dhcsr = self._mem_reg_read(mem_ap_ix=self.mem_ap_ix, addr=self.DHCSR_REG)
+        except SPSDKError:
+            self.debug_access_status["core_dhcsr_ok"] = False
+            raise
+        self.debug_access_status["core_dhcsr_ok"] = True
+        is_halted = bool(dhcsr & self.DHCSR_S_HALT)
         logger.debug(f"CPU state: {'HALTED' if is_halted else 'RUNNING'} (DHCSR: 0x{dhcsr:08X})")
         return is_halted
+
+    @get_mem_ap
+    def write_core_register(self, reg_num: int, value: int) -> None:
+        """Write a value into an ARM core register via DCRSR/DCRDR.
+
+        The core must be halted for this transfer to have a defined effect (per the ARM
+        debug architecture); this method does not halt the core implicitly.
+
+        :param reg_num: Core register number (DCRSR REGSEL field), e.g. ``CORE_REG_PC``,
+            ``CORE_REG_SP``. Numbering is fixed by the ARM debug architecture and is the
+            same for every ARMv6-M/v7-M/v8-M Cortex-M core.
+        :param value: 32-bit value to write into the register.
+        :raises SPSDKError: If the memory register write operation fails.
+        :raises SPSDKTimeoutError: If the transfer does not complete (S_REGRDY) in time.
+        """
+        self._mem_reg_write(mem_ap_ix=self.mem_ap_ix, addr=self.DCRDR_REG, data=value)
+        self._mem_reg_write(
+            mem_ap_ix=self.mem_ap_ix,
+            addr=self.DCRSR_REG,
+            data=(reg_num & 0x1F) | self.DCRSR_REGWNR,
+        )
+        self._wait_for_reg_transfer_done()
+
+    @get_mem_ap
+    def read_core_register(self, reg_num: int) -> int:
+        """Read the value of an ARM core register via DCRSR/DCRDR.
+
+        The core must be halted for this transfer to have a defined effect.
+
+        :param reg_num: Core register number (DCRSR REGSEL field), e.g. ``CORE_REG_PC``.
+        :return: 32-bit value of the register.
+        :raises SPSDKError: If the memory register access fails.
+        :raises SPSDKTimeoutError: If the transfer does not complete (S_REGRDY) in time.
+        """
+        self._mem_reg_write(mem_ap_ix=self.mem_ap_ix, addr=self.DCRSR_REG, data=reg_num & 0x1F)
+        self._wait_for_reg_transfer_done()
+        return self._mem_reg_read(mem_ap_ix=self.mem_ap_ix, addr=self.DCRDR_REG)
+
+    def _wait_for_reg_transfer_done(self) -> None:
+        """Poll DHCSR.S_REGRDY until the pending DCRSR core-register transfer completes.
+
+        :raises SPSDKTimeoutError: If the transfer does not complete within the timeout.
+        """
+        timeout = Timeout(100, units="ms")
+        while True:
+            dhcsr = self._mem_reg_read(mem_ap_ix=self.mem_ap_ix, addr=self.DHCSR_REG)
+            if dhcsr & self.DHCSR_S_REGRDY:
+                return
+            if timeout.overflow():
+                raise SPSDKTimeoutError(
+                    "Timed out waiting for DCRSR core-register transfer to complete "
+                    f"(DHCSR: 0x{dhcsr:08X})."
+                )
+
+    def set_registers_and_resume(self, pc: int, sp: int) -> None:
+        """Set the Program Counter and Stack Pointer, then resume core execution.
+
+        This provides the generic "load binary into RAM, then jump to it" primitive used
+        by e.g. the ``nxpdebugmbox tool execute`` CLI command: after the target binary has
+        been written into RAM via :meth:`mem_block_write`, this halts the core if it is not
+        already halted, sets SP/PC to the requested values, and resumes execution from
+        there. Works identically on any Cortex-M based device, since DHCSR/DCRSR/DCRDR
+        addresses and register numbering are fixed by the ARM debug architecture.
+
+        :param pc: Value to set into the Program Counter (R15) - the execution start address.
+        :param sp: Value to set into the Stack Pointer (R13) - the initial stack top.
+        :raises SPSDKError: If any of the underlying register accesses fail.
+        """
+        if not self.is_cpu_halted():
+            self.debug_halt()
+        self.write_core_register(self.CORE_REG_SP, sp)
+        self.write_core_register(self.CORE_REG_PC, pc)
+        self.debug_resume()
 
     def __del__(self) -> None:
         """Clean up resources when the debug probe object is destroyed.

@@ -180,7 +180,7 @@ ahab_sign_support:
       type: string
       title: Super Root Key (SRK) set
       description: Defines which set is used to authenticate the container.
-      enum: [oem, nxp]
+      enum: [oem, nxp, devhsm]
       template_value: oem
     used_srk_id:
       type: [number, string]
@@ -309,6 +309,36 @@ ahab_sign_support_add_crc:
       description:
         If true, add additional CRC image that is computed from all data execution image and optionally TrustZone.
       template_value: false
+
+ahab_sign_support_add_core1_app:
+  type: object
+  title: Secondary core application.
+  properties:
+    core1ApplicationFile:
+      type: string
+      title: Core1 application image
+      description:
+        Optional application image for the secondary core (Core1). It is added to the AHAB container
+        as a second image, in the slot used by the TrustZone preset data on ARM devices. When the
+        additional CRC image check is enabled, the CRC is computed over both the Core0 and the Core1
+        image.
+      format: file
+      template_value: core1_application.bin
+    core1_id:
+      type: string
+      title: Core1 target Core ID
+      description:
+        Target core id of the secondary core image. Defaults to the second core declared for
+        the family.
+      template_value: core1
+      skip_in_template: true
+    core1LoadAddress:
+      type: [number, string]
+      title: Core1 application load address
+      description: Loading address of the secondary core application image.
+      format: number
+      template_value: 0
+      skip_in_template: true
 
 cert_block_vX:
   type: object

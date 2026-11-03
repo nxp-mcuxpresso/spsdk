@@ -293,6 +293,80 @@ def test_core_reset_entry_verify_invalid_smr_config(family: FamilyRevision) -> N
     assert verifier.has_errors is True
 
 
+@pytest.mark.parametrize("family_name", ["mcxe327", "mcxe32b"])
+def test_core_reset_entry_second_core_verify_and_roundtrip(family_name: str) -> None:
+    """Test M7_1 support end-to-end on dual-core MCX E32 families.
+
+    SPSDK-7117: MCXE327 and MCXE32B physically implement a second Cortex-M7 core
+    (CM7_1), added to ``core_ids`` in their device database alongside the inherited
+    ``M7_0``. This covers the essential API-level behavior in one test: building a
+    ``CoreResetEntry`` with ``core_id=M7_1`` passes ``verify()``, and the entry
+    survives an export/parse round-trip without losing the core ID.
+    """
+    family = FamilyRevision(family_name)
+    cr_entry = CoreResetEntry(
+        family=family,
+        core_id=CoreId.CORE_M7_1,
+        pre_boot_smr_map=HseSmrMap.SMR_0,
+        pass_reset_addr=0x00400000,
+    )
+
+    # M7_1 must be accepted as a supported core -> no verification errors.
+    assert cr_entry.verify().has_errors is False
+
+    # Core ID must survive the export/parse round-trip and remain valid for the family.
+    parsed = CoreResetEntry.parse(cr_entry.export(), family)
+    assert parsed.core_id == CoreId.CORE_M7_1
+    assert parsed.verify().has_errors is False
+
+
+def test_core_reset_entry_verify_second_core_not_supported_single_core() -> None:
+    """Test that M7_1 is reported as unsupported on the single-core mcxe31b family.
+
+    SPSDK-7117 regression guard: ``mcxe31b`` is the single-core base device that
+    ``mcxe327``/``mcxe32b`` alias from. Its database only lists ``M7_0`` in
+    ``core_ids``, so requesting ``core_id=M7_1`` must be flagged as an error by
+    ``verify()``. This confirms the second-core support added for the dual-core
+    variants did not leak into (or get inherited by) the single-core family.
+    """
+    family = FamilyRevision("mcxe31b")
+    cr_entry = CoreResetEntry(
+        family=family,
+        core_id=CoreId.CORE_M7_1,
+        pre_boot_smr_map=HseSmrMap.SMR_0,
+        pass_reset_addr=0x00400000,
+    )
+
+    verifier = cr_entry.verify()
+
+    # M7_1 does not exist on mcxe31b -> verify() must report an error.
+    assert verifier.has_errors is True
+
+
+@pytest.mark.parametrize(
+    "family_name,expected_core_ids",
+    [("mcxe327", ["M7_0", "M7_1"]), ("mcxe32b", ["M7_0", "M7_1"]), ("mcxe31b", ["M7_0"])],
+)
+def test_core_reset_entry_get_validation_schemas_core_ids(
+    family_name: str, expected_core_ids: list[str]
+) -> None:
+    """Test that the coreId schema enum matches the family's supported core IDs.
+
+    SPSDK-7117: ``get_validation_schemas()`` builds the ``coreId`` enum dynamically
+    from ``CoreId.get_available_core_ids(family)``, which reads the database's
+    ``core_ids`` list. This ensures the generated config schema (used both for
+    config validation and for ``get-template``/CLI) offers exactly ``M7_1`` for the
+    dual-core MCXE327/MCXE32B (SPT-7808: "Second core selectable for MCXE327 and
+    MCXE32B") while the single-core ``mcxe31b`` base device still only exposes
+    ``M7_0``.
+    """
+    family = FamilyRevision(family_name)
+    schemas = CoreResetEntry.get_validation_schemas(family)
+    cr_schema = next(s for s in schemas if "coreId" in s.get("properties", {}))
+
+    assert cr_schema["properties"]["coreId"]["enum"] == expected_core_ids
+
+
 def test_core_reset_entry_binary_size_consistency(family: FamilyRevision) -> None:
     """Test that exported binary size is consistent."""
     cr_entry = CoreResetEntry(

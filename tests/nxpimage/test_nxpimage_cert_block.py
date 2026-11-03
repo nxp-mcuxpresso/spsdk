@@ -512,7 +512,7 @@ def test_certblock_binary_rot_config_rsa4096_chain_lpc55s16(
     keys_dir = os.path.join(mbi_data_dir, "keys_and_certs")
 
     cert_block_src = os.path.join(mbi_data_dir, "lpc55s16_cert_block_chain_rsa4096.yaml")
-    with open(cert_block_src) as f:
+    with open(cert_block_src, encoding="utf-8") as f:
         cert_block_cfg = yaml.safe_load(f)
 
     cert_block_bin = os.path.join(tmpdir, "cert_block.bin")
@@ -524,7 +524,7 @@ def test_certblock_binary_rot_config_rsa4096_chain_lpc55s16(
     cert_block_cfg["containerOutputFile"] = cert_block_bin
 
     cert_block_tmp = os.path.join(tmpdir, "lpc55s16_cert_block_chain_rsa4096.yaml")
-    with open(cert_block_tmp, "w") as f:
+    with open(cert_block_tmp, "w", encoding="utf-8") as f:
         yaml.dump(cert_block_cfg, f)
 
     cli_runner.invoke(nxpimage.main, ["cert-block", "export", "-c", cert_block_tmp])

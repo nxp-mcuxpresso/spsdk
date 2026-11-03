@@ -36,7 +36,7 @@ from spsdk.crypto.keys import (
 from spsdk.image.ahab.ahab_blob import AhabBlob, AhabBlobOffline
 from spsdk.image.ahab.ahab_certificate import AhabCertificate
 from spsdk.image.ahab.ahab_container import AHABContainerV1forV2, AHABContainerV2
-from spsdk.image.ahab.ahab_data import FlagsSrkSet
+from spsdk.image.ahab.ahab_data import AHABSignHashAlgorithm, FlagsSrkSet
 from spsdk.image.ahab.ahab_image import AHABImage
 from spsdk.image.ahab.ahab_srk import SRKRecordV2, SRKTableArray
 from spsdk.image.ahab.signed_msg import MessageCommands, SignedMessage
@@ -1660,6 +1660,9 @@ def test_nxpimage_ahab_sign_rt2660_mixed_mldsa_lms(
         ahab.verify().validate()
 
         container = ahab.ahab_containers[0]
+        generated_config = container.get_config(data_path=str(tmpdir))
+        assert "parallel_verification" in generated_config["container"]
+        assert "fast_boot" not in generated_config["container"]
         assert container.flag_used_srk_id == 3
         assert container.signature_block
         assert container.signature_block.signature
@@ -1674,6 +1677,11 @@ def test_nxpimage_ahab_sign_rt2660_mixed_mldsa_lms(
         srk_table = srk_assets._srk_tables[0]
         assert srk_table.srk_records[0].hash_algorithm.label == "SHA384"
         assert srk_table.srk_records[3].hash_algorithm.label == "SHA256"
+
+        container.flags |= 1 << AHABContainerV2.FLAGS_PARALLEL_VERIFICATION_OFFSET
+        verification = ahab.verify()
+        assert "Parallel verification with LMS" in str(verification)
+        assert "LMS signing is not supported" in str(verification)
 
 
 def test_nxpimage_ahab_sign_emmc(cli_runner: CliRunner, tmpdir: str, data_dir: str) -> None:
@@ -2012,6 +2020,121 @@ def test_nxpimage_ahab_parse_nxp_containers_as_binary(data_dir: str, tmpdir: str
     ahab_nxp = AHABImage.parse(nxp_bin, FamilyRevision("mimxrt1189"), "nor")
     assert len(ahab_nxp.ahab_containers) == 1
     assert ahab_nxp.ahab_containers[0].flag_srk_set == FlagsSrkSet.NXP
+
+
+@pytest.fixture
+def iccs_ahab_binary(data_dir: str) -> bytes:
+    """Build a synthetic ICCS-signed container with encrypted ELE data and no blob."""
+    family = FamilyRevision("mimxrt2662")
+    source = AHABImage(family, target_memory="standard")
+    key_dir = os.path.abspath(os.path.join(data_dir, "..", "..", "_data", "keys", "ecc256"))
+    container = AHABContainerV2.load_from_config(
+        source.chip_config,
+        Config(
+            {
+                "srk_set": "iccs",
+                "signer": os.path.join(key_dir, "srk0_ecc256.pem"),
+                "srk_table": {
+                    "srk_array": [os.path.join(key_dir, f"srk{i}_ecc256.pub") for i in range(4)]
+                },
+                "images": [],
+            }
+        ),
+        0,
+    )
+    container.image_array.append(
+        container.IAE_TYPE(
+            container.chip_config,
+            image=bytes(range(256)) * 2,
+            flags=container.IAE_TYPE.create_flags(
+                6, 6, AHABSignHashAlgorithm.SHA256, is_encrypted=True
+            ),
+            image_iv=bytes(range(32)),
+            already_encrypted_image=True,
+        )
+    )
+    source.add_container(container)
+    source.update_fields()
+    source.verify().validate()
+    return source.export()
+
+
+@pytest.mark.parametrize("family", ["mimxrt2660", "mimxrt2662"])
+def test_nxpimage_ahab_iccs_export_roundtrip(
+    cli_runner: CliRunner, tmpdir: str, iccs_ahab_binary: bytes, family: str
+) -> None:
+    """Import encrypted ICCS firmware, append an OEM image, and preserve the signed binary."""
+    firmware_path = os.path.join(tmpdir, "ele.bin")
+    application_path = os.path.join(tmpdir, "app.bin")
+    config_path = os.path.join(tmpdir, "config.yaml")
+    output_path = os.path.join(tmpdir, "image.bin")
+    write_file(iccs_ahab_binary, firmware_path, mode="wb")
+    write_file(bytes(512), application_path, mode="wb")
+    config = {
+        "family": family,
+        "target_memory": "standard",
+        "output": output_path,
+        "containers": [
+            {"binary_container": {"path": firmware_path}},
+            {
+                "container": {
+                    "srk_set": "none",
+                    "images": [
+                        {
+                            "image_path": application_path,
+                            "core_id": "cortex-m85",
+                            "image_type": "executable",
+                            "load_address": 0x22000000,
+                            "entry_point": 0x22000000,
+                        }
+                    ],
+                }
+            },
+        ],
+    }
+    write_file(yaml.safe_dump(config), config_path)
+    cli_runner.invoke(nxpimage.main, ["ahab", "export", "-c", config_path])
+    exported = load_binary(output_path)
+    parsed = AHABImage.parse(exported, FamilyRevision(family), "standard")
+    container = parsed.ahab_containers[0]
+    assert len(parsed.ahab_containers) == 2
+    assert container.flag_srk_set.label == "iccs"
+    assert container.chip_config.srk_set.label == "iccs"
+    assert container.signature_block and container.signature_block.blob is None
+    assert container.export() == iccs_ahab_binary[: len(container.export())]
+    assert container.image_array[0].image == bytes(range(256)) * 2
+    verifier = parsed.verify()
+    verifier.validate()
+    assert "ICCS image cannot be decrypted" in str(verifier)
+    assert parsed.post_export(tmpdir) == []
+
+    parsed_config = parsed.get_config(tmpdir)
+    assert "binary_container" in parsed_config["containers"][0]
+    parsed_config.search_paths = [str(tmpdir)]
+    rebuilt = AHABImage.load_from_config(parsed_config)
+    rebuilt.update_fields()
+    rebuilt.verify().validate()
+    assert rebuilt.export() == exported
+    full_config = parsed.get_config(tmpdir, parse_nxp=True)
+    assert full_config["containers"][0]["container"]["srk_set"] == "iccs"
+
+
+@pytest.mark.parametrize("corruption", ["signature", "payload", "missing_signature_block"])
+def test_ahab_iccs_authenticity_is_verified(iccs_ahab_binary: bytes, corruption: str) -> None:
+    """Allowing ICCS firmware without a blob must not bypass signature or image hash checks."""
+    parsed = AHABImage.parse(iccs_ahab_binary, FamilyRevision("mimxrt2662"), "standard")
+    container = parsed.ahab_containers[0]
+    assert container.signature_block and container.signature_block.signature
+    if corruption == "signature":
+        signature = container.signature_block.signature
+        signature.signature_data = (
+            bytes([signature.signature_data[0] ^ 1]) + signature.signature_data[1:]
+        )
+    elif corruption == "payload":
+        container.image_array[0].encrypted_image = bytes(512)
+    else:
+        container.signature_block = None
+    assert parsed.verify().has_errors
 
 
 def test_nxpimage_ahab_parse_nxp_containers_full_with_flag(data_dir: str, tmpdir: str) -> None:

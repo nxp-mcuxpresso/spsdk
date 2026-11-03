@@ -12,6 +12,7 @@ serialization, parsing, validation, and header management across different conta
 """
 
 import textwrap
+from abc import ABC
 from dataclasses import dataclass
 from struct import calcsize, unpack
 from typing import ClassVar
@@ -162,7 +163,7 @@ class HeaderContainerData:
         return cls(tag, length, version)
 
 
-class HeaderContainer(Container):
+class HeaderContainer(Container, ABC):
     """AHAB container with header structure containing tag, length and version fields.
 
     This class represents containers used in AHAB (Advanced High Assurance Boot) that
@@ -232,8 +233,8 @@ class HeaderContainer(Container):
     def verify_parsed_header(self) -> Verifier:
         """Verify the parsed header of container properties.
 
-        Validates parsed tag, length and version against constraints. If no parsed header
-        is available, adds a warning record to the verification results.
+        Validates parsed tag, length and version against constraints when a binary
+        representation has been parsed.
 
         :return: Verifier object with validation results.
         :raises SPSDKValueError: If any mandatory field has invalid value.
@@ -248,8 +249,6 @@ class HeaderContainer(Container):
                     len(self),
                 )
             )
-        else:
-            ret.add_record("Availability", VerifierResult.WARNING, "Not included")
         return ret
 
     @classmethod
@@ -503,7 +502,7 @@ class HeaderContainer(Container):
         return format_dict(diff, 0)
 
 
-class HeaderContainerInverted(HeaderContainer):
+class HeaderContainerInverted(HeaderContainer, ABC):
     """AHAB container with inverted header field order.
 
     This class extends HeaderContainer to handle binary data where the

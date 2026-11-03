@@ -13,7 +13,7 @@ and utilities for device and memory identification.
 """
 
 import math
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from struct import calcsize, pack, unpack_from
 
@@ -203,7 +203,7 @@ class CmdHeader(BaseClass):
 ########################################################################################################################
 # Commands Classes
 ########################################################################################################################
-class CmdBaseClass(BaseClass):
+class CmdBaseClass(BaseClass, ABC):
     """Base class for all SB2 commands.
 
     This class provides the foundation for all Secure Binary 2.0 command implementations,

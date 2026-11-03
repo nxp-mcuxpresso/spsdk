@@ -35,6 +35,7 @@ from ruamel.yaml.comments import CommentedSeq as CSeq
 from spsdk import (
     SPSDK_CACHE_DISABLED,
     SPSDK_DEBUG,
+    SPSDK_DEPRECATED_STRICT,
     SPSDK_PLATFORM_DIRS,
     SPSDK_SCHEMA_STRICT,
     SPSDK_YML_INDENT,
@@ -609,7 +610,7 @@ def _print_validation_fail_reason(
                 # Validate only the rules that apply to exception.value
                 required = rule_def.get("required")
                 if required and required[0] in exception.value:
-                    validator = fastjsonschema.compile(rule_def, formats=extra_formatters)
+                    validator = fastjsonschema.compile(rule_def, formats=extra_formatters or {})
                     validator(exception.value)
             except fastjsonschema.JsonSchemaValueException as _exc:
                 message += (
@@ -641,7 +642,7 @@ def _print_validation_fail_reason(
         message = ""
         for rule_def_ix, rule_def in enumerate(exception.rule_definition):
             try:
-                validator = fastjsonschema.compile(rule_def, formats=extra_formatters)
+                validator = fastjsonschema.compile(rule_def, formats=extra_formatters or {})
                 validator(exception.value)
                 message += f"\nRule#{rule_def_ix} passed.\n"
             except fastjsonschema.JsonSchemaValueException as _exc:
@@ -758,6 +759,58 @@ def check_unknown_properties(config_dict: dict, schema_dict: dict, path: str = "
             if SPSDK_SCHEMA_STRICT:
                 raise SPSDKError(error_msg)
             logger.warning(error_msg)
+
+
+def check_deprecated_properties(config: Any, schema_dict: dict, path: str = "") -> None:
+    """Recursively report deprecated configuration properties.
+
+    A schema property is considered deprecated when it has ``deprecated: true`` or its
+    description starts with ``Deprecated``.
+
+    :param config: Configuration dictionary or list to inspect.
+    :param schema_dict: JSON schema dictionary defining the properties.
+    :param path: Current path in the configuration for reporting.
+    :raises SPSDKError: When a deprecated property is found in strict mode.
+    """
+    nested_schemas = [
+        schema for keyword in ("oneOf", "allOf", "anyOf") for schema in schema_dict.get(keyword, [])
+    ]
+    if nested_schemas:
+        merged_schema: dict[str, Any] = {}
+        merger = SPSDKMerger()
+        for schema in nested_schemas:
+            merger.merge(merged_schema, copy.deepcopy(schema))
+        schema_dict = merged_schema
+
+    if isinstance(config, list):
+        items_schema = schema_dict.get("items")
+        if isinstance(items_schema, dict):
+            for index, item in enumerate(config):
+                current_path = f"{path}[{index}]" if path else f"[{index}]"
+                check_deprecated_properties(item, items_schema, current_path)
+        return
+    if not isinstance(config, dict):
+        return
+
+    schema_properties = schema_dict.get("properties", {})
+    for key, value in config.items():
+        property_schema = schema_properties.get(key)
+        if not isinstance(property_schema, dict):
+            continue
+
+        current_path = f"{path}.{key}" if path else key
+        description = property_schema.get("description", "")
+        is_deprecated = property_schema.get("deprecated") is True or (
+            isinstance(description, str) and description.lstrip().lower().startswith("deprecated")
+        )
+        if is_deprecated:
+            error_msg = f"Deprecated property found in configuration: '{current_path}'"
+            if SPSDK_DEPRECATED_STRICT:
+                raise SPSDKError(error_msg)
+            logger.warning(error_msg)
+
+        if isinstance(value, (dict, list)):
+            check_deprecated_properties(value, property_schema, current_path)
 
 
 def _check_config_debug(
@@ -889,6 +942,8 @@ def check_config(
         # deepmerge does not mutate the source; deepcopy is not needed here.
         always_merger.merge(schema, sch)
     formats = always_merger.merge(custom_formatters, extra_formatters or {})
+
+    check_deprecated_properties(config_to_check, schema)
 
     # Check for unknown properties before validation
     if check_unknown_props and "properties" in schema:

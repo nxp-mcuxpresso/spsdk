@@ -15,13 +15,19 @@ MBI, HAB, AHAB, and Secure Binary containers.
 import logging
 import os
 from inspect import isclass
-from struct import unpack
+from struct import pack, unpack
 from typing import Any, ClassVar
 
 import colorama
 from typing_extensions import Self
 
-from spsdk.exceptions import SPSDKError, SPSDKNotTextFileError, SPSDKParsingError, SPSDKValueError
+from spsdk.exceptions import (
+    SPSDKError,
+    SPSDKNotImplementedError,
+    SPSDKNotTextFileError,
+    SPSDKParsingError,
+    SPSDKValueError,
+)
 from spsdk.image.ahab.ahab_image import AHABImage
 from spsdk.image.exceptions import SPSDKSegmentNotPresent
 from spsdk.image.fcb.fcb import FCB
@@ -76,6 +82,7 @@ class BootableImageSegment(SpsdkEnum):
     )
     SB21 = (14, "sb21", "Secure binary 2.1 segment")
     SB31 = (15, "sb31", "Secure binary 3.1 segment")
+    SECONDARY_IMAGE_TABLE = (16, "secondary_image_table", "SD/eMMC secondary-image table")
 
 
 class Segment(BaseClass):
@@ -294,11 +301,20 @@ class Segment(BaseClass):
     def parse(cls, data: bytes) -> Self:
         """Parse object from bytes array.
 
+        Bootable image segments are not parsed as standalone objects. They are always
+        parsed in the context of the complete bootable image, because the segment
+        position, size and content interpretation depend on the target family and
+        memory type. Use :meth:`parse_binary` on an instantiated segment instead.
+
         :param data: Input data to parse.
-        :raises NotImplementedError: Method must be implemented by subclass.
-        :return: Parsed object instance.
+        :raises SPSDKNotImplementedError: Standalone parsing is not supported for segments.
         """
-        raise NotImplementedError
+        raise SPSDKNotImplementedError(
+            f"Standalone parsing is not supported for the '{cls.__name__}' segment. "
+            "Parse the whole bootable image (BootableImage.parse) or use the "
+            "'parse_binary' method on an existing segment instance. "
+            "If you need this functionality, please contact the SPSDK team."
+        )
 
     def parse_binary(self, binary: bytes, dek_map: dict[int | None, str] | None = None) -> None:
         """Parse binary block into Segment object.
@@ -430,7 +446,7 @@ class Segment(BaseClass):
             ret.add_record("Raw data", VerifierResult.WARNING, "Not used")
         elif self.raw_block is None:
             ret.add_record("Raw data", VerifierResult.ERROR, "Is missing")
-        elif self.size > 0 and bin_size > self.size:
+        elif 0 < self.size < bin_size:
             ret.add_record(
                 "Raw data",
                 VerifierResult.ERROR,
@@ -716,6 +732,118 @@ class SegmentFcb(Segment):
                 raise SPSDKParsingError(
                     f"The given binary form of FCB block looks corrupted: {exc!s}"
                 ) from exc
+
+
+class SegmentSecondaryImageTable(Segment):
+    """Optional SD/eMMC table pointing to a redundant boot image.
+
+    The five little-endian words are chipNum (reserved), driveType (reserved),
+    tag, firstSectorNumber, and sectorCount (reserved). New tables use zero for
+    reserved words; imported tables preserve them without assigning semantics.
+    """
+
+    NAME = BootableImageSegment.SECONDARY_IMAGE_TABLE
+    TAG = 0x00112233
+    SECTOR_SIZE = 512
+
+    @property
+    def size(self) -> int:
+        """Get the table size in bytes."""
+        return 20
+
+    @property
+    def secondary_image_offset(self) -> int:
+        """Get the secondary image's byte offset on the boot media.
+
+        :raises SPSDKError: If the table is absent or invalid.
+        :return: Absolute media offset, not an AHAB container-relative offset.
+        """
+        if not self.raw_block:
+            raise SPSDKError("The secondary-image table is not present.")
+        self.verify().validate()
+        return unpack("<5I", self.export())[3] * self.SECTOR_SIZE
+
+    def pre_parse_verify(self, data: bytes) -> Verifier:
+        """Check table length, tag, and sector address before parsing.
+
+        :param data: Table bytes, optionally followed by the rest of the image.
+        :return: Verification result; padding denotes an omitted table.
+        """
+        ret = super().pre_parse_verify(data)
+        if not ret.has_errors and not self._is_padding(data):
+            _, _, tag, first_sector, _ = unpack("<5I", data[: self.size])
+            ret.add_record("Tag", tag == self.TAG, f"0x{tag:08X}")
+            ret.add_record_range("First sector number", first_sector, min_val=1, max_val=0xFFFFFFFF)
+        return ret
+
+    def parse_binary(self, binary: bytes, dek_map: dict[int | None, str] | None = None) -> None:
+        """Parse the table, rejecting malformed data rather than treating it as absent.
+
+        :param binary: Table bytes, optionally followed by the rest of the image.
+        :param dek_map: Unused decryption mapping.
+        :raises SPSDKParsingError: If the table is truncated or invalid.
+        :raises SPSDKSegmentNotPresent: If the table contains only padding.
+        """
+        verifier = self.pre_parse_verify(binary)
+        if verifier.has_errors:
+            raise SPSDKParsingError(f"Invalid secondary-image table:\n{verifier}")
+        super().parse_binary(binary, dek_map=dek_map)
+
+    def load_config(self, config: Config) -> None:
+        """Load an inline sector number or an exact binary table.
+
+        :param config: Bootable-image configuration.
+        :raises SPSDKSegmentNotPresent: If the optional table is omitted.
+        :raises SPSDKError: If the configuration or binary table is invalid.
+        """
+        value = config.get(self.cfg_key())
+        if value is None or value == "":
+            raise SPSDKSegmentNotPresent("The secondary-image table is not configured.")
+        if isinstance(value, dict):
+            table_config = config.get_config(self.cfg_key())
+            if isinstance(table_config.get("first_sector_number"), bool):
+                raise SPSDKValueError("First sector number must be an integer, not a boolean.")
+            first_sector = table_config.get_int("first_sector_number")
+            if not 1 <= first_sector <= 0xFFFFFFFF:
+                raise SPSDKValueError("First sector number must be in range 1..0xFFFFFFFF.")
+            self.raw_block = BinaryImage(
+                name=self.NAME.label + "_data",
+                binary=pack("<5I", 0, 0, self.TAG, first_sector, 0),
+            )
+        elif isinstance(value, str):
+            self._load_binary_from_config(config, self.cfg_key())
+        else:
+            raise SPSDKValueError("The secondary-image table must be a mapping or binary path.")
+        self.verify().validate()
+
+    def create_config(self, output_dir: str, **_kwargs: Any) -> str | int | dict:
+        """Export an inline configuration, preserving nonzero reserved words in a binary.
+
+        :param output_dir: Directory for an extracted binary table, if needed.
+        :param _kwargs: Unused compatibility arguments.
+        :return: Inline sector configuration, binary filename, or empty string.
+        """
+        if not self.is_present:
+            return ""
+        self.verify().validate()
+        chip_num, drive_type, _, first_sector, sector_count = unpack("<5I", self.export())
+        if chip_num or drive_type or sector_count:
+            return super().create_config(output_dir)
+        return {"first_sector_number": first_sector}
+
+    def verify(self) -> Verifier:
+        """Verify configured table bytes, including exact size and non-padding content.
+
+        :return: Table verification results.
+        """
+        ret = super().verify()
+        if self.raw_block is not None:
+            data = self.export()
+            ret.add_record("Table size", len(data) == self.size, len(data))
+            if len(data) == self.size:
+                ret.add_record("Table present", not self._is_padding(data))
+                ret.add_child(self.pre_parse_verify(data))
+        return ret
 
 
 class SegmentImageVersion(Segment):

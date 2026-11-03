@@ -295,6 +295,21 @@ signed_message:
                   template_value: 0x10
 
             - type: object
+              template_title: The 'Forward boot crypto request'
+              required: [FORWARD_BOOT_CRYPTO_REQ]
+              properties:
+                FORWARD_BOOT_CRYPTO_REQ:
+                  type: string
+                  title: Secure boot crypto mode
+                  description: "Secure boot crypto mode to move to:\n
+                    - HYBRID: PQC and classic signature will be verified during secure boot.\n
+                    - PQC: Only PQC signature will be verified during secure boot.\n
+                    - RETURN_TO_CLASSIC: When current policy is hybrid or PQC, go back to classic.
+                    Only classic will be verified during secure boot."
+                  enum: [HYBRID, PQC, RETURN_TO_CLASSIC]
+                  template_value: HYBRID
+
+            - type: object
               template_title: The 'Write secure fuse request' is message for NXP use, not usable for OEM
               required: [WRITE_SEC_FUSE_REQ]
               properties:

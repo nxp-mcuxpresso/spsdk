@@ -3,7 +3,6 @@
 # Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-
 """Tests for SPSDK nxpdebugmbox utility application.
 
 This module contains comprehensive test cases for the nxpdebugmbox command-line
@@ -20,9 +19,16 @@ import pytest
 
 from spsdk.apps.nxpdebugmbox import main
 from spsdk.apps.utils.utils import SPSDKAppError
-from spsdk.dat.dm_commands import EnterISPMode, ProgramLifecycle, SetBrickedMode
+from spsdk.dat.dm_commands import (
+    EnterISPMode,
+    EraseFlash,
+    GetCRPLevel,
+    ProgramLifecycle,
+    SetBrickedMode,
+    SetFaultAnalysisMode,
+)
 from spsdk.utils.exceptions import SPSDKTimeoutError
-from spsdk.utils.family import get_device, get_families
+from spsdk.utils.family import FamilyRevision, get_db, get_device, get_families
 from spsdk.utils.misc import use_working_directory
 from tests.cli_runner import CliRunner
 from tests.debuggers.debug_probe_virtual import DebugProbeVirtual
@@ -162,6 +168,32 @@ def test_nxpdebugmbox_erase_exe(cli_runner: CliRunner) -> None:
     cli_runner.invoke(main, cmd.split())
 
 
+def test_nxpdebugmbox_erase_password_exe(cli_runner: CliRunner) -> None:
+    """Test for erase command of nxp debug mailbox with --password option.
+
+    Verifies that the password-protected erase flow correctly sends the request
+    word followed by four 32-bit password words, acknowledging each in turn,
+    and accepts a final success status from the device.
+
+    The substituted RETURN register values mimic the device responses:
+    four 0xA5A5 acknowledgements with the remaining parameter count in the
+    upper word (4, 3, 2, 1) followed by a final 0 (success).
+    """
+    # ACKs for paramlen 4..1 followed by final success status (0)
+    ack_4 = (4 << 16) | 0xA5A5  # 0x4A5A5 = 304549
+    ack_3 = (3 << 16) | 0xA5A5  # 0x3A5A5 = 239013
+    ack_2 = (2 << 16) | 0xA5A5  # 0x2A5A5 = 173477
+    ack_1 = (1 << 16) | 0xA5A5  # 0x1A5A5 = 107941
+    hw_responses = '-o subs_ap={"33554440":[' f"{ack_4},{ack_3},{ack_2},{ack_1},0]" + "}"
+    password = "0x000102030405060708090A0B0C0D0E0F"
+    cmd = (
+        f"-i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {hw_responses} -vv "
+        f"cmd -f lpc55s69 erase -p {password}"
+    )
+    result = cli_runner.invoke(main, cmd.split())
+    assert "Mass flash erase succeeded" in result.output
+
+
 def test_nxpdebugmbox_set_bricked_mode_exe(cli_runner: CliRunner) -> None:
     """Test for set-bricked-mode command of nxp debug mailbox.
 
@@ -296,6 +328,154 @@ def test_set_bricked_mode_handles_successful_response() -> None:
 
     dm.spin_write.assert_called_once()
     assert result == [0x00000000]
+
+
+def test_nxpdebugmbox_erase_help(cli_runner: CliRunner) -> None:
+    """Test that the erase command exposes the --password option in --help."""
+    result = cli_runner.invoke(main, ["cmd", "-f", "lpc55s69", "erase", "--help"])
+    assert "--password" in result.output
+
+
+def test_erase_flash_no_password() -> None:
+    """Test that EraseFlash with paramlen=0 sends only the request word.
+
+    The default unauthenticated erase must write a single request word
+    (command 0x03 with paramlen field = 0) and read a single return status.
+    """
+    dm = MagicMock()
+    dm.registers = {
+        "REQUEST": {"address": 0x04},
+        "RETURN": {"address": 0x08},
+    }
+    dm.command_delays = {}
+    dm.non_standard_statuses = {}
+    dm.read_return.return_value = 0x00000000
+
+    cmd = EraseFlash(dm=dm)
+    result = cmd.run()
+
+    # one write for the request word, no parameter writes
+    dm.spin_write.assert_called_once_with(0x04, 0x0003)
+    assert result == [0]
+
+
+def test_erase_flash_with_password() -> None:
+    """Test that EraseFlash with paramlen=4 sends the request and four password words.
+
+    Verifies the full password-protected erase flow: write request word with
+    paramlen=4 in the high word, then for each password word, read an ACK
+    (0xA5A5 with the remaining count in the high word) and write the next
+    parameter. The final read returns the success status.
+    """
+    dm = MagicMock()
+    dm.registers = {
+        "REQUEST": {"address": 0x04},
+        "RETURN": {"address": 0x08},
+    }
+    dm.command_delays = {}
+    dm.non_standard_statuses = {}
+    # ACKs with remaining paramlen 4, 3, 2, 1 then final success (0)
+    dm.read_return.side_effect = [
+        (4 << 16) | 0xA5A5,
+        (3 << 16) | 0xA5A5,
+        (2 << 16) | 0xA5A5,
+        (1 << 16) | 0xA5A5,
+        0,
+    ]
+
+    params = [0x03020100, 0x07060504, 0x0B0A0908, 0x0F0E0D0C]
+    cmd = EraseFlash(dm=dm, paramlen=4)
+    result = cmd.run(params)
+
+    # Expected writes: request word with cmd 0x03 and paramlen=4 in high word,
+    # followed by four password words in order.
+    expected_writes = [
+        ((0x04, (4 << 16) | 0x0003),),
+        ((0x04, params[0]),),
+        ((0x04, params[1]),),
+        ((0x04, params[2]),),
+        ((0x04, params[3]),),
+    ]
+    actual_writes = [call.args for call in dm.spin_write.call_args_list]
+    assert actual_writes == [w[0] for w in expected_writes]
+    assert dm.read_return.call_count == 5
+    assert result == [0]
+
+
+def test_mcxc353_get_crp_non_standard_statuses_mapping() -> None:
+    """The mcxc353 ROM returns raw ELS_OTP_LC_STATE bytes for GET_CRP_LEVEL.
+
+    Verifies the database exposes the lifecycle-to-label mapping under
+    ``dat.non_standard_statuses[2]`` so ``nxpdebugmbox get-crp`` can print
+    the symbolic lifecycle name instead of a bare hex value.
+    """
+    from spsdk.dat.dm_commands import DebugMailboxCommandID
+    from spsdk.utils.database import DatabaseManager
+    from spsdk.utils.family import FamilyRevision, get_db
+
+    nss = get_db(FamilyRevision("mcxc353")).get_dict(
+        DatabaseManager.DAT, "non_standard_statuses", {}
+    )
+    crp_map = nss[DebugMailboxCommandID.GET_CRP_LEVEL.tag]
+    # Names match LIFECYCLE_* in the mcxc353 ROM's life_cycle.h.
+    expected = {
+        0x00: "NXP_BLANK",
+        0x01: "NXP_FAB",
+        0x03: "DEVELOP",
+        0x07: "IN_FIELD1",
+        0x0F: "IN_FIELD2",
+        0x7F: "NXP_FIELD_RETURN",
+        0xCF: "IN_FIELD_LOCKED",
+        0xFC: "NXP_DEV",
+    }
+    for byte, label in expected.items():
+        assert crp_map[byte] == label
+    assert "SHREDDED" in crp_map[0xFF]
+
+
+def test_mcxc353_has_no_rom_isp() -> None:
+    """MCXC353 does not advertise an ISP protocol or interfaces."""
+    isp = get_db(FamilyRevision("mcxc353")).device.info.isp
+
+    assert isp.rom.protocol is None
+    assert isp.rom.interfaces == []
+    assert not isp.is_protocol_supported("mboot")
+
+
+def test_mcxc353_debug_mailbox_command_allowlist() -> None:
+    """Command classes never gate construction on family support.
+
+    Whether a debug mailbox command is actually implemented by a given ROM
+    (e.g. the MCXC353 ROM has no handler for ENTER_ISP_MODE or SET_FA_MODE) is
+    determined at runtime by the target's response, not by the SPSDK command
+    class itself. Constructing any ``DebugMailboxCommand`` subclass therefore
+    succeeds regardless of the family it will eventually be used with.
+    """
+
+    family = FamilyRevision("mcxc353")
+    dm = MagicMock()
+    dm.family = family
+    dm.command_delays = {}
+    assert isinstance(GetCRPLevel(dm), GetCRPLevel)
+    for command in (EnterISPMode, SetFaultAnalysisMode, SetBrickedMode):
+        assert isinstance(command(dm), command)
+
+
+def test_mcxc353_get_crp_prints_lifecycle_label(cli_runner: CliRunner) -> None:
+    """End-to-end check that ``get-crp`` prints the lifecycle label for mcxc353.
+
+    mcxc353 has ``dmbox_ap_ix: 1``, so the RETURN register lives at
+    ``(1 << 24) | 0x08 == 16777224``. Substitute it with 0x07
+    (LIFECYCLE_IN_FIELD1) so the GET_CRP_LEVEL status read returns that
+    raw lifecycle byte and the CLI maps it via ``dat.non_standard_statuses``.
+    """
+    hw_responses = '-o subs_ap={"16777468":[2752512],"16777224":[7]}'
+    cmd = (
+        f"-i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {hw_responses} -vv "
+        f"cmd -f mcxc353 get-crp"
+    )
+    result = cli_runner.invoke(main, cmd.split())
+    assert "CRP level is: IN_FIELD1." in result.output
 
 
 def test_program_lifecycle_handles_timeout() -> None:

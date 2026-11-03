@@ -290,7 +290,7 @@ def test_nxpimage_bee_key_reuse(cli_runner: CliRunner, tmpdir: Any, data_dir: st
         config_dict["bee_engine"][0]["bee_cfg"]["engine_counter"] = counter_path
 
         reuse_config = os.path.join(work_dir, "bee_config_reuse.yaml")
-        with open(reuse_config, "w") as f:
+        with open(reuse_config, "w", encoding="utf-8") as f:
             yaml.dump(config_dict, f)
 
         # Step 3: Re-export with saved keys
@@ -347,7 +347,7 @@ def test_nxpimage_bee_engine_keys_from_file(
         config_dict["bee_engine"][0]["bee_cfg"]["engine_counter"] = counter_file
 
         file_config = os.path.join(work_dir, "bee_config_files.yaml")
-        with open(file_config, "w") as f:
+        with open(file_config, "w", encoding="utf-8") as f:
             yaml.dump(config_dict, f)
 
         # Export with file references
@@ -373,7 +373,7 @@ def test_nxpimage_bee_template_contains_engine_keys(cli_runner: CliRunner, tmpdi
     cli_runner.invoke(nxpimage.main, cmd.split())
     assert os.path.isfile(template)
 
-    with open(template) as f:
+    with open(template, encoding="utf-8") as f:
         content = f.read()
 
     assert "engine_key:" in content

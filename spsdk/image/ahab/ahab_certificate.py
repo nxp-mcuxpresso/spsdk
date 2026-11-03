@@ -40,6 +40,7 @@ from spsdk.utils.misc import (
     UINT8,
     UINT16,
     UINT32,
+    align,
     bytes_to_print,
     extend_block,
     load_hex_string,
@@ -272,27 +273,42 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
             + f"{cls.UUID_SIZE}s"  # UUID
         )
 
+    @property
+    def member_alignment(self) -> int:
+        """Get required alignment of the certificate members.
+
+        Some devices (ROM implementations) require that the signatures inside the certificate
+        start at an aligned offset, otherwise an unaligned access fault may be raised
+        during the boot.
+
+        :return: Alignment in bytes. Value 1 means that no padding is inserted.
+        """
+        return create_chip_config(self.family).signature_block_member_alignment
+
     def __len__(self) -> int:
         """Calculate the total length of the certificate.
 
         The method computes the combined length of all certificate components including
         public keys, SRK data, and signatures. For certificates with dual keys, both
-        key pairs are included in the calculation.
+        key pairs are included in the calculation. When the chip requires it, the
+        signatures are placed at aligned offsets.
+
+        The total length itself is deliberately not padded, the alignment of the block
+        following the certificate is ensured by the signature block.
 
         :raises SPSDKValueError: When certificate is not properly initialized.
         :return: Total length of the certificate in bytes.
         """
         if not (self.public_key_0 and self.public_key_0.srk_data and self.signature_0):
             raise SPSDKValueError("Certificate is not properly initialized.")
-        ret = (
-            super().__len__()
-            + len(self.public_key_0)
-            + len(self.public_key_0.srk_data)
-            + len(self.signature_0)
-        )
+        alignment = self.member_alignment
+        ret = super().__len__() + len(self.public_key_0) + len(self.public_key_0.srk_data)
         if self.public_key_1 and self.signature_1:
             assert isinstance(self.public_key_1.srk_data, SRKData)
-            ret += len(self.public_key_1) + len(self.public_key_1.srk_data) + len(self.signature_1)
+            ret += len(self.public_key_1) + len(self.public_key_1.srk_data)
+        ret = align(ret, alignment) + len(self.signature_0)
+        if self.public_key_1 and self.signature_1:
+            ret = align(ret, alignment) + len(self.signature_1)
         return ret
 
     @classmethod
@@ -411,12 +427,13 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
         if self.public_key_1:
             self.public_key_1.update_fields()
         self.length = len(self)
-        self.signature_offset = (
+        signature_offset = (
             self.fixed_length() + len(self.public_key_0) + len(self.public_key_0.srk_data)
         )
         if self.public_key_1:
             assert isinstance(self.public_key_1.srk_data, SRKData)
-            self.signature_offset += len(self.public_key_1) + len(self.public_key_1.srk_data)
+            signature_offset += len(self.public_key_1) + len(self.public_key_1.srk_data)
+        self.signature_offset = align(signature_offset, self.member_alignment)
         signature_data_final = self.get_signature_data()
         self.signature_0.sign(signature_data_final)
         if self.public_key_1 and self.signature_1:
@@ -433,8 +450,10 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
         :return: Bytes representing container certificate content.
         """
         cert = self.get_signature_data()
+        cert = extend_block(cert, self.signature_offset, padding=RESERVED)
         cert += self.signature_0.export()
         if self.signature_1:
+            cert = extend_block(cert, align(len(cert), self.member_alignment), padding=RESERVED)
             cert += self.signature_1.export()
         if self.length != len(cert):
             raise SPSDKValueError(
@@ -495,12 +514,20 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
         if self.public_key_1:
             assert isinstance(self.public_key_1.srk_data, SRKData)
             expected_signature_offset += len(self.public_key_1) + len(self.public_key_1.srk_data)
+        expected_signature_offset = align(expected_signature_offset, self.member_alignment)
 
         if self.signature_offset != expected_signature_offset:
             ret.add_record(
                 "Signature offset",
                 VerifierResult.ERROR,
                 f"Invalid. {self.signature_offset} != {expected_signature_offset} (expected)",
+            )
+        elif self.signature_offset % self.member_alignment:
+            ret.add_record(
+                "Signature offset",
+                VerifierResult.ERROR,
+                f"Invalid. {self.signature_offset} is not aligned "
+                f"to {self.member_alignment} bytes",
             )
         else:
             ret.add_record("Signature offset", VerifierResult.SUCCEEDED, self.signature_offset)
@@ -729,13 +756,16 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
         if inverted_permissions != ~permissions & 0xFF:
             raise SPSDKValueError("Certificate parser: Invalid permissions record.")
 
+        cert_member_alignment = create_chip_config(family).signature_block_member_alignment
+
         public_key_0 = SRKRecordV2.parse(data[certificate_data_offset:])
         certificate_data_offset += len(public_key_0)
         public_key_0.srk_data = SRKData.parse(data[certificate_data_offset:])
         certificate_data_offset += len(public_key_0.srk_data)
         # check if there is space for second key set
+        # The padding inserted to align the signature must not be mistaken for a second key
         public_key_1 = None
-        if certificate_data_offset < signature_offset:
+        if align(certificate_data_offset, cert_member_alignment) < signature_offset:
             public_key_1 = SRKRecordV2.parse(data[certificate_data_offset:])
             certificate_data_offset += len(public_key_1)
             public_key_1.srk_data = SRKData.parse(data[certificate_data_offset:])
@@ -743,12 +773,13 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
 
         signature_0 = ContainerSignature.parse(data[signature_offset:])
         signature_1 = None
-        computed_length = signature_offset
+        computed_length = signature_offset + len(signature_0)
         if public_key_1:
-            computed_length += len(signature_0)
+            computed_length = align(computed_length, cert_member_alignment)
             signature_1 = ContainerSignature.parse(data[computed_length:])
+            computed_length += len(signature_1)
 
-        if container_length != computed_length + len(signature_1) if signature_1 else 0:
+        if container_length != computed_length:
             raise SPSDKParsingError(
                 "The final parsing size of container doesn't fit to declared container length. "
                 f"{computed_length}B != {container_length}B"

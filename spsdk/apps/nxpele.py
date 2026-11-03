@@ -49,6 +49,7 @@ from spsdk.ele.ele_constants import (
     KeyBlobEncryptionIeeCtrModes,
     LifeCycleToSwitch,
     ResponseStatus,
+    SecureBootCryptoMode,
 )
 from spsdk.exceptions import SPSDKError
 from spsdk.image.iee.iee import Iee, IeeKeyBlobLockAttributes, IeeKeyBlobModeAttributes
@@ -844,6 +845,57 @@ def ele_fwd_lc_update(ele_handler: EleMessageHandler, lifecycle: LifeCycleToSwit
     with ele_handler:
         ele_handler.send_message(fwd_lc_update_msg)
     click.echo("Forward Lifecycle update ends successfully.")
+
+
+@main.command(name="forward-boot-crypto", no_args_is_help=True)
+@click.option(
+    "-m",
+    "--mode",
+    type=click.Choice(SecureBootCryptoMode.labels(), case_sensitive=False),
+    required=True,
+    help="Secure boot crypto mode to move to.",
+)
+@click.option(
+    "-b",
+    "--signed-msg",
+    type=click.Path(exists=True, file_okay=True, resolve_path=True),
+    required=False,
+    help=(
+        "Path to signed message binary, required by some secure boot crypto forward "
+        "policy transitions (signed by PQC and classic keys with 'Check all signatures' set). "
+        "Signed message could be created by 'nxpimage signed-msg' tool."
+    ),
+)
+@click.pass_obj
+def cmd_forward_boot_crypto(handler: EleMessageHandler, mode: str, signed_msg: str | None) -> None:
+    """Forward secure boot crypto state to a new value.
+
+    The Forward boot crypto message is used to move the secure boot crypto state
+    (Classic, PQC, Hybrid) from one value to another. This command burns a fuse on
+    success, this operation cannot be reverted.
+    """
+    ele_forward_boot_crypto(handler, SecureBootCryptoMode.from_label(mode), signed_msg)
+
+
+def ele_forward_boot_crypto(
+    ele_handler: EleMessageHandler, mode: SecureBootCryptoMode, signed_msg_path: str | None
+) -> None:
+    """Forward secure boot crypto state to a new value.
+
+    The Forward boot crypto message is used to move the secure boot crypto state
+    (Classic, PQC, Hybrid) from one value to another. This command burns a fuse on
+    success, this operation cannot be reverted.
+
+    :param ele_handler: ELE handler class
+    :param mode: Target secure boot crypto mode
+    :param signed_msg_path: Optional path to signed message binary file required by some
+        secure boot crypto forward policy transitions
+    """
+    signed_msg_data = load_binary(signed_msg_path) if signed_msg_path else None
+    fwd_boot_crypto_msg = ele_message.EleMessageForwardBootCrypto(mode, signed_msg_data)
+    with ele_handler:
+        ele_handler.send_message(fwd_boot_crypto_msg)
+    click.echo("Forward boot crypto ends successfully.")
 
 
 @main.command(name="signed-message", no_args_is_help=True)

@@ -1,0 +1,12 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+#
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/cmpa_pswd_template.yaml
+user_cfg: inputs/cmpa_pswd.yaml
+custom_command: "%! pfr get-template -f mcxc353 -t cmpa_pswd -o workspace/cmpa_pswd_template.yaml --force"
+
+comments:
+  IMG_MISR_SEED: "MUST match the misrSeed used to build the MISR master boot image"

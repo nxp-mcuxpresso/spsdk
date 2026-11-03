@@ -49,6 +49,7 @@ features:
     sub_features: [certificate_supported]
     container_types: [2] # Supported container types
     containers_max_cnt: 1
+    signature_block_member_alignment: 4 # ROM requires word aligned signature block members
     image_types_mapping: {}
     certificate_type: 32bit_fuse_version # The certificate with full 32-bit fuse version support
     fuses_0:

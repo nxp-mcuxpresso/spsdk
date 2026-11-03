@@ -15,12 +15,14 @@ integration for various MCU families including LPC55S3x and ELEv2.
 
 import logging
 import os
+from pathlib import Path
 
 import pytest
 
 from spsdk.crypto.dilithium import IS_DILITHIUM_SUPPORTED
 from spsdk.crypto.hash import EnumHashAlgorithm
-from spsdk.crypto.keys import PrivateKeyEcc
+from spsdk.crypto.keys import PrivateKeyEcc, PrivateKeyRsa
+from spsdk.crypto.signature_provider import PlainFileSP
 from spsdk.dat.debug_credential import (
     DebugCredentialCertificate,
     DebugCredentialCertificateEcc,
@@ -28,6 +30,8 @@ from spsdk.dat.debug_credential import (
     ProtocolVersion,
 )
 from spsdk.exceptions import SPSDKError, SPSDKValueError
+from spsdk.image.ahab.ahab_certificate import get_ahab_certificate_class
+from spsdk.image.ahab.ahab_srk import SRKData, SRKRecordV2
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import load_binary, use_working_directory
@@ -354,6 +358,80 @@ def test_elev2_load_from_config_or_binary(data_dir: str, tmpdir: str) -> None:
         assert dc_from_config == dc_from_binary
 
 
+def test_elev2_certificate_members_are_word_aligned(tmp_path: Path) -> None:
+    """Verify the aligned AHAB certificate used by an ELE v2 debug credential."""
+    family = FamilyRevision("mcxn556s")
+    certificate_class = get_ahab_certificate_class(family)
+    key = PrivateKeyRsa.generate_key(2048)
+    record = SRKRecordV2.create_from_key(key.get_public_key(), srk_id=0)
+    record.srk_data = SRKData.create_from_key(key.get_public_key(), 0)
+    key_path = os.path.join(tmp_path, "dck.pem")
+    key.save(key_path)
+    certificate = certificate_class(
+        family=family,
+        permissions=certificate_class.create_permissions(["debug"]),
+        permissions_data=bytes(12),
+        public_key_0=record,
+        signature_provider_0=PlainFileSP(key_path),
+    )
+    debug_credential = DebugCredentialEdgeLockEnclaveV2(family=family, certificate=certificate)
+
+    debug_credential.sign()
+    exported = debug_credential.export()
+    parsed = DebugCredentialEdgeLockEnclaveV2.parse(exported, family=family)
+
+    assert certificate.signature_offset % 4 == 0
+    assert parsed.certificate.export() == exported
+
+
+@pytest.mark.parametrize("family", ["mcxn556s", "mcxa457", "kw43l43z97"])
+def test_elev2_cc_vu_is_preserved(data_dir: str, family: str) -> None:
+    """Verify the common cc_vu field reaches the ELE v2 certificate vendor usage field."""
+    with use_working_directory(data_dir):
+        config = Config.create_from_file("dc_mx95_ecc256.yaml")
+        config["family"] = family
+        config.pop("fuse_version", None)
+        config["cc_vu"] = 0x12345678
+
+        debug_credential = DebugCredentialEdgeLockEnclaveV2.load_from_config(config)
+        debug_credential.sign()
+        parsed = DebugCredentialEdgeLockEnclaveV2.parse(
+            debug_credential.export(), family=FamilyRevision(family)
+        )
+
+        assert debug_credential.certificate.fuse_version == 0x12345678
+        assert debug_credential.cc_vu == 0x12345678
+        assert parsed.cc_vu == 0x12345678
+
+
+@pytest.mark.parametrize("family", ["mcxn556s", "mcxa457", "kw43l43z97"])
+def test_elev2_cc_vu_is_known_to_the_schema(family: str) -> None:
+    """The 'cc_vu' alias must be part of the ELE v2 validation schema.
+
+    The value is accepted by load_from_config, so it has to be declared in the schema as
+    well, otherwise the configuration check reports it as an unknown property.
+
+    :param family: Family revision under test.
+    """
+    schemas = DebugCredentialEdgeLockEnclaveV2.get_validation_schemas(FamilyRevision(family))
+    properties = {key for schema in schemas for key in schema.get("properties", {})}
+    assert "cc_vendor_usage" in properties
+    assert "cc_vu" in properties
+
+
+def test_elev2_rejects_conflicting_vendor_usage(data_dir: str) -> None:
+    """Reject ambiguous ELE v2 configurations containing different vendor usage values."""
+    with use_working_directory(data_dir):
+        config = Config.create_from_file("dc_mx95_ecc256.yaml")
+        config["family"] = "mcxn556s"
+        config.pop("fuse_version", None)
+        config["cc_vu"] = 1
+        config["cc_vendor_usage"] = 2
+
+        with pytest.raises(SPSDKValueError, match="must contain the same value"):
+            DebugCredentialEdgeLockEnclaveV2.load_from_config(config)
+
+
 def test_classic_load_from_config_or_binary(data_dir: str, tmpdir: str) -> None:
     """Test loading a classic (non-ELE) debug credential from a config or a binary file.
 
@@ -427,10 +505,10 @@ def test_parse(data_dir: str, dc_file_name: str, class_name: str, family: str) -
 
 
 def test_dc_pre_validation_hook_fills_ele_unsupported_fields(caplog) -> None:  # type: ignore[no-untyped-def]
-    """ELE families auto-fill missing unsupported fields in pre-validation hook."""
+    """ELE container v1 families auto-fill missing unsupported fields in pre-validation hook."""
     cfg = Config(
         {
-            "family": "mimx943",
+            "family": "mimx9352",
             "revision": "a0",
             "uuid": "00000000000000000000000000000000",
             "cc_socu": 0,
@@ -448,6 +526,34 @@ def test_dc_pre_validation_hook_fills_ele_unsupported_fields(caplog) -> None:  #
     assert normalized.get_int("cc_vu") == 0
     assert normalized.get_int("cc_beacon") == 0
     assert "auto-filled" in caplog.text
+
+
+def test_dc_pre_validation_hook_keeps_ele_v2_unchanged() -> None:
+    """ELE container v2 families are not modified by the DAT pre-validation hook.
+
+    Regression test for SPSDK-7070: the ELEv2 schema (used e.g. by mimx9596/mimx943) never
+    declares ``cc_vu``/``cc_beacon`` as top-level properties, so injecting them produced false
+    "Unknown property found in configuration" warnings during ``dat dc export``.
+    """
+    cfg = Config(
+        {
+            "family": "mimx9596",
+            "uuid": "00000000000000000000000000000000",
+            "cc_socu": "0x0FFF",
+            "public_key_0": "../../_data/keys/ecc256/srk0_ecc256.pub",
+            "signer_0": "../../_data/keys/ecc256/srk0_ecc256.pem",
+        }
+    )
+    cfg.search_paths = [os.path.join(os.path.dirname(__file__), "data")]
+
+    normalized = DebugCredentialCertificate.PRE_VALIDATION_CFG_HOOK(cfg)
+    assert "cc_vu" not in normalized
+    assert "cc_beacon" not in normalized
+
+    # The normalized config must validate cleanly against the real schema without any
+    # "Unknown property" warnings being logged for cc_vu/cc_beacon.
+    schemas = DebugCredentialCertificate.get_validation_schemas_from_cfg(cfg)
+    normalized.check(schemas, check_unknown_props=True)
 
 
 def test_dc_pre_validation_hook_keeps_non_ele_unchanged() -> None:
@@ -469,6 +575,16 @@ def test_dc_pre_validation_hook_keeps_non_ele_unchanged() -> None:
     normalized = DebugCredentialCertificate.PRE_VALIDATION_CFG_HOOK(cfg)
     assert "cc_vu" not in normalized
     assert "cc_beacon" not in normalized
+
+
+def test_dc_pre_validation_hook_keeps_cc_vu_out_of_mcxa287_config() -> None:
+    """The mcxa287 credentials use cc_vendor_usage instead of cc_vu."""
+    cfg = Config({"family": "mcxa287", "cc_vendor_usage": 0})
+
+    normalized = DebugCredentialCertificate.PRE_VALIDATION_CFG_HOOK(cfg)
+
+    assert "cc_vu" not in normalized
+    assert normalized.get_int("cc_vendor_usage") == 0
 
 
 def test_ele_dc_schema_uses_iee_clear_regions() -> None:
