@@ -1,0 +1,17 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ==================================  PFR CMPA configuration for mcxn946  =====================================
+# NXP chip family identifier.
+family: mcxn946
+# Revision of silicon.
+revision: latest
+# PFR / IFR configuration area type.
+type: CMPA
+# CMPA register settings. The RKTH (root key table hash) is taken from the referenced
+# certificate block during 'pfr export' (-e option). To actually enforce secure boot on the
+# device, configure the secure boot related fields here (e.g. SECURE_BOOT_CFG) according to
+# your product security policy. In this minimal example the factory defaults are kept so the
+# flow can be demonstrated without permanently locking the part.
+settings: {}

@@ -20,7 +20,7 @@ from typing import ClassVar
 from typing_extensions import Self
 
 from spsdk.crypto.certificate import Certificate, ExtensionNotFound
-from spsdk.crypto.crypto_types import SPSDKKeyUsage
+from spsdk.crypto.crypto_types import SPSDKExtensionOID, SPSDKKeyUsage, SPSDKVersion
 from spsdk.crypto.keys import EccCurve, PublicKeyEcc, PublicKeyRsa, get_ecc_curve
 from spsdk.exceptions import SPSDKError
 from spsdk.image.hab.constants import EnumAlgorithm
@@ -29,6 +29,10 @@ from spsdk.image.misc import hexdump_fmt, modulus_fmt
 from spsdk.utils.abstract import BaseClass
 from spsdk.utils.misc import Endianness
 from spsdk.utils.spsdk_enum import SpsdkEnum
+
+# Netscape certificate type extension and its CA bits (SSL CA, S/MIME CA, object signing CA)
+_NETSCAPE_CERT_TYPE_OID = "2.16.840.1.113730.1.1"
+_NETSCAPE_ANY_CA = 0x04 | 0x02 | 0x01
 
 
 class SRKException(SPSDKError):
@@ -203,6 +207,63 @@ class SrkItem:
         except SPSDKError:
             pass
         raise NotImplementedSRKCertificate()
+
+    @staticmethod
+    def get_ca_flag(cert: Certificate) -> int:
+        """Get SRK CA flag value for the certificate.
+
+        The CA flag is set the same way as CST srktool does it, i.e. when OpenSSL
+        X509_check_ca() returns non-zero value:
+
+        - a Key Usage extension, if present, must allow certificate signing;
+        - if the Basic Constraints extension is present, its CA value decides;
+        - without Basic Constraints, the certificate is still a (legacy) CA if it is
+          a self-issued version 1 certificate, if it has a Key Usage extension (which
+          then allows certificate signing) or if its Netscape certificate type
+          contains any CA type.
+
+        :param cert: X.509 certificate of the SRK.
+        :return: 0x80 if the certificate is a CA certificate, 0 otherwise.
+        """
+        try:
+            key_usage = cert.extensions.get_extension_for_class(SPSDKKeyUsage)
+            assert isinstance(key_usage.value, SPSDKKeyUsage)
+            if not key_usage.value.key_cert_sign:
+                return 0
+            has_key_usage = True
+        except ExtensionNotFound:
+            has_key_usage = False
+        try:
+            basic_constraints = cert.extensions.get_extension_for_oid(
+                SPSDKExtensionOID.BASIC_CONSTRAINTS
+            )
+            return 0x80 if basic_constraints.value.ca else 0  # type: ignore[attr-defined]
+        except ExtensionNotFound:
+            pass
+        if cert.version == SPSDKVersion.v1 and cert.subject == cert.issuer:
+            return 0x80
+        if has_key_usage:
+            return 0x80
+        if SrkItem._get_netscape_cert_type(cert) & _NETSCAPE_ANY_CA:
+            return 0x80
+        return 0
+
+    @staticmethod
+    def _get_netscape_cert_type(cert: Certificate) -> int:
+        """Get the first byte of Netscape certificate type extension.
+
+        :param cert: X.509 certificate.
+        :return: First byte of the certificate type bit string, 0 if not present or invalid.
+        """
+        for extension in cert.extensions:
+            if extension.oid.dotted_string != _NETSCAPE_CERT_TYPE_OID:
+                continue
+            # DER encoded BIT STRING: tag, length, number of unused bits, first data octet
+            der = getattr(extension.value, "value", b"")
+            if len(der) > 3 and der[0] == 0x03 and der[1] < 0x80:
+                return der[3]
+            return 0
+        return 0
 
 
 class SrkItemHash(SrkItem):
@@ -494,14 +555,7 @@ class SrkItemRSA(SrkItem):
         :return: SRKItemRSA instance created from certificate's RSA public key.
         """
         assert isinstance(cert, Certificate)
-        flag = 0
-        try:
-            key_usage = cert.extensions.get_extension_for_class(SPSDKKeyUsage)
-            assert isinstance(key_usage.value, SPSDKKeyUsage)
-            if key_usage.value.key_cert_sign:
-                flag = 0x80
-        except ExtensionNotFound:
-            pass
+        flag = SrkItem.get_ca_flag(cert)
         try:
             public_key = cert.get_public_key()
             if not isinstance(public_key, PublicKeyRsa):
@@ -700,14 +754,7 @@ class SrkItemEcc(SrkItem):
             other processing errors occur.
         :return: SrkItemEcc instance created from certificate's public key data.
         """
-        flag = 0
-        try:
-            key_usage = cert.extensions.get_extension_for_class(SPSDKKeyUsage)
-            assert isinstance(key_usage.value, SPSDKKeyUsage)
-            if key_usage.value.key_cert_sign:
-                flag = 0x80
-        except ExtensionNotFound:
-            pass
+        flag = SrkItem.get_ca_flag(cert)
 
         try:
             public_key = cert.get_public_key()

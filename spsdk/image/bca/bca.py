@@ -23,6 +23,7 @@ from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.family import FamilyRevision, update_validation_schema_family
 from spsdk.utils.misc import Endianness
 from spsdk.utils.registers import Registers, RegistersPreValidationHook
+from spsdk.utils.verifier import Verifier
 
 logger = logging.getLogger(__name__)
 
@@ -104,6 +105,42 @@ class BCA(SegmentBase):
         config["revision"] = self.family.revision
         config["bca"] = self.registers.get_config()
         return config
+
+    def verify(self) -> Verifier:
+        """Verify BCA content and report the effective register values.
+
+        Checks the BCA tag and size and lists the configured register values together with
+        the enumerated bitfield settings.
+
+        :return: Verifier containing the BCA tag, size and configured register values.
+        """
+        verifier = Verifier("Bootloader Configuration Area (BCA)")
+        tag = self.registers.find_reg("TAG").get_bytes_value()
+        verifier.add_record(
+            name="BCA tag",
+            result=tag == self.TAG,
+            value=f"Tag: {tag!r} (expected {self.TAG!r})",
+        )
+        exported_len = len(self.export())
+        verifier.add_record(
+            name="BCA size",
+            result=exported_len == self.SIZE,
+            value=f"BCA size: {exported_len} bytes (expected {self.SIZE} bytes)",
+        )
+        for register in self.registers.get_registers(include_group_regs=True):
+            verifier.add_record(
+                name=register.name,
+                result=True,
+                value=register.get_hex_value(),
+            )
+            for bitfield in register.get_bitfields():
+                if bitfield.has_enums():
+                    verifier.add_record(
+                        name=bitfield.name,
+                        result=True,
+                        value=bitfield.get_enum_value(),
+                    )
+        return verifier
 
     @classmethod
     def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:

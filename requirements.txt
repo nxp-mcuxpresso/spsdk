@@ -21,6 +21,7 @@ packaging<27,>=23.2
 platformdirs<5,>=3.9.1
 prettytable<4,>=3.12
 pyasn1<1,>=0.6
+pyjson5<3,>=2.0.1  # Cython-based JSON5/JSONC parser used by load_configuration(); near-parity speed with stdlib json
 pyserial<4,>=3.1
 pyyaml<7,>=6
 requests<3,>=2.32.3

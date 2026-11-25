@@ -36,6 +36,31 @@ def test_get_supported_devices_returns_list() -> None:
     assert all(isinstance(d, FamilyRevision) for d in devices)
 
 
+@pytest.mark.parametrize(
+    "family_name",
+    ["mcxn236", "mcxn235", "mcxa457", "mcxa286", "mcxa287", "mcxa557", "mcxa566", "mcxa577"],
+)
+def test_get_supported_devices_mcx(family_name: str) -> None:
+    """MCXN236, MCXA457, and their aliases must be available to DICE clients."""
+    assert FamilyRevision(family_name) in get_supported_devices()
+
+
+@pytest.mark.parametrize("family_name", ["mcxn236", "mcxn235"])
+def test_haddiff_mcxn23x(family_name: str) -> None:
+    """MCXN23x must decode critical HAD differences using the shared register layout."""
+    diff = HADDiff(FamilyRevision(family_name, "a0"))
+    expected = bytes(diff.had_length)
+    actual = b"\x00\x00\x00\x01" + expected[4:]
+
+    assert diff.get_diff(expected, expected) == []
+    differences = diff.get_diff(expected, actual, critical_only=True)
+    assert len(differences) == 1
+    expected_field, actual_field = differences[0]
+    assert expected_field.name == actual_field.name == "CFG_LC_STATE"
+    assert expected_field.get_value() == 0
+    assert actual_field.get_value() == 1
+
+
 # ---------------------------------------------------------------------------
 # reconstruct_ecc_key
 # ---------------------------------------------------------------------------

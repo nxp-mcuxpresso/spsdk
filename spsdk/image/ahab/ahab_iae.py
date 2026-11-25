@@ -1140,7 +1140,17 @@ class ImageArrayEntry(Container):
             ret_cfg["meta_data_start_cpu_id"] = self.metadata_sm_cpu_id
             ret_cfg["meta_data_msel"] = self.metadata_sm_msel
             ret_cfg["meta_data_flags"] = self.metadata_sm_flags
-        ret_cfg["hash_type"] = self.get_hash_from_flags(self.flags).label
+        # Schema enum of 'hash_type' uses lowercase labels (see AHABImage.get_validation_schemas)
+        ret_cfg["hash_type"] = self.get_hash_from_flags(self.flags).label.lower()
+
+        if self.gap_after_image:
+            ret_cfg["gap_after_image"] = hex(self.gap_after_image)
+        if self.gap_after_image_binary:
+            gap_file_name = clean_up_file_name(f"container{index}_image{image_index}_gap.bin")
+            write_file(
+                self.gap_after_image_binary, os.path.join(data_path, gap_file_name), mode="wb"
+            )
+            ret_cfg["gap_after_image_file"] = gap_file_name
 
         return ret_cfg
 
@@ -1576,6 +1586,8 @@ class ImageArrayEntryTemplates:
         For each configuration item, it either:
         1. Loads directly using load_from_config if "image_path" is specified
         2. Finds a matching template class and uses create_image_array_entry
+        The V2X container of double authentication is placed after the OEI DDR image,
+        because it is loaded into DDR.
 
         :param iae_cls: ImageArrayEntry class type to instantiate.
         :param chip_config: AHAB container chip configuration.
@@ -1584,8 +1596,9 @@ class ImageArrayEntryTemplates:
         """
         config_loaders = ImageArrayEntryTemplates.__subclasses__()
         image_array: list = []
+        deferred_v2x: list = []
 
-        for image in config:
+        for index, image in enumerate(config):
             hit = False
             # Direct image_path entry
             if "image_path" in image:
@@ -1595,13 +1608,25 @@ class ImageArrayEntryTemplates:
             # Template-based entry
             for iae_template_class in config_loaders:
                 if image.get(iae_template_class.KEY):
-                    image_array.extend(
-                        iae_template_class.create_image_array_entry(
-                            iae_cls,
-                            chip_config,
-                            image,
-                        )
+                    entries = iae_template_class.create_image_array_entry(
+                        iae_cls,
+                        chip_config,
+                        image,
                     )
+                    if iae_template_class is IaeDoubleAuthentication and any(
+                        img.get(IaeOEIDDR.KEY) for img in config[index + 1 :]
+                    ):
+                        # The V2X container is loaded into DDR, so it must follow the OEI DDR
+                        deferred_v2x = entries[1:]
+                        entries = entries[:1]
+                    # Header positions of template entries are relative to the template start
+                    for entry in entries:
+                        if entry.iae_header_position is not None:
+                            entry.iae_header_position += len(image_array)
+                    image_array.extend(entries)
+                    if iae_template_class is IaeOEIDDR:
+                        image_array.extend(deferred_v2x)
+                        deferred_v2x = []
                     hit = True
                     break
 
@@ -1684,11 +1709,12 @@ class IaeDoubleAuthentication(ImageArrayEntryTemplates):
             + bytes(ele_iae._image_offset - container_size)
             + nxp_image[ele_iae._image_offset : ele_iae._image_offset + ele_iae.image_size]
         )
-        config["core_id"] = "ele"
-        config["image_type"] = "ele_as_image"
         ret.append(
             cls._create_image_array_entry(
-                iae_cls=iae_cls, binary=ele_container, chip_config=chip_config, config=config
+                iae_cls=iae_cls,
+                binary=ele_container,
+                chip_config=chip_config,
+                config=cls._get_container_config(chip_config, config, "ele", "ele_as_image"),
             )
         )
 
@@ -1708,13 +1734,68 @@ class IaeDoubleAuthentication(ImageArrayEntryTemplates):
                     v2xfhs_iae._image_offset + v2xfhs_iae.image_size,
                 )
             ]
-            config["core_id"] = "v2x-1"
-            config["image_type"] = "v2x_as_image"
             ret.append(
                 cls._create_image_array_entry(
-                    iae_cls=iae_cls, binary=v2xfh_container, chip_config=chip_config, config=config
+                    iae_cls=iae_cls,
+                    binary=v2xfh_container,
+                    chip_config=chip_config,
+                    config=cls._get_container_config(chip_config, config, "v2x", "v2x_as_image"),
                 )
             )
+        return ret
+
+    @classmethod
+    def get_default_setting_description(cls, family: FamilyRevision) -> str:
+        """Generate a human-readable description of default double authentication settings.
+
+        :param family: Chip family revision to get settings for.
+        :return: Formatted string containing default settings description.
+        """
+        database = get_db(family)
+        ele_load_address = cls._load_int(database, "ele_load_address", default=0)
+        v2x_load_address = cls._load_int(database, "v2x_load_address", default=0)
+        return (
+            "Image array default settings. Can be overridden by definitions that are hidden in "
+            "the template:\n"
+            f"ele_load_address:              0x{ele_load_address:016X}\n"
+            f"v2x_load_address:              0x{v2x_load_address:016X}"
+        )
+
+    @classmethod
+    def _get_container_config(
+        cls, chip_config: AhabChipContainerConfig, config: Config, name: str, image_type: str
+    ) -> Config:
+        """Get image entry configuration for an NXP container embedded as an OEM image.
+
+        With DOUBLE_AUTH_EN fused, ELE verifies that the embedded ELE/V2X container is located
+        at the load address of its image entry, so each container needs its own valid address.
+
+        :param chip_config: AHAB container chip configuration.
+        :param config: Double authentication image configuration.
+        :param name: Embedded container name, "ele" or "v2x".
+        :param image_type: Image type of the embedded container.
+        :raises SPSDKError: If the load address is not defined or common load address is used.
+        :return: Image entry configuration of the embedded container.
+        """
+        for key in ("load_address", "entry_point"):
+            if key in config:
+                raise SPSDKError(
+                    f"The '{key}' is not supported for double authentication, use "
+                    "'ele_load_address' and 'v2x_load_address' instead."
+                )
+        load_address = cls._load_int(
+            get_db(chip_config.base.family), f"{name}_load_address", config=config, default=0
+        )
+        if not load_address:
+            raise SPSDKError(
+                f"The {name.upper()} container load address for double authentication is not "
+                f"defined, set '{name}_load_address' in the configuration."
+            )
+        ret = Config(config)
+        ret["core_id"] = name if name == "ele" else "v2x-1"
+        ret["image_type"] = image_type
+        ret["load_address"] = load_address
+        ret["entry_point"] = load_address
         return ret
 
 

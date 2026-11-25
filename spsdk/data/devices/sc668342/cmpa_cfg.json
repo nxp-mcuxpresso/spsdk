@@ -19,6 +19,7 @@
                         },
                         {
                             "width": 16,
+                            "access": "WRITE_CONST",
                             "id": "field000-bits16-31",
                             "name": "CMPA_Header_marker",
                             "description": "CMPA header marker, 16'h5963. The CMPA user configuration data is valid only when the CMPA header marker is cleared and is valid"

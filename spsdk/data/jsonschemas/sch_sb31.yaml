@@ -460,6 +460,25 @@ sb3_commands:
                     description: Indicates whether key is provided as plaintext or not. If it's in plaintext this option also indicates whether it's as binary or hex
                     enum: ["no", bin, hex]
                     template_value: "no"
+                  keyType:
+                    type: string
+                    title: Plain key type
+                    description: >-
+                      Type of the plain key, used only with plainInput by DevHSM to wrap the key on the device
+                      by HSM_STORE_KEY command. CKDFK - customer master key (CUST_MK_SK), HKDFK - HKDF master key,
+                      HMACK - HMAC key, CMACK - CMAC key, AESK - AES key, KUOK - key unwrap only key.
+                    enum: [CKDFK, HKDFK, HMACK, CMACK, AESK, KUOK]
+                    template_value: CKDFK
+                  keyProperties:
+                    type: [string, number]
+                    title: Plain key properties
+                    description: >-
+                      HSM_STORE_KEY key properties of the plain key, used only with plainInput.
+                      Bit 0 - key size (0: 128-bit, 1: 256-bit), bit 30 - PPROT0 (key usable in privileged mode only),
+                      bit 31 - PPROT1 (key usable in secure mode only), other bits must be zero.
+                      If not specified, the key size is derived from the key length.
+                    format: number
+                    template_value: 0x1
                 required: [offset, wrappingKeyId, file]
 
           - type: object

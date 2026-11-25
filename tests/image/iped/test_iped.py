@@ -18,6 +18,7 @@ from click.testing import CliRunner
 from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.image.iped import iped_v2 as iped_module
 from spsdk.image.iped.iped import Iped, IpedContext, IpedMode, IpedV1, IpedV1Region, IpedV2
+from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import load_binary, write_file
@@ -269,9 +270,11 @@ def test_iped_post_export_encrypted_data(monkeypatch: pytest.MonkeyPatch, tmpdir
 
     generated_files = iped.post_export(str(tmpdir))
 
-    assert os.path.join(tmpdir, "iped_table.bin") in generated_files
-    assert os.path.join(tmpdir, "encrypted_blob.bin") in generated_files
-    assert os.path.join(tmpdir, "iped_image.bin") in generated_files
+    # post_export returns paths normalized by get_abs_path (forward slashes on all platforms)
+    generated_paths = [Path(file) for file in generated_files]
+    assert Path(tmpdir, "iped_table.bin") in generated_paths
+    assert Path(tmpdir, "encrypted_blob.bin") in generated_paths
+    assert Path(tmpdir, "iped_image.bin") in generated_paths
     assert load_binary(os.path.join(tmpdir, "encrypted_blob.bin")) == b"\x00" * 5 + b"\x03\x02\x01"
     full_image = load_binary(os.path.join(tmpdir, "iped_image.bin"))
     assert full_image[: IpedV2.RAW_TABLE_SIZE] == iped.export()[: IpedV2.RAW_TABLE_SIZE]
@@ -426,8 +429,9 @@ def test_iped_post_export_matches_offline_tool_cli(
     assert result.exit_code == 0, result.output
     encrypted_file = os.path.join(output_folder, "encrypted_blob.bin")
     image_file = os.path.join(output_folder, "iped_image.bin")
-    assert encrypted_file in generated_files
-    assert image_file in generated_files
+    generated_paths = [Path(file) for file in generated_files]
+    assert Path(encrypted_file) in generated_paths
+    assert Path(image_file) in generated_paths
     assert load_binary(encrypted_file) == load_binary(cli_output)
     full_image = load_binary(image_file)
     assert full_image[: iped.table_size] == iped.export()
@@ -839,12 +843,212 @@ def test_iped_v2_rt266x_preserves_encrypted_output_name(tmp_path: Path) -> None:
 
     assert iped.image_name == "iped_image_combined"
     assert iped.device == "rt2660_a0"
-    assert str(tmp_path / "iped_image.bin") in generated_files
-    assert str(tmp_path / "iped_image_combined.bin") in generated_files
-    assert (tmp_path / "iped_table.bin").stat().st_size == 48
+    generated_paths = [Path(file) for file in generated_files]
+    assert tmp_path / "iped_image.bin" in generated_paths
+    assert tmp_path / "iped_image_combined.bin" in generated_paths
+    assert (tmp_path / "iped_table.bin").stat().st_size == 0x400
     encrypted = (tmp_path / "iped_image.bin").read_bytes()
     assert len(encrypted) == 8
     assert encrypted != b"\x01\x02\x03" + bytes(5)
+
+
+def _rt2661_ctr_iped(end_address: int = 0x60001100) -> IpedV2:
+    """Create an RT2661 IPED table with one CTR context starting at 0x60001000.
+
+    :param end_address: Context end address.
+    :return: IPED table.
+    """
+    context = IpedContext(
+        start_address=0x60001000,
+        end_address=end_address,
+        mode=IpedMode.CTR,
+        nonce=0x0011223344556677,
+        iv=[0x00010203, 0x04050607],
+        key=bytes.fromhex("00000000000000000000000000000001"),
+    )
+    return IpedV2(family=FamilyRevision("mimxrt2661"), contexts=[context], instance="xspi0")
+
+
+def test_iped_v2_zero_padding_beyond_context_is_not_encrypted() -> None:
+    """Test trailing zero padding beyond the context end is kept as plaintext."""
+    iped = _rt2661_ctr_iped()
+    content = bytes(range(1, 0xF1))
+    padded = content + bytes(0x200 - len(content))
+
+    encrypted = iped.encrypt_image(padded, 0x60001000)
+
+    assert len(encrypted) == len(padded)
+    assert encrypted[:0x100] == _rt2661_ctr_iped(0x60001200).encrypt_image(
+        padded[:0x100], 0x60001000
+    )
+    assert encrypted[0x100:] == bytes(0x100)
+
+
+def test_iped_v2_data_beyond_context_is_stored_as_plaintext() -> None:
+    """Test data beyond the context end is not encrypted when the region covers part of a blob."""
+    iped = _rt2661_ctr_iped()
+    data = bytes(range(0x100)) * 2
+
+    encrypted = iped.encrypt_image(data, 0x60001000)
+
+    assert len(encrypted) == len(data)
+    assert encrypted[:0x100] == iped.encrypt_image(data[:0x100], 0x60001000)
+    assert encrypted[0x100:] == data[0x100:]
+
+
+def test_iped_v2_data_before_context_is_stored_as_plaintext() -> None:
+    """Test data placed before the first context is kept as plaintext."""
+    iped = _rt2661_ctr_iped()
+    data = bytes(range(0x100)) * 2
+
+    encrypted = iped.encrypt_image(data, 0x60000F00)
+
+    assert encrypted[:0x100] == data[:0x100]
+    assert encrypted[0x100:] == iped.encrypt_image(data[0x100:], 0x60001000)
+
+
+def _second_ctr_context(start_address: int, end_address: int) -> IpedContext:
+    """Create a second RT2661 CTR context with a different key.
+
+    :param start_address: Context start address.
+    :param end_address: Context end address.
+    :return: IPED context.
+    """
+    return IpedContext(
+        start_address=start_address,
+        end_address=end_address,
+        mode=IpedMode.CTR,
+        nonce=0x0011223344556677,
+        iv=[0x00010203, 0x04050607],
+        key=bytes.fromhex("00000000000000000000000000000002"),
+        region_id=1,
+    )
+
+
+def test_iped_v2_blob_spanning_contexts_with_gap() -> None:
+    """Test a blob spanning two contexts with an unencrypted gap between them."""
+    iped = _rt2661_ctr_iped()
+    iped.contexts.append(_second_ctr_context(0x60001200, 0x60001300))
+    data = bytes(range(0x100)) * 3 + b"\x01" * 0x10
+
+    encrypted = iped.encrypt_image(data, 0x60001000)
+
+    second = IpedV2(
+        family=FamilyRevision("mimxrt2661"), contexts=[iped.contexts[1]], instance="xspi0"
+    )
+    assert len(encrypted) == len(data)
+    assert encrypted[:0x100] == iped.encrypt_image(data[:0x100], 0x60001000)
+    assert encrypted[0x100:0x200] == data[0x100:0x200]
+    assert encrypted[0x200:] == second.encrypt_image(data[0x200:], 0x60001200)
+
+
+def test_iped_v2_zero_padding_in_next_context_is_encrypted() -> None:
+    """Test zero padding is encrypted where another context would decrypt it."""
+    iped = _rt2661_ctr_iped()
+    iped.contexts.append(_second_ctr_context(0x60001100, 0x60001200))
+    data = b"\x01" * 0xF0 + bytes(0x110)
+
+    encrypted = iped.encrypt_image(data, 0x60001000)
+
+    second = IpedV2(
+        family=FamilyRevision("mimxrt2661"), contexts=[iped.contexts[1]], instance="xspi0"
+    )
+    assert encrypted[0x100:] == second.encrypt_image(data[0x100:], 0x60001100)
+    assert encrypted[0x100:] != data[0x100:]
+
+
+def test_iped_v2_gcm_partial_context_rejects_shifted_data() -> None:
+    """Test interleaved GCM tags cannot shift data placed behind the context."""
+    context = IpedContext(
+        start_address=0x60001000,
+        end_address=0x60001100,
+        mode=IpedMode.GCM,
+        aad=[0, 0],
+        key=bytes.fromhex("b938104c9a597f0caecca7a525ea7263"),
+        iv=[0xCBD00D4D, 0xC34B692B],
+        nonce=0x6902C9E2,
+    )
+    iped = IpedV2(family=FamilyRevision("mimxrt2662"), contexts=[context], instance="xspi0")
+
+    with pytest.raises(SPSDKError, match="would shift the data placed behind it"):
+        iped.encrypt_image(bytes(0x100) + b"\x01" * 0x100, 0x60001000)
+
+
+def _rt2661_export_config(tmp_path: Path, output_format: str = "bin", **names: str) -> Config:
+    """Create an RT2661 IPED export configuration stored in tmp_path/configs.
+
+    :param tmp_path: Test temporary directory.
+    :param output_format: Output file format.
+    :param names: Output name overrides.
+    :return: IPED configuration.
+    """
+    plain_file = tmp_path / "plain.bin"
+    plain_file.write_bytes(bytes(range(1, 0x31)))
+    config = Config(
+        {
+            "family": "mimxrt2661",
+            "output_folder": "iped_output",
+            "output_format": output_format,
+            "keyblob_address": "0x60000000",
+            "instance": "xspi0",
+            "contexts": [
+                {
+                    "start_address": "0x60001000",
+                    "end_address": "0x60002000",
+                    "mode": "ctr",
+                    "nonce": "0x0011223344556677",
+                    "iv": "0x0001020304050607",
+                    "key": "0x00000000000000000000000000000001",
+                }
+            ],
+            "data_blobs": [{"data": str(plain_file), "address": "0x60001000"}],
+            **names,
+        }
+    )
+    config.config_dir = str(tmp_path / "configs")
+    return config
+
+
+def test_iped_v2_output_names_resolved_like_otfad(tmp_path: Path) -> None:
+    """Test plain output names go to output_folder and names with path are config relative."""
+    config = _rt2661_export_config(
+        tmp_path, output_name="../bootable_images/iped_keyblob", encrypted_name="app_encrypted"
+    )
+    iped = IpedV2.load_from_config(config)
+
+    generated_files = iped.post_export(config.get_output_file_name("output_folder"))
+
+    expected = [
+        tmp_path / "bootable_images" / "iped_keyblob.bin",
+        tmp_path / "configs" / "iped_output" / "app_encrypted.bin",
+        tmp_path / "configs" / "iped_output" / "iped_image.bin",
+    ]
+    assert [Path(file) for file in generated_files] == expected
+    assert all(file.is_file() for file in expected)
+
+
+@pytest.mark.parametrize("output_format, encrypted_size", [("bin", 0x30), ("sparse", 0x100)])
+def test_iped_v2_exported_table_has_table_size(
+    tmp_path: Path, output_format: str, encrypted_size: int
+) -> None:
+    """Test the table is padded to table_size and sparse data only to the IPED alignment."""
+    config = _rt2661_export_config(tmp_path, output_format=output_format)
+    iped = IpedV2.load_from_config(config)
+
+    table_file, encrypted_file, _ = iped.post_export(str(tmp_path / "out"))
+
+    assert len(BinaryImage.load_binary_image(table_file).export()) == 0x400
+    assert len(BinaryImage.load_binary_image(encrypted_file).export()) == encrypted_size
+
+
+@pytest.mark.parametrize("family", ["mimxrt2660", "mimxrt2661", "mimxrt2662", "mimxrt2663"])
+def test_iped_v2_rom_config_requires_nonce_in_schema(family: str) -> None:
+    """Test the schema requires a context nonce for ROM configuration blob families."""
+    schemas = IpedV2.get_validation_schemas(FamilyRevision(family))
+    context_items = schemas[-1]["properties"]["contexts"]["items"]
+
+    assert "nonce" in context_items["required"]
+    assert "nonce: '0x0011223344556677'" in IpedV2.get_config_template(FamilyRevision(family))
 
 
 # ==============================================================================
@@ -1074,8 +1278,6 @@ def test_iped_v1_context_key_all_16_regions() -> None:
 
 def test_iped_v1_encrypt_data_blob() -> None:
     """Test that V1 encryption with user_key XOR context_key matches decrypt."""
-    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-
     from spsdk.image.iped.iped_v1 import IpedV1, IpedV1Region
     from spsdk.image.iped.prince import PrinceCipher
 
@@ -1108,12 +1310,8 @@ def test_iped_v1_encrypt_data_blob() -> None:
     assert encrypted != plaintext
     assert len(encrypted) == len(plaintext)
 
-    # Derive IV from the serialized nonce layout used by the IPED V1 table.
-    aes_input = nonce.to_bytes(8, "little") + fw_version.to_bytes(4, "little") + bytes(4)
-    aes_key = bytes(reversed(user_key))
-    aes_cipher = Cipher(algorithms.AES(aes_key), modes.ECB())
-    cipher_data = aes_cipher.encryptor().update(aes_input)
-    derived_iv = int.from_bytes(cipher_data[0:8], "little")
+    # IV = AES_ECB(reversed(user_key), nonce LE || fw_version LE || 0s)[0:8] as LE int
+    derived_iv = 0x32D7BDD564750ADF
     assert iped._derive_iv(region) == derived_iv
 
     # Decrypt with same effective key and derived IV

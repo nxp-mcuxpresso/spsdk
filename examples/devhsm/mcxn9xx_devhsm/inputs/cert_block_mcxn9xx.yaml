@@ -1,0 +1,20 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ===============================  Certification Block V21 configuration for mcxn946  =================================
+# MCU family name.
+family: mcxn946
+# Do not use an ISK certificate in this example, sign directly with a root key.
+useIsk: false
+# Main root Certification Private Key used to sign the certificate block.
+signer: ../../_data/keys/ecc256/srk0_ecc256.pem
+# Root certificates (up to 4). The hash of this table (RKTH) is what is fused into the device.
+rootCertificate0File: ../../_data/keys/ecc256/srk0_ecc256.pub
+rootCertificate1File: ../../_data/keys/ecc256/srk1_ecc256.pub
+rootCertificate2File: ../../_data/keys/ecc256/srk2_ecc256.pub
+rootCertificate3File: ../../_data/keys/ecc256/srk3_ecc256.pub
+# Index of the root certificate that matches the signer private key.
+mainRootCertId: 0
+# Generated cert block filename.
+containerOutputFile: ../workspace/cert_block.bin

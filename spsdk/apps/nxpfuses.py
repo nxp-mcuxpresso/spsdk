@@ -29,13 +29,15 @@ from spsdk.apps.utils.common_cli_options import (
 from spsdk.apps.utils.interface_helper import load_interface_config
 from spsdk.apps.utils.utils import SPSDKAppError, catch_spsdk_error, progress_bar
 from spsdk.ele.ele_comm import EleMessageHandler
-from spsdk.exceptions import SPSDKError, SPSDKTypeError
+from spsdk.exceptions import SPSDKConnectionError, SPSDKError, SPSDKTypeError
 from spsdk.fuses.fuse_registers import print_register_info
 from spsdk.fuses.fuses import (
     BlhostFuseOperator,
     BlhostFuseOperatorLegacy,
+    FuseCompareStatus,
     FuseOperator,
     Fuses,
+    FuseVerifyStatus,
     NxpeleFuseOperator,
     SPSDKFuseOperationFailure,
 )
@@ -43,9 +45,20 @@ from spsdk.mboot.mcuboot import McuBoot
 from spsdk.mboot.protocol.base import MbootProtocolBase
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
+from spsdk.utils.interfaces.protocol.protocol_base import (
+    SpsdkMultipleDevicesFoundError,
+    SpsdkNoDeviceFoundError,
+)
 from spsdk.utils.misc import get_printable_path, value_to_int, write_file
 
 logger = logging.getLogger(__name__)
+
+# Exit codes for the 'verify' and 'compare' commands, distinct from the generic
+# catch_spsdk_error codes (1 = SPSDKAppError default, 2 = SPSDKError/AssertionError,
+# 3 = generic Exception).
+EXIT_CODE_MISMATCH = 4
+EXIT_CODE_PARTIAL = 5
+EXIT_CODE_COMM_ERROR = 6
 
 
 def prompt_for_write_permission(skip: bool = False) -> bool:
@@ -432,6 +445,136 @@ def get_config(
         finally:
             write_file(fuses.get_config_yaml(diff=diff_only), output)
             click.echo(f"The fuses configuration has been saved into {get_printable_path(output)}")
+
+
+@main.command(name="verify", no_args_is_help=True)
+@nxpele_options
+@spsdk_config_option(klass=Fuses)
+@spsdk_output_option(required=False, help="Path to store the verification report YAML file.")
+@click.option(
+    "-ia",
+    "--ignore-access-rights",
+    is_flag=True,
+    default=False,
+    help="Force reading fuses even when access rights are set to WO (Write-Only) or Reserved.",
+)
+def verify(
+    port: str | None,
+    usb: str | None,
+    lpcusbsio: str | None,
+    buspal: str | None,
+    timeout: int,
+    device: str | None,
+    buffer_addr: int | None,
+    buffer_size: int | None,
+    fb_addr: int | None,
+    fb_size: int | None,
+    config: Config,
+    output: str | None,
+    ignore_access_rights: bool,
+    uboot_prompt: str | None,
+) -> None:
+    """Verify fuses in the device against the expected configuration.
+
+    Reads back every fuse defined in the given configuration file from the
+    connected device and compares the actual value with the expected one. The
+    command produces a commented YAML report with the overall status and a
+    per-fuse MATCH/MISMATCH/NOT_VERIFIABLE result.
+
+    Exit codes: 0 = PASS, 2 = SPSDK/config error, 4 = FAIL (mismatch),
+    5 = PARTIAL (some fuses not verifiable), 6 = device communication error.
+    """
+    fuses = Fuses.load_from_config(config)
+    try:
+        fuses.fuse_operator = get_fuse_operator(
+            family=fuses.family,
+            port=port,
+            usb=usb,
+            lpcusbsio=lpcusbsio,
+            buspal=buspal,
+            timeout=timeout,
+            device=device,
+            buffer_addr=buffer_addr,
+            buffer_size=buffer_size,
+            fb_addr=fb_addr,
+            fb_size=fb_size,
+            uboot_prompt=uboot_prompt,
+        )
+        report = fuses.verify_loaded(force=ignore_access_rights)
+    except (
+        SPSDKConnectionError,
+        SpsdkNoDeviceFoundError,
+        SpsdkMultipleDevicesFoundError,
+    ) as exc:
+        raise SPSDKAppError(
+            f"Device communication failed during fuses verification: {exc!s}",
+            error_code=EXIT_CODE_COMM_ERROR,
+        ) from exc
+
+    report_yaml = report.get_report_yaml()
+    if output:
+        write_file(report_yaml, output)
+        click.echo(
+            f"The fuses verification report has been saved into {get_printable_path(output)}"
+        )
+    else:
+        click.echo(report_yaml)
+
+    click.echo(f"Overall verification status: {report.status.label}")
+    if report.status == FuseVerifyStatus.FAIL:
+        raise SPSDKAppError(
+            "Fuses verification FAILED: at least one fuse value does not match.",
+            error_code=EXIT_CODE_MISMATCH,
+        )
+    if report.status == FuseVerifyStatus.PARTIAL:
+        raise SPSDKAppError(
+            "Fuses verification PARTIAL: some fuses could not be verified.",
+            error_code=EXIT_CODE_PARTIAL,
+        )
+
+
+@main.command(name="compare", no_args_is_help=True)
+@click.argument(
+    "config_a",
+    type=click.Path(resolve_path=True, exists=True, dir_okay=False, path_type=str),
+)
+@click.argument(
+    "config_b",
+    type=click.Path(resolve_path=True, exists=True, dir_okay=False, path_type=str),
+)
+@spsdk_output_option(required=False, help="Path to store the comparison report YAML file.")
+def compare(config_a: str, config_b: str, output: str | None) -> None:
+    """Compare two fuse configurations using field-level fuse semantics.
+
+    CONFIG_A is the old configuration and CONFIG_B is the new configuration.
+    Comments, field order, numeric formatting, and enum formatting are ignored.
+
+    Exit codes: 0 = IDENTICAL, 2 = SPSDK/config error, 4 = DIFFERENT,
+    5 = PARTIAL (some fields are not verifiable).
+    """
+    old_config = Config.create_from_file(config_a)
+    new_config = Config.create_from_file(config_b)
+    old_config.check(Fuses.get_validation_schemas_from_cfg(old_config), check_unknown_props=True)
+    new_config.check(Fuses.get_validation_schemas_from_cfg(new_config), check_unknown_props=True)
+    report = Fuses.compare_configs(old_config, new_config)
+    report_yaml = report.get_report_yaml()
+    if output:
+        write_file(report_yaml, output)
+        click.echo(f"The fuses comparison report has been saved into {get_printable_path(output)}")
+    else:
+        click.echo(report_yaml)
+
+    click.echo(f"Overall comparison status: {report.status.label}")
+    if report.status == FuseCompareStatus.DIFFERENT:
+        raise SPSDKAppError(
+            "Fuse configurations are DIFFERENT.",
+            error_code=EXIT_CODE_MISMATCH,
+        )
+    if report.status == FuseCompareStatus.PARTIAL:
+        raise SPSDKAppError(
+            "Fuse configuration comparison is PARTIAL: some fields are not verifiable.",
+            error_code=EXIT_CODE_PARTIAL,
+        )
 
 
 @catch_spsdk_error

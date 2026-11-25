@@ -25,6 +25,7 @@ wheels/
 *.egg
 MANIFEST
 docs/devices_list.rst
+docs/devices/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

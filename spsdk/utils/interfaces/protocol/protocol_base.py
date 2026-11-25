@@ -274,6 +274,26 @@ class ProtocolBase(ABC):
             raise SPSDKError(f"Interface with identifier {identifier} does not exist.")
         return interface
 
+    @classmethod
+    def get_plugin_interface_classes(cls) -> list[type[Self]]:
+        """Get list of interface classes provided by device interface plugins.
+
+        Only interface classes defined in modules loaded through the plugin system
+        (``spsdk.device.interface`` entry points or explicitly registered plugin modules)
+        are returned; built-in SPSDK interfaces are excluded.
+
+        :return: List of plugin interface classes that have an identifier attribute.
+        """
+        plugins = cls._load_plugins()
+        return [
+            iface
+            for iface in cls._get_interface_classes()
+            if any(
+                iface.__module__ == name or iface.__module__.startswith(f"{name}.")
+                for name in plugins
+            )
+        ]
+
     @staticmethod
     def _load_plugins() -> dict[str, ModuleType]:
         """Load all installed interface plugins.

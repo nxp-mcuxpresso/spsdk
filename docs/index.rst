@@ -122,10 +122,12 @@ All products, including those with advanced security features, may be subject to
     :maxdepth: 1
     :hidden:
 
+    secure_boot
     images/executable
     images/secure_update
     images/flash
     images/bootable
+    images/aisec
     examples/_knowledge_base/cert_block_summary
 
 .. toctree::

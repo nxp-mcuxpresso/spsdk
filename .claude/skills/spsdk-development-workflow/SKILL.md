@@ -147,6 +147,11 @@ Without `-u`, VS Code will still show "Publish Branch" even though the branch ex
 - [ ] Check coverage is reasonable for new code
 - [ ] All tests pass before moving to linting
 
+### Checkpoint 4.3: Update the Changelog
+For every user-visible change (new feature, behaviour change, bugfix), add an entry to `CHANGELOG.md` in the repository root (Keep a Changelog format, see the *Changelog* section in AGENTS.md):
+- [ ] Add the entry under the topmost `## X.Y.Z - Unreleased` version, in the matching `### Added` / `### Changed` / `### Removed` / `### Fixed` / ... section
+- [ ] Do **not** edit `docs/release_notes.md` — it only includes `CHANGELOG.md` into the documentation
+
 ---
 
 ## Phase 5: Code Quality Checks
@@ -230,6 +235,7 @@ Bitbucket only allows **one open PR per source/target branch pair**. If `nxp_scm
 - Create commits without JIRA ticket prefix
 - Assume device database structure — verify first
 - Skip tests for "simple" changes
+- Add release notes anywhere other than `CHANGELOG.md`
 - Leave temporary files/directories in the workspace (e.g., generated templates, test outputs)
 
 ✅ **Do**:

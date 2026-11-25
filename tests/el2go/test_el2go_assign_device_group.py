@@ -19,7 +19,7 @@ from unittest.mock import patch
 import pytest
 
 from spsdk.el2go.api_utils import EL2GOTPClient
-from spsdk.el2go.client import EL2GOApiResponse
+from spsdk.el2go.client import SPSDKHTTPClientError
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.config import Config
 from spsdk.utils.misc import use_working_directory
@@ -49,18 +49,13 @@ def test_00_001_whitelist_device(
     shutil.copy(os.path.join(data_dir, config), work_dir)
     with use_working_directory(work_dir):
         config_data = Config.create_from_file(config)
-        generic_dict = {"mock": "el2go_test", "api": "response"}
-
-        mock_el2go_response = EL2GOApiResponse(status_code=status_code, json_body=generic_dict)
-        mock_url = "mock_url"
         client = EL2GOTPClient.load_from_config(config_data=config_data)
         client.headers["EL2G-Correlation-ID"] = "some-uuid"
         with patch(
             "spsdk.el2go.api_utils.EL2GOTPClient._assign_device_to_group",
-            return_value=[mock_el2go_response, mock_url],
+            return_value=None,
         ):
             client.assign_device_to_devicegroup(device_id=device_id)
-            client.response_handling(mock_el2go_response, mock_url)
 
 
 @pytest.mark.parametrize(
@@ -92,8 +87,7 @@ def test_00_002_device_reg_correct_group(
 
         generic_dict = {"mock": "el2go_test", "api": "response", "code": "SOME_CODE"}
 
-        mock_el2go_response = EL2GOApiResponse(status_code=status_code, json_body=generic_dict)
-        mock_url = "mock_url"
+        mock_error = SPSDKHTTPClientError(status_code=status_code, response=generic_dict)
         client = EL2GOTPClient.load_from_config(config_data=config_data)
         client.headers["EL2G-Correlation-ID"] = "some-uuid"
         client.device_group_id = int(device_group_id)
@@ -101,7 +95,7 @@ def test_00_002_device_reg_correct_group(
         with (
             patch(
                 "spsdk.el2go.api_utils.EL2GOTPClient._assign_device_to_group",
-                return_value=[mock_el2go_response, mock_url],
+                side_effect=mock_error,
             ),
             patch(
                 "spsdk.el2go.api_utils.EL2GOTPClient._find_device_group_id",
@@ -142,15 +136,14 @@ def test_00_004_005_assign_device_error(
         config_data = Config.create_from_file(config)
         generic_dict = {"mock": "el2go_test", "api": "response"}
 
-        mock_el2go_response = EL2GOApiResponse(status_code=status_code, json_body=generic_dict)
-        mock_url = "mock_url"
+        mock_error = SPSDKHTTPClientError(status_code=status_code, response=generic_dict)
         client = EL2GOTPClient.load_from_config(config_data=config_data)
         client.headers["EL2G-Correlation-ID"] = "some-uuid"
 
         with (
             patch(
                 "spsdk.el2go.api_utils.EL2GOTPClient._assign_device_to_group",
-                return_value=[mock_el2go_response, mock_url],
+                side_effect=mock_error,
             ),
             pytest.raises(SPSDKError),
         ):

@@ -27,7 +27,13 @@ from spsdk import SPSDK_DEBUG_LOG_FILE, SPSDK_DEBUG_LOGGING_DISABLED
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
-from spsdk.utils.misc import get_abs_path, get_printable_path, value_to_int, write_file
+from spsdk.utils.misc import (
+    get_abs_path,
+    get_printable_path,
+    output_format_from_path,
+    value_to_int,
+    write_file,
+)
 from spsdk.utils.verifier import Verifier, VerifierResult
 
 WARNING_MSG = """
@@ -265,6 +271,7 @@ def filepath_from_config(
     default_value: str,
     output_folder: str = "",
     file_extension: str = ".bin",
+    keep_image_extension: bool = False,
 ) -> str:
     """Get file path from configuration dictionary and append .bin if the value is not blank.
 
@@ -276,6 +283,8 @@ def filepath_from_config(
     :param default_value: default value in case key value is not present
     :param output_folder: Output folder, if blank file path from config will be used
     :param file_extension: File extension that will be appended
+    :param keep_image_extension: Do not append the file extension if the filename already ends
+        with a known binary image extension (.bin, .hex, .srec, .s19, .simg, ...)
     :return: filename with appended ".bin" or blank filename ""
     """
     filename = config.get(key, default_value)
@@ -283,6 +292,8 @@ def filepath_from_config(
         return filename
     if not os.path.dirname(filename):
         filename = os.path.join(output_folder, filename)
+    if keep_image_extension and output_format_from_path(filename):
+        return get_abs_path(filename, config.config_dir)
     if not filename.endswith(file_extension):
         filename += file_extension
     return get_abs_path(filename, config.config_dir)

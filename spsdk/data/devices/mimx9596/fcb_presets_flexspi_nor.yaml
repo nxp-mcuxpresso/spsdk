@@ -1,0 +1,90 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# FCB presets of standard FlexSPI NOR memories for i.MX95.
+# The preset settings are applied on top of the reset values of the FCB registers.
+# Each preset has a "description" and "settings" with the FCB register values.
+
+mt35x_octal_ddr_200mhz:
+  description: Micron MT35X Octal DDR NOR flash, 200 MHz
+  settings:
+    readSampleClkSrc: "0x03"
+    csHoldTime: "0x03"
+    csSetupTime: "0x03"
+    deviceModeCfgEnable: "0x01"
+    deviceModeSeq: { seqNum: "0x01", seqId: "0x04" }
+    deviceModeArg: "0x000000E7"
+    controllerMiscOption: "0x00000050"
+    deviceType: "0x01"
+    sflashPadType: "0x08"
+    serialClkFreq: "0x08"
+    sflashA1Size: "0x10000000"
+    # Sequence 0: Octal DDR read (0xFD)
+    lookupTable_seq0_instr0: { OPERAND: "0xFD", NUM_PADS: 8PAD, OPERATION_CODE: CMD_DDR }
+    lookupTable_seq0_instr1: { OPERAND: "0xFD", NUM_PADS: 8PAD, OPERATION_CODE: CMD_DDR }
+    lookupTable_seq0_instr2: { OPERAND: "0x20", NUM_PADS: 8PAD, OPERATION_CODE: RADDR_DDR }
+    lookupTable_seq0_instr3: { OPERAND: "0x20", NUM_PADS: 8PAD, OPERATION_CODE: DUMMY_DDR }
+    lookupTable_seq0_instr4: { OPERAND: "0x04", NUM_PADS: 8PAD, OPERATION_CODE: READ_DDR }
+    # Sequence 1: Octal DDR read status register
+    lookupTable_seq1_instr0: { OPERAND: "0x05", NUM_PADS: 8PAD, OPERATION_CODE: CMD_DDR }
+    lookupTable_seq1_instr1: { OPERAND: "0x05", NUM_PADS: 8PAD, OPERATION_CODE: CMD_DDR }
+    lookupTable_seq1_instr2: { OPERAND: "0x20", NUM_PADS: 8PAD, OPERATION_CODE: DUMMY_DDR }
+    lookupTable_seq1_instr3: { NUM_PADS: 8PAD, OPERATION_CODE: READ_DDR }
+    # Sequence 3: Write enable (single pad SDR)
+    lookupTable_seq3_instr0: { OPERAND: "0x06", OPERATION_CODE: CMD_SDR }
+    # Sequence 4: Write volatile configuration register, switches the memory to Octal DDR mode
+    lookupTable_seq4_instr0: { OPERAND: "0x81", OPERATION_CODE: CMD_SDR }
+    lookupTable_seq4_instr1: { OPERAND: "0x18", OPERATION_CODE: RADDR_SDR }
+    lookupTable_seq4_instr2: { OPERAND: "0x01", OPERATION_CODE: WRITE_SDR }
+    pageSize: "0x00000100"
+    sectorSize: "0x00010000"
+mt35x_octal_ddr_133mhz:
+  description: Micron MT35X Octal DDR NOR flash, 133 MHz
+  settings:
+    readSampleClkSrc: "0x03"
+    csHoldTime: "0x03"
+    csSetupTime: "0x03"
+    deviceModeCfgEnable: "0x01"
+    deviceModeSeq: { seqNum: "0x01", seqId: "0x04" }
+    deviceModeArg: "0x000000E7"
+    controllerMiscOption: "0x00000050"
+    deviceType: "0x01"
+    sflashPadType: "0x08"
+    serialClkFreq: "0x06"
+    sflashA1Size: "0x10000000"
+    # Sequence 0: Octal DDR read (0xFD)
+    lookupTable_seq0_instr0: { OPERAND: "0xFD", NUM_PADS: 8PAD, OPERATION_CODE: CMD_DDR }
+    lookupTable_seq0_instr1: { OPERAND: "0xFD", NUM_PADS: 8PAD, OPERATION_CODE: CMD_DDR }
+    lookupTable_seq0_instr2: { OPERAND: "0x20", NUM_PADS: 8PAD, OPERATION_CODE: RADDR_DDR }
+    lookupTable_seq0_instr3: { OPERAND: "0x20", NUM_PADS: 8PAD, OPERATION_CODE: DUMMY_DDR }
+    lookupTable_seq0_instr4: { OPERAND: "0x04", NUM_PADS: 8PAD, OPERATION_CODE: READ_DDR }
+    # Sequence 1: Octal DDR read status register
+    lookupTable_seq1_instr0: { OPERAND: "0x05", NUM_PADS: 8PAD, OPERATION_CODE: CMD_DDR }
+    lookupTable_seq1_instr1: { OPERAND: "0x05", NUM_PADS: 8PAD, OPERATION_CODE: CMD_DDR }
+    lookupTable_seq1_instr2: { OPERAND: "0x20", NUM_PADS: 8PAD, OPERATION_CODE: DUMMY_DDR }
+    lookupTable_seq1_instr3: { NUM_PADS: 8PAD, OPERATION_CODE: READ_DDR }
+    # Sequence 3: Write enable (single pad SDR)
+    lookupTable_seq3_instr0: { OPERAND: "0x06", OPERATION_CODE: CMD_SDR }
+    # Sequence 4: Write volatile configuration register, switches the memory to Octal DDR mode
+    lookupTable_seq4_instr0: { OPERAND: "0x81", OPERATION_CODE: CMD_SDR }
+    lookupTable_seq4_instr1: { OPERAND: "0x18", OPERATION_CODE: RADDR_SDR }
+    lookupTable_seq4_instr2: { OPERAND: "0x01", OPERATION_CODE: WRITE_SDR }
+    pageSize: "0x00000100"
+    sectorSize: "0x00010000"
+w25q512nw_single_sdr_133mhz:
+  description: Winbond W25Q512NW NOR flash, single pad SDR, 133 MHz
+  settings:
+    csHoldTime: "0x03"
+    csSetupTime: "0x03"
+    deviceType: "0x01"
+    sflashPadType: "0x01"
+    serialClkFreq: "0x06"
+    sflashA1Size: "0x10000000"
+    # Sequence 0: Fast read (0x0B), 24-bit address, 8 dummy cycles
+    lookupTable_seq0_instr0: { OPERAND: "0x0B", OPERATION_CODE: CMD_SDR }
+    lookupTable_seq0_instr1: { OPERAND: "0x18", OPERATION_CODE: RADDR_SDR }
+    lookupTable_seq0_instr2: { OPERAND: "0x08", OPERATION_CODE: DUMMY_SDR }
+    lookupTable_seq0_instr3: { OPERAND: "0x04", OPERATION_CODE: READ_SDR }
+    pageSize: "0x00000100"
+    sectorSize: "0x00010000"

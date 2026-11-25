@@ -159,6 +159,43 @@ def test_tz_verify_customized(sample_tz_data: Config) -> None:
     assert len(verifier.records) > 1
 
 
+def test_tz_registers_lazy_load() -> None:
+    """Test TrustZone registers are loaded from database only when really needed."""
+    tz = TrustZone(family=FamilyRevision("mimxrt798s"))
+    # Default TrustZone doesn't need registers to decide it is not customized
+    assert not tz.is_customized
+    assert tz._regs is None
+    # Accessing registers loads them and the result is consistent with reset values
+    assert len(tz) > 0
+    assert tz._regs is not None
+    assert not tz.is_customized
+
+
+def test_mbi_without_trustzone_does_not_load_registers(tmpdir: str) -> None:
+    """Test MBI configuration without TrustZone preset doesn't load TrustZone registers."""
+    from spsdk.image.mbi.mbi import MasterBootImage
+
+    app_file = os.path.join(tmpdir, "app.bin")
+    with open(app_file, "wb") as f:
+        f.write(bytes(1024))
+    config = Config(
+        {
+            "family": "mimxrt798s",
+            "inputImageFile": app_file,
+            "outputImageExecutionTarget": "load-to-ram",
+            "outputImageAuthenticationType": "crc",
+            "outputImageExecutionAddress": "0x20080000",
+            "trustZonePresetFile": "",
+        }
+    )
+    mbi = MasterBootImage.load_from_config(config)
+    trust_zone = getattr(mbi, "trust_zone")
+    assert isinstance(trust_zone, TrustZone)
+    assert trust_zone._regs is None
+    mbi.export()
+    assert trust_zone._regs is None
+
+
 def test_tz_v2_verify_default_values() -> None:
     """Test TrustZoneV2.verify() doesn't report the generic 'Not implemented' warning."""
     tz = TrustZoneV2(family=FamilyRevision("mcxn556s"))

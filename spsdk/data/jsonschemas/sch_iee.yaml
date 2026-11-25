@@ -22,21 +22,21 @@ iee_output:
     output_name:
       type: string
       title: Output binary image filename
-      description: Filename of the output image containing keyblobs and encrypted data blobs without file extension (.bin will be appended)
+      description: Filename of the output image containing keyblobs and encrypted data blobs. If the name has no image file extension (.bin, .hex, .srec, .s19, .simg), the extension given by output_format is appended. A given image file extension is kept and also selects the format of the file
       template_value: "iee_full_image"
       default: "iee_full_image"
 
     keyblob_name:
       type: string
       title: Keyblob filename
-      description: Filename of the keyblob without file extension (.bin will be appended)
+      description: Filename of the keyblob. If the name has no image file extension (.bin, .hex, .srec, .s19, .simg), the extension given by output_format is appended. A given image file extension is kept and also selects the format of the file
       template_value: "iee_keyblob"
       default: "iee_keyblob"
 
     encrypted_name:
       type: string
       title: Encrypted name
-      description: filename of the encrypted datablobs without file extension (.bin will be appended)
+      description: filename of the encrypted datablobs. If the name has no image file extension (.bin, .hex, .srec, .s19, .simg), the extension given by output_format is appended. A given image file extension is kept and also selects the format of the file
       template_value: "encrypted_blob"
       default: "encrypted_blob"
 

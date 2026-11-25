@@ -14,7 +14,6 @@ import contextlib
 import copy
 import functools
 import hashlib
-import json
 import logging
 import math
 import os
@@ -30,6 +29,7 @@ from pathlib import Path
 from struct import pack, unpack
 from typing import Any, ClassVar, TypeVar
 
+import pyjson5
 import yaml
 
 from spsdk import SPSDK_SECRETS_PATH
@@ -379,6 +379,31 @@ def file_extension(output_format: str = "bin", add_dot: bool = True) -> str:
     if add_dot:
         ret = "." + ret
     return ret
+
+
+IMAGE_FILE_EXTENSIONS: dict[str, str] = {
+    ".bin": "bin",
+    ".hex": "hex",
+    ".ihex": "hex",
+    ".srec": "srec",
+    ".s19": "srec",
+    ".s28": "srec",
+    ".s37": "srec",
+    ".simg": "sparse",
+}
+
+
+def output_format_from_path(path: str, default: str = "") -> str:
+    """Get the output format implied by the file extension of the path.
+
+    The recognized extensions are ".bin", ".hex", ".ihex", ".srec", ".s19", ".s28", ".s37" and
+    ".simg" (case insensitive).
+
+    :param path: Path to the file.
+    :param default: Value returned if the extension is not recognized, defaults to "".
+    :return: Output format ["bin", "hex", "srec", "sparse"] or the default value.
+    """
+    return IMAGE_FILE_EXTENSIONS.get(os.path.splitext(path)[1].lower(), default)
 
 
 def get_abs_path(file_path: str, base_dir: str | None = None) -> str:
@@ -1046,11 +1071,13 @@ def check_range(x: int, start: int = 0, end: int = (1 << 32) - 1) -> bool:
 
 
 def load_configuration(path: str, search_paths: list[str] | None = None) -> dict:
-    """Load configuration from YAML or JSON file.
+    """Load configuration from YAML, JSON, or JSONC/JSON5 file.
 
-    The method attempts to parse the file content as JSON first, then falls back
-    to YAML parsing if JSON parsing fails. It uses SecretsLoader for YAML parsing
-    to handle sensitive data securely.
+    The method attempts to parse the file content as JSON/JSONC/JSON5 first (via
+    the ``pyjson5`` parser, which is a superset of plain JSON and additionally
+    supports ``//`` line comments, ``/* */`` block comments, and trailing commas),
+    then falls back to YAML parsing if that fails. It uses SecretsLoader for YAML
+    parsing to handle sensitive data securely.
 
     Parsed results are cached in memory keyed by ``(absolute_path, mtime)`` so that
     repeated calls with the same unchanged file avoid re-parsing overhead.
@@ -1084,8 +1111,8 @@ def load_configuration(path: str, search_paths: list[str] | None = None) -> dict
     json_error: Exception | None = None
     yaml_error: Exception | None = None
     try:
-        config_data = json.loads(config)
-    except json.JSONDecodeError as json_exc:
+        config_data = pyjson5.loads(config)
+    except pyjson5.Json5Exception as json_exc:
         json_error = json_exc
         try:
             # SecretLoader inherits from SafeLoader, thus using yaml.load is OK

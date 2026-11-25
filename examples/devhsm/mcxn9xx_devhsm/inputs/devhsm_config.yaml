@@ -1,0 +1,35 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# =====================  DEVHSM (Device HSM) provisioning SB file configuration for mcxn946  ======================
+# NXP chip family identifier.
+family: mcxn946
+# Revision of silicon.
+revision: latest
+# Part Common Key / CUST_MK_SK - 256-bit customer master symmetric key. On the device this key is
+# derived and stored inside the EdgeLock keystore and is later used to encrypt/decrypt SB3.1 blocks.
+# Here it is provided as a plain hex string for demonstration purposes only.
+containerKeyBlobEncryptionKey: cust_mk_sk.txt
+# Reset the device before starting the DEVHSM operation.
+initialReset: false
+# Reset the device after the DEVHSM operation (so the freshly provisioned image can boot).
+finalReset: true
+# Path where to store the generated DEVHSM provisioning SB file.
+containerOutputFile: ../workspace/mcxn9xx_devhsm.sb
+# Minimal provisioning steps: load the chip configuration (CMPA/CFPA). The CUST_MK_SK key blob
+# load command is injected automatically from 'containerKeyBlobEncryptionKey'.
+commands:
+  # Load CMPA (contains the RKTH / Root of Trust and secure boot configuration).
+  - load:
+      address: 0x0100_4000
+      file: ../workspace/cmpa.bin
+  # Load CFPA.
+  - load:
+      address: 0x0100_0000
+      file: ../workspace/cfpa.bin
+  # WARNING: Advancing the life cycle to "in-field"/production is an IRREVERSIBLE operation and
+  # permanently seals the device. Uncomment only when you intend to lock the part for production.
+  # - programFuses:
+  #     address: 1
+  #     values: 0x300_0003

@@ -8,7 +8,7 @@
 
 from pathlib import Path
 from types import SimpleNamespace
-from typing import cast
+from typing import Literal, cast
 
 import pytest
 
@@ -24,7 +24,8 @@ from spsdk.crypto.keys import (
 if IS_LMS_SUPPORTED:
     from spsdk.crypto.keys import PrivateKeyLMS
     from spsdk.crypto.lms import LMSParams
-from spsdk.exceptions import SPSDKError, SPSDKUnsupportedOperation, SPSDKValueError
+
+from spsdk.exceptions import SPSDKError, SPSDKKeyError, SPSDKUnsupportedOperation, SPSDKValueError
 from spsdk.image.ahab.ahab_container import AHABContainerV2
 from spsdk.image.ahab.ahab_data import (
     AhabChipContainerConfig,
@@ -41,7 +42,9 @@ from spsdk.image.ahab.ahab_srk import (
     SRKTableV2,
     get_key_by_val,
 )
+from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
+from spsdk.utils.verifier import VerifierRecord, VerifierResult
 
 FAMILY = FamilyRevision("mimxrt1189")
 RT2660_FAMILY = FamilyRevision("mimxrt2662")
@@ -294,6 +297,27 @@ def test_srk_record_get_key_name_ecdsa(ecc521_pub) -> None:  # type: ignore[no-u
     assert "secp521r1" in name.lower() or "521" in name.lower() or "EccCurve" in name
 
 
+@pytest.mark.skipif(not IS_LMS_SUPPORTED, reason="pyhsslms not available")
+@pytest.mark.parametrize("hash_length,expected_name", [(32, "lms256"), (24, "lms192")])
+def test_srk_record_get_key_name_lms(
+    rt2660_chip_config_container: AhabChipContainerConfig,
+    hash_length: Literal[32, 24],
+    expected_name: str,
+) -> None:
+    """get_key_name() returns correct name for LMS keys.
+
+    :param rt2660_chip_config_container: RT2660 chip configuration supporting LMS.
+    :param hash_length: LMS hash length in bytes.
+    :param expected_name: Expected key name.
+    """
+    lms_pub = PrivateKeyLMS.generate_key(
+        LMSParams(hash_length=hash_length, height=5, w=1)
+    ).get_public_key()
+    srk = SRKRecordV2.create_from_key(lms_pub, chip_config=rt2660_chip_config_container.base)
+    assert srk.get_key_name() == expected_name
+    assert SRKTable._get_record_name(srk) == expected_name
+
+
 # SRKRecord – flags
 
 
@@ -395,6 +419,144 @@ def test_srk_table_verify_wrong_count(ecc256_pub) -> None:  # type: ignore[no-un
     table.update_fields()
     v = table.verify()
     assert v.has_errors
+
+
+def _mixed_ecc_srk_config(hash_algorithm: str = "default") -> Config:
+    """Return SRK table config with 2x ECC P-256 and 2x ECC P-384 keys."""
+    return Config(
+        {
+            "srk_array": [
+                str(KEYS_DIR / "ecc256" / "srk0_ecc256.pub"),
+                str(KEYS_DIR / "ecc256" / "srk1_ecc256.pub"),
+                str(KEYS_DIR / "ecc384" / "srk2_ecc384.pub"),
+                str(KEYS_DIR / "ecc384" / "srk3_ecc384.pub"),
+            ],
+            "hash_algorithm": hash_algorithm,
+        }
+    )
+
+
+def test_srk_table_verify_rt2660_mixed_ecc_default_hash(
+    rt2660_chip_config_container: AhabChipContainerConfig,
+) -> None:
+    """Mixed keys with default hash algorithm use one common hash algorithm in the SRK table.
+
+    The default hash algorithm of the first SRK key (SHA256 for P-256) is used for all records,
+    the P-384 keys must not get their own default (SHA384).
+    """
+    assert rt2660_chip_config_container.base.allow_key_mix
+    table = SRKTable.load_from_config(
+        _mixed_ecc_srk_config(), chip_config=rt2660_chip_config_container.base
+    )
+    table.update_fields()
+
+    assert [rec.hash_algorithm.label for rec in table.srk_records] == ["SHA256"] * 4
+    assert len({rec.length for rec in table.srk_records}) == 2
+    assert not table.verify().has_errors
+
+
+def test_srk_table_verify_rt2660_mixed_hash_algorithms(
+    rt2660_chip_config_container: AhabChipContainerConfig,
+) -> None:
+    """Different hash algorithms in SRK records are rejected even if key mix is allowed."""
+    chip_config = rt2660_chip_config_container.base
+    assert chip_config.allow_key_mix
+    table = SRKTable()
+    table._chip_config = chip_config
+    for srk_id, (key, hash_label) in enumerate(
+        [
+            ("ecc256/srk0_ecc256.pub", "SHA256"),
+            ("ecc256/srk1_ecc256.pub", "SHA256"),
+            ("ecc384/srk2_ecc384.pub", "SHA384"),
+            ("ecc384/srk3_ecc384.pub", "SHA384"),
+        ]
+    ):
+        table.add_record(
+            PublicKeyEcc.load(str(KEYS_DIR / key)),
+            srk_id=srk_id,
+            hash_algorithm=chip_config.hash_algorithms.from_label(hash_label),  # type: ignore[arg-type]
+        )
+    table.update_fields()
+
+    ver = table.verify()
+    assert ver.has_errors
+    hash_record = next(
+        rec
+        for rec in ver.records
+        if isinstance(rec, VerifierRecord) and rec.name == "Hash algorithm"
+    )
+    assert hash_record.result == VerifierResult.ERROR
+    assert "[2] SECP384R1: SHA384" in str(hash_record.value)
+    assert "'hash_algorithm'" in str(hash_record.value)
+
+
+@pytest.mark.parametrize("srk_table_cls", [SRKTable, SRKTableV2])
+@pytest.mark.parametrize("hash_algorithm", ["sha256", "sha384"])
+def test_srk_table_verify_rt2660_mixed_ecc_explicit_hash(
+    rt2660_chip_config_container: AhabChipContainerConfig,
+    srk_table_cls: type[SRKTable],
+    hash_algorithm: str,
+) -> None:
+    """RT2660 allows mixing ECC P-256 and P-384 keys when the hash algorithm is set explicitly."""
+    table = srk_table_cls.load_from_config(
+        _mixed_ecc_srk_config(hash_algorithm), chip_config=rt2660_chip_config_container.base
+    )
+    table.update_fields()
+
+    assert {rec.hash_algorithm.label for rec in table.srk_records} == {hash_algorithm.upper()}
+    assert len({rec.length for rec in table.srk_records}) == (2 if srk_table_cls is SRKTable else 1)
+    assert not table.verify().has_errors
+
+
+def test_srk_table_array_verify_rt2660_mixed_ecc_default_hash(
+    rt2660_chip_config_container: AhabChipContainerConfig,
+) -> None:
+    """SRK table array (AHAB v2) with mixed keys and default hash uses one hash algorithm."""
+    table = SRKTableV2.load_from_config(
+        _mixed_ecc_srk_config(), chip_config=rt2660_chip_config_container.base
+    )
+    table.update_fields()
+    assert {rec.hash_algorithm.label for rec in table.srk_records} == {"SHA256"}
+    arr = SRKTableArray(chip_config=rt2660_chip_config_container, srk_tables=[table])
+    arr.update_fields()
+    assert not arr.verify().has_errors
+
+
+def test_srk_table_verify_mixed_ecc_not_allowed(
+    chip_config_container: AhabChipContainerConfig,
+) -> None:
+    """Mixed ECC key sizes fail verification on devices without key mix support."""
+    table = SRKTable.load_from_config(
+        _mixed_ecc_srk_config(), chip_config=chip_config_container.base
+    )
+    table.update_fields()
+    assert table.verify().has_errors
+
+
+def test_srk_table_rt2660_unsupported_hash_algorithm(
+    rt2660_chip_config_container: AhabChipContainerConfig,
+) -> None:
+    """RT2660 rejects hash algorithms not listed in its device database."""
+    with pytest.raises(SPSDKKeyError):
+        SRKTable.load_from_config(
+            _mixed_ecc_srk_config("sm3"), chip_config=rt2660_chip_config_container.base
+        )
+
+
+@pytest.mark.parametrize("family", ["mimxrt2660", "mimxrt2661", "mimxrt2662", "mimxrt2663"])
+def test_rt266x_ahab_enums_restricted(family: str) -> None:
+    """RT266x AHAB enums contain only device-supported members, not merged defaults."""
+    chip_config = create_chip_config(family=FamilyRevision(family))
+    assert [m.label for m in chip_config.signature_algorithms] == ["ECDSA", "ML-DSA", "LMS"]
+    assert [m.label for m in chip_config.hash_algorithms] == [
+        "SHA256",
+        "SHA384",
+        "SHA512",
+        "SHA3_256",
+        "SHA3_384",
+        "SHA3_512",
+    ]
+    assert [m.label for m in chip_config.srk_sets] == ["none", "nxp", "oem", "dev", "iccs"]
 
 
 # SRKTable – export / parse round-trip
@@ -777,16 +939,19 @@ def test_srk_table_array_verify_rt2660_mixed_mldsa_lms(
     assert rt2660_chip_config_container.base.allow_key_mix
     assert not create_chip_config(family=FAMILY).allow_key_mix
 
+    hash_algorithm = rt2660_chip_config_container.base.hash_algorithms.from_label("SHA256")
     table = SRKTableV2()
     table._chip_config = rt2660_chip_config_container.base
     for srk_id in range(3):
         table.add_record(
             PublicKeyMLDSA.load(str(KEYS_DIR / "mldsa65" / f"srk{srk_id}_mldsa65_native.pub")),
             srk_id=srk_id,
+            hash_algorithm=hash_algorithm,  # type: ignore[arg-type]
         )
     table.add_record(
         PrivateKeyLMS.generate_key(LMSParams(hash_length=32, height=5, w=1)).get_public_key(),
         srk_id=3,
+        hash_algorithm=hash_algorithm,  # type: ignore[arg-type]
     )
     table.update_fields()
     arr = SRKTableArray(chip_config=rt2660_chip_config_container, srk_tables=[table])
@@ -949,3 +1114,26 @@ def test_srk_record_get_public_key_unsupported_algo(ecc256_pub) -> None:  # type
     srk.version = AHABSignAlgorithm.DILITHIUM.tag
     with pytest.raises(SPSDKUnsupportedOperation):
         srk.get_public_key()
+
+
+@pytest.mark.parametrize("srk_table_cls", [SRKTable, SRKTableV2])
+@pytest.mark.parametrize("srk_count", [0, 3, 5])
+def test_srk_table_load_from_config_invalid_count(
+    srk_table_cls: type[SRKTable], srk_count: int
+) -> None:
+    """SRK table loaded from configuration must contain exactly SRK_RECORDS_CNT keys."""
+    keys = [str(KEYS_DIR / "ecc256" / f"srk{i % 4}_ecc256.pub") for i in range(srk_count)]
+    with pytest.raises(SPSDKValueError, match="srk_array"):
+        srk_table_cls.load_from_config(Config({"srk_array": keys}))
+
+
+@pytest.mark.parametrize("srk_table_cls", [SRKTable, SRKTableV2])
+def test_srk_table_load_from_config_valid_count(srk_table_cls: type[SRKTable]) -> None:
+    """SRK table loaded from configuration with SRK_RECORDS_CNT keys is valid."""
+    keys = [
+        str(KEYS_DIR / "ecc256" / f"srk{i}_ecc256.pub") for i in range(SRKTable.SRK_RECORDS_CNT)
+    ]
+    table = srk_table_cls.load_from_config(Config({"srk_array": keys}))
+    table.update_fields()
+    assert len(table.srk_records) == SRKTable.SRK_RECORDS_CNT
+    assert not table.verify().has_errors

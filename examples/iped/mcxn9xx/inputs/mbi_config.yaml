@@ -1,0 +1,18 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ==================  Master Boot Image configuration for mcxn946 (signed, external XIP)  ==================
+# Signed MBI executed in place from external FlexSPI flash (mapped at 0x80000000). Confidentiality is
+# provided by IPED (In-line PRINCE Encryption/Decryption) configured in the CMPA - the FlexSPI
+# controller decrypts the external flash region on the fly, so the MBI itself is only signed here.
+family: mcxn946
+revision: latest
+outputImageExecutionTarget: xip
+outputImageAuthenticationType: signed
+masterBootOutputFile: ../workspace/mcxn9xx_ext_signed.bin
+inputImageFile: frdm_mcxn947_led_blinky.bin
+# External FlexSPI XIP execution address (must match the IPED region start in the CMPA).
+outputImageExecutionAddress: 0x80001000
+certBlock: cert_block_mcxn9xx.yaml
+signer: ../../_data/keys/ecc256/srk0_ecc256.pem

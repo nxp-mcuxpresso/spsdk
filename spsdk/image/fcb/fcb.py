@@ -17,13 +17,14 @@ from typing import Any
 
 from typing_extensions import Self
 
+from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
 from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.image.mem_type import MemoryType
 from spsdk.image.segments_base import SegmentBase
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager, get_schema_file
-from spsdk.utils.family import FamilyRevision, update_validation_schema_family
-from spsdk.utils.misc import Endianness, swap_bytes
+from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_family
+from spsdk.utils.misc import Endianness, load_configuration, swap_bytes, value_to_bytes
 from spsdk.utils.registers import Registers, RegistersPreValidationHook
 
 logger = logging.getLogger(__name__)
@@ -40,12 +41,14 @@ class FCB(SegmentBase):
     :cvar FEATURE: Database feature identifier for FCB operations.
     :cvar TAG: Binary tag identifier for FCB segments.
     :cvar TAG_SWAPPED: Byte-swapped version of the FCB tag.
+    :cvar TAG_REGISTER: Default name of the register holding the FCB tag.
     """
 
     FEATURE = DatabaseManager.FCB
     PRE_VALIDATION_CFG_HOOK = RegistersPreValidationHook(register_keys=["fcb_settings"])
     TAG = b"FCFB"
     TAG_SWAPPED = swap_bytes(TAG)
+    TAG_REGISTER = "tag"
 
     def __init__(self, family: FamilyRevision, mem_type: MemoryType) -> None:
         """FCB Constructor.
@@ -69,6 +72,61 @@ class FCB(SegmentBase):
             base_key=["mem_types", self.mem_type.label],
             base_endianness=Endianness.LITTLE,
         )
+        self.tag_register: str = self.db.get_str(
+            self.FEATURE, ["mem_types", self.mem_type.label, "tag_register"], self.TAG_REGISTER
+        )
+        self.crc_register: str | None = (
+            self.db.get_str(self.FEATURE, ["mem_types", self.mem_type.label, "crc_register"], "")
+            or None
+        )
+
+    @property
+    def tag(self) -> bytes:
+        """Get the expected FCB tag for used memory type.
+
+        :return: Expected tag value in bytes.
+        """
+        return value_to_bytes(
+            self.registers.find_reg(self.tag_register).get_reset_value(),
+            byte_cnt=4,
+            endianness=Endianness.LITTLE,
+        )
+
+    @property
+    def tag_offset(self) -> int:
+        """Get the offset of FCB tag for used memory type.
+
+        :return: Offset of the tag register in bytes.
+        """
+        return self.registers.find_reg(self.tag_register).offset
+
+    def calculate_crc(self) -> int:
+        """Calculate the FCB checksum.
+
+        The CRC32 MPEG2 variant is calculated over the whole FCB except the checksum field itself.
+
+        :raises SPSDKError: The FCB of this memory type has no checksum.
+        :return: Calculated checksum.
+        """
+        if not self.crc_register:
+            raise SPSDKError(f"FCB for memory type {self.mem_type.label} has no checksum.")
+        crc_reg = self.registers.find_reg(self.crc_register)
+        data = self.registers.export()
+        data = data[: crc_reg.offset] + data[crc_reg.offset + crc_reg.width // 8 :]
+        return from_crc_algorithm(CrcAlg.CRC32_MPEG).calculate(data)
+
+    def update_crc(self) -> None:
+        """Update the FCB checksum register, if the FCB of used memory type has any."""
+        if self.crc_register:
+            self.registers.find_reg(self.crc_register).set_value(self.calculate_crc(), raw=True)
+
+    def export(self) -> bytes:
+        """Export FCB to binary representation with updated checksum.
+
+        :return: Binary data of the FCB.
+        """
+        self.update_crc()
+        return super().export()
 
     @property
     def size(self) -> int:
@@ -103,23 +161,33 @@ class FCB(SegmentBase):
         :param offset: Offset position of FCB in the binary image.
         :param family: Target chip family revision.
         :param mem_type: Memory type used for the FCB.
-        :raises SPSDKError: If binary block size is insufficient or contains invalid FCB tag.
+        :raises SPSDKError: If binary block size is insufficient, contains invalid FCB tag
+            or invalid checksum.
         :return: Parsed FCB object instance.
         """
         fcb = cls(family=family, mem_type=mem_type)
-        if len(binary[offset:]) < fcb.size:
-            raise SPSDKError(
-                f"Invalid input binary block size: ({len(binary[offset:])} < {fcb.size})."
-            )
-        if binary[: (len(cls.TAG))] == cls.TAG_SWAPPED:
+        binary = binary[offset:]
+        if len(binary) < fcb.size:
+            raise SPSDKError(f"Invalid input binary block size: ({len(binary)} < {fcb.size}).")
+        tag_offset = fcb.tag_offset
+        expected_tag = fcb.tag
+        if binary[tag_offset : tag_offset + len(expected_tag)] == swap_bytes(expected_tag):
             logger.info("Swapped bytes order has been detected. Fixing the bytes order.")
             binary = swap_bytes(binary)
-        fcb.registers.parse(binary[offset:])
-        tag = fcb.registers.find_reg("tag")
-        if tag.get_bytes_value() != cls.TAG:
+        fcb.registers.parse(binary)
+        tag = fcb.registers.find_reg(fcb.tag_register)
+        if tag.get_bytes_value() != expected_tag:
             raise SPSDKError(
                 f"Tag value {tag.get_bytes_value()!r} does does not match the expected value."
             )
+        if fcb.crc_register:
+            crc = fcb.registers.find_reg(fcb.crc_register).get_value(raw=True)
+            calculated_crc = fcb.calculate_crc()
+            if crc != calculated_crc:
+                raise SPSDKError(
+                    f"FCB checksum 0x{crc:08X} does not match the calculated value "
+                    f"0x{calculated_crc:08X}."
+                )
         return fcb
 
     @classmethod
@@ -137,11 +205,54 @@ class FCB(SegmentBase):
             family = FamilyRevision.load_from_config(config)
             mem_type = MemoryType.from_label(config.get_str("type"))
             fcb = cls(family=family, mem_type=mem_type)
-            fcb_settings = config.get_config("fcb_settings")
-            fcb.registers.load_from_config(fcb_settings)
+            preset = config.get("preset")
+            if preset:
+                fcb.apply_preset(str(preset))
+            # The explicit settings are applied on top of the preset (if any)
+            if "fcb_settings" in config:
+                fcb.registers.load_from_config(config.get_config("fcb_settings"))
+            elif not preset:
+                raise SPSDKValueError("The 'fcb_settings' or 'preset' must be defined.")
         except (SPSDKError, AttributeError) as exc:
             raise SPSDKValueError(f"Cannot load FCB configuration: {exc!s}") from exc
         return fcb
+
+    @classmethod
+    def get_presets(
+        cls, family: FamilyRevision, mem_type: MemoryType = MemoryType.FLEXSPI_NOR
+    ) -> dict[str, dict[str, Any]]:
+        """Get FCB presets for standard memories defined in the database.
+
+        The presets are stored in a separate data file referenced by the 'presets_file' key of the
+        memory type in the database. Each preset is a dictionary with a 'description' and
+        'settings' with register values, which are applied on top of the reset values of the FCB
+        registers.
+
+        :param family: Chip family and revision information.
+        :param mem_type: Memory type of the FCB.
+        :return: Dictionary of presets, the key is the preset name.
+        """
+        mem_types_cfg = cls.get_memory_types_config(family)
+        if "presets_file" not in mem_types_cfg.get(mem_type.label, {}):
+            return {}
+        presets_file = get_db(family).get_file_path(
+            cls.FEATURE, ["mem_types", mem_type.label, "presets_file"]
+        )
+        return dict(load_configuration(presets_file))
+
+    def apply_preset(self, preset: str) -> None:
+        """Apply FCB preset of a standard memory to the FCB registers.
+
+        :param preset: Name of the preset from the database.
+        :raises SPSDKValueError: The preset is not defined for the family and memory type.
+        """
+        presets = self.get_presets(self.family, self.mem_type)
+        if preset not in presets:
+            raise SPSDKValueError(
+                f"Unknown FCB preset '{preset}' for {self.family} and {self.mem_type.label}. "
+                f"Available presets: {', '.join(presets) or 'none'}"
+            )
+        self.registers.load_from_config(Config(presets[preset]["settings"]))
 
     def get_config(self, data_path: str = "./") -> Config:
         """Create configuration of the FCB.
@@ -197,6 +308,18 @@ class FCB(SegmentBase):
             ]
             sch_cfg["memory_type"]["properties"]["type"]["template_value"] = mem_type.label
             sch_cfg["fcb"]["properties"]["fcb_settings"] = fcb_obj.registers.get_validation_schema()
+            presets = cls.get_presets(fcb_obj.family, mem_type)
+            if presets:
+                # The preset can be used instead of, or together with, the FCB settings
+                sch_preset = sch_cfg["fcb"]["properties"]["preset"]
+                sch_preset["enum"] = list(presets)
+                sch_preset["description"] += "".join(
+                    f"\n - {name}: {preset['description']}" for name, preset in presets.items()
+                )
+                sch_cfg["fcb"].pop("required")
+                sch_cfg["fcb"]["anyOf"] = [{"required": ["fcb_settings"]}, {"required": ["preset"]}]
+            else:
+                sch_cfg["fcb"]["properties"].pop("preset")
             return [sch_family, sch_cfg["memory_type"], sch_cfg["fcb"]]
         except (KeyError, SPSDKError) as exc:
             raise SPSDKError(f"Family {family} is not supported") from exc
@@ -233,17 +356,26 @@ class FCB(SegmentBase):
 
     @classmethod
     def get_config_template(
-        cls, family: FamilyRevision, mem_type: MemoryType = MemoryType.FLEXSPI_NOR
+        cls,
+        family: FamilyRevision,
+        mem_type: MemoryType = MemoryType.FLEXSPI_NOR,
+        preset: str | None = None,
     ) -> str:
         """Get configuration template for selected family and memory type.
 
         Generates a configuration template for FCB (Flash Configuration Block) based on
-        the specified family revision and memory type parameters.
+        the specified family revision and memory type parameters. If a preset is specified,
+        the template is filled by the values of the preset.
 
         :param family: Family revision specification for target MCU.
         :param mem_type: Memory type to generate configuration for.
+        :param preset: Optional name of the FCB preset used to fill the template.
         :return: Template string of FCB Block configuration.
         """
+        if preset:
+            fcb = cls(family=family, mem_type=mem_type)
+            fcb.apply_preset(preset)
+            return fcb.get_config_yaml()
         schemas = cls.get_validation_schemas(family, mem_type)
         return cls._get_config_template(family, schemas)
 

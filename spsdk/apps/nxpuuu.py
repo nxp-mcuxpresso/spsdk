@@ -66,6 +66,25 @@ def _strip_uuu_version(script_text: str, uuu_version_str: str) -> str:
     return _UUU_VERSION_RE.sub("", script_text)
 
 
+DEFAULT_BOOT_DEVICE = "spl"
+_UUU_SCRIPT_SIGNATURE = b"uuu_version"
+
+
+def _is_uuu_auto_detect_input(path: str) -> bool:
+    """Check whether the input must be handled by the UUU auto-detection.
+
+    UUU auto-detection processes directories (``uuu.auto``), ZIP and SDCARD archives and
+    UUU script files. Any other file is a plain bootloader image.
+
+    :param path: Path to the input file or directory.
+    :return: True if the input is a directory, an archive or a UUU script.
+    """
+    if os.path.isdir(path) or path.upper().endswith(("ZIP", "SDCARD")):
+        return True
+    with open(path, "rb") as f:
+        return f.read(len(_UUU_SCRIPT_SIGNATURE)) == _UUU_SCRIPT_SIGNATURE
+
+
 # List to store device information
 device_list: list[dict[str, Any]] = []
 
@@ -323,8 +342,9 @@ def write(
 ) -> None:
     """Write using the in-built UUU scripts.
 
-    If the boot device is not provided, the first argument is passed to auto detect function.
-    File is loaded to the device using the SDPS/SDP protocol.
+    If the boot device is not provided, a bootloader image is loaded using the 'spl' script
+    (SPL and U-Boot). UUU scripts, directories and ZIP/SDCARD archives are passed to the UUU
+    auto detect function.
 
     Run Built-in scripts:
 
@@ -415,8 +435,12 @@ def write(
             filename = arguments[0]
             if not os.path.exists(filename):
                 raise SPSDKAppError(f"File {filename} does not exist")
-            uuu_op.uuu.auto_detect_file(filename)
-        elif boot_device:
+            if _is_uuu_auto_detect_input(filename):
+                uuu_op.uuu.auto_detect_file(filename)
+            else:
+                boot_device = DEFAULT_BOOT_DEVICE
+                logger.info(f"Boot device not specified, using '{boot_device}' (SPL and U-Boot)")
+        if boot_device:
             processed_script = uuu.get_uuu_script(boot_device, family, arguments)
             logger.debug(f"Processing script:\n{processed_script}")
             uuu_op.handle_error(uuu.run_script(processed_script))

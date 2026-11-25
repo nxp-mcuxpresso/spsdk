@@ -1607,3 +1607,23 @@ def test_signed_message_container_v2_version_byte(chip_config_v2) -> None:  # ty
     raw = ctr.export()
     # Byte 0 of AHAB container header is the VERSION field.
     assert raw[0] == 0x02
+
+
+def test_signed_message_dat_signature_block_offset_word_aligned_mimxrtl3450() -> None:
+    """DAR signature block of mimxrtl3450 starts at a word aligned offset.
+
+    The ROM requires the signature block offset in the signed message header to be 32-bit
+    aligned. The 4 byte authentication beacon keeps the DAT message size word aligned.
+    """
+    from spsdk.image.ahab.signed_msg import SignedMessageContainerV2
+
+    rtl3450 = FamilyRevision("mimxrtl3450")
+    msg = MessageDat(
+        family=rtl3450, unique_id_len=MessageV2.UNIQUE_ID_LEN, authentication_beacon=0x55
+    )
+    ctr = SignedMessageContainerV2(chip_config=create_chip_config(rtl3450), message=msg)
+    raw = ctr.export()
+    signature_block_offset = int.from_bytes(raw[12:14], "little")
+    assert msg.authentication_beacon_length == 4
+    assert signature_block_offset == 0x70
+    assert raw[signature_block_offset - 4 : signature_block_offset] == bytes([0x55, 0, 0, 0])

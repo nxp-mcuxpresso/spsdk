@@ -362,3 +362,41 @@ def test_nxpimage_xmcd_crc_fuses_script(
     assert f"Family: {family}, Revision: latest" in content
     assert "WARNING! Partially set register, check all bitfields before writing" in content
     assert f"efuse-program-once {crc_sum_fuse_id} 0xBC333806" in content
+
+
+@pytest.mark.parametrize("family", ["mimxrt2660", "mimxrt2661", "mimxrt2662", "mimxrt2663"])
+def test_nxpimage_xmcd_crc_fuses_script_rt266x(
+    cli_runner: CliRunner, tmpdir: str, data_dir: str, family: str
+) -> None:
+    """Test XMCD CRC fuses script generation for RT266x families.
+
+    The XMCD CRC32 check is enabled by BOOT_CFG8[12] (fuse word 32) and the expected
+    CRC32 is stored in BOOT_CFG11 (fuse word 35).
+
+    :param cli_runner: Click CLI test runner for invoking commands
+    :param tmpdir: Temporary directory path for output files
+    :param data_dir: Path to test data directory containing XMCD binaries
+    :param family: Target MCU family name for the fuses script
+    """
+    # XSPI RAM XMCD has the same layout on RT7xx and RT266x
+    binary_path = os.path.join(data_dir, "xmcd", "mimxrt798s", "xspi_ram_simplified.bin")
+    fuses_script = os.path.join(tmpdir, "fuses.txt")
+    cmd = [
+        "bootable-image",
+        "xmcd",
+        "crc-fuses-script",
+        "-b",
+        binary_path,
+        "-f",
+        family,
+        "-o",
+        fuses_script,
+    ]
+    result = cli_runner.invoke(nxpimage.main, cmd)
+    assert "Created fuses script" in result.output
+    content = load_file(fuses_script, mode="r")
+    assert "The CRC hash fuses are not available" not in content
+    assert f"Family: {family}, Revision: latest" in content
+    assert "Bitfield: XMC_CRC32_CHECK_EN" in content
+    assert "efuse-program-once 32 0x1000 --verify" in content
+    assert "efuse-program-once 35 0x20FA163A --verify" in content

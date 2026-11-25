@@ -1,0 +1,23 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ==================================  PFR CMPA configuration for mcxn236  =====================================
+# NXP chip family identifier.
+family: mcxn236
+# Revision of silicon.
+revision: latest
+# PFR / IFR configuration area type.
+type: CMPA
+# Only the settings that differ from the defaults are listed. The ROTKH (root key table hash)
+# is taken from the certificate block during 'pfr export' (-e option).
+settings:
+  SECURE_BOOT_CFG:
+    # !!! From the next reset the ROM boots ONLY signed images !!!
+    SEC_BOOT_EN: SIGNED_IMAGES
+  RoTK_USAGE:
+    # Only one root key is used in this example (see cert_block_mcxn236.yaml).
+    RoTK0_Usage: USABLE
+    RoTK1_Usage: KEY_SLOT_NOT_USED
+    RoTK2_Usage: KEY_SLOT_NOT_USED
+    RoTK3_Usage: KEY_SLOT_NOT_USED

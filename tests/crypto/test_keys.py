@@ -1328,3 +1328,106 @@ def test_otps_format_public_key_parse() -> None:
 
     key = PublicKey.parse(data=otps_data)
     assert isinstance(key, PublicKeyMLDSA)
+
+
+def _plain_keys_with_encodings() -> list[Any]:
+    """Return parameters of unencrypted private keys for all supported key types and encodings."""
+    params: list[Any] = []
+    for name, generator in [
+        ("rsa", lambda: PrivateKeyRsa.generate_key(key_size=2048)),
+        ("ecc", lambda: PrivateKeyEcc.generate_key(curve_name=EccCurve.SECP256R1)),
+        ("mldsa", lambda: PrivateKeyMLDSA.generate_key(level=3)),
+    ]:
+        for encoding in [SPSDKEncoding.PEM, SPSDKEncoding.DER]:
+            params.append(pytest.param(generator, encoding, id=f"{name}-{encoding.name}"))
+    for encoding in [SPSDKEncoding.PEM, SPSDKEncoding.DER]:
+        params.append(
+            pytest.param(
+                lambda: PrivateKeyDilithium.generate_key(level=3),
+                encoding,
+                id=f"dilithium-{encoding.name}",
+                marks=pytest.mark.skipif(
+                    not IS_DILITHIUM_SUPPORTED, reason="spsdk-pqc not installed"
+                ),
+            )
+        )
+    params.append(
+        pytest.param(
+            PrivateKeySM2.generate_key,
+            SPSDKEncoding.DER,
+            id="sm2-DER",
+            marks=pytest.mark.skipif(not IS_OSCCA_SUPPORTED, reason="gmssl (SM2) not installed"),
+        )
+    )
+    return params
+
+
+@pytest.mark.parametrize("generator,encoding", _plain_keys_with_encodings())
+def test_private_key_parse_plain_key_with_password(
+    generator: Callable[[], PrivateKey], encoding: SPSDKEncoding, tmpdir: Any
+) -> None:
+    """Test that a password given for an unencrypted private key is ignored.
+
+    The key must be loaded (generic and key-type specific parser, from data and file) and must
+    remain usable for signing.
+
+    :param generator: Function generating the private key.
+    :param encoding: Encoding used to export the private key.
+    :param tmpdir: Temporary directory for the key file.
+    """
+    key = generator()
+    data = key.export(encoding=encoding)
+    key_file = os.path.join(tmpdir, "plain_key.bin")
+    write_file(data, key_file, mode="wb")
+
+    for loaded in [
+        PrivateKey.parse(data, password="unused"),
+        type(key).parse(data, password="unused"),
+        PrivateKey.load(key_file, password="unused"),
+    ]:
+        assert loaded == key
+        signature = loaded.sign(b"data to sign")
+        assert key.get_public_key().verify_signature(signature, b"data to sign")
+
+
+@pytest.mark.parametrize("encoding", [SPSDKEncoding.PEM, SPSDKEncoding.DER])
+def test_crypto_load_private_key_plain_key_with_password_warns(
+    encoding: SPSDKEncoding, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Test that a warning is logged when a password is given for an unencrypted key.
+
+    :param encoding: Encoding used to export the private key.
+    :param caplog: Log capture fixture.
+    """
+    key = PrivateKeyEcc.generate_key()
+    with caplog.at_level("WARNING", logger="spsdk.crypto.keys"):
+        loaded = _crypto_load_private_key(encoding, key.export(encoding=encoding), b"unused")
+    assert PrivateKeyEcc(loaded) == key
+    assert "not encrypted" in caplog.text
+
+
+@pytest.mark.parametrize(
+    "generator",
+    [
+        lambda: PrivateKeyRsa.generate_key(key_size=2048),
+        lambda: PrivateKeyEcc.generate_key(curve_name=EccCurve.SECP256R1),
+        lambda: PrivateKeyMLDSA.generate_key(level=3),
+    ],
+    ids=["rsa", "ecc", "mldsa"],
+)
+@pytest.mark.parametrize("encoding", [SPSDKEncoding.PEM, SPSDKEncoding.DER])
+def test_private_key_parse_encrypted_key_wrong_or_missing_password(
+    generator: Callable[[], PrivateKey], encoding: SPSDKEncoding
+) -> None:
+    """Test that an encrypted private key still fails with a wrong or missing password.
+
+    :param generator: Function generating the private key.
+    :param encoding: Encoding used to export the private key.
+    """
+    key = generator()
+    data = key.export(encoding=encoding, password="correct_pass")
+    assert PrivateKey.parse(data, password="correct_pass") == key
+    with pytest.raises(SPSDKError):
+        PrivateKey.parse(data, password="wrong_pass")
+    with pytest.raises(SPSDKError):
+        PrivateKey.parse(data)

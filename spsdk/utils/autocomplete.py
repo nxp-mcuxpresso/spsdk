@@ -331,6 +331,13 @@ _T_VER = "SPSDK_TMPL_VER"  # spsdk version string
 _BASH_DISPATCHER_TMPL = """# SPSDK SPSDK_TMPL_VER -- bash completion for SPSDK_TMPL_TOOL
 # Auto-generated -- do not edit.
 # shellcheck disable=all
+_spsdk_files_SPSDK_TMPL_FUNC() {
+    # Treat results as file names: readline then appends '/' to directories
+    # (without a trailing space) and escapes special characters.
+    compopt -o filenames 2>/dev/null
+    local IFS=$'\\n'
+    COMPREPLY=($(compgen -f -- "$1"))
+}
 _spsdk_cmp_SPSDK_TMPL_FUNC() {
     local _D="SPSDK_TMPL_DATA"
     local _V="SPSDK_TMPL_VBASE"
@@ -372,7 +379,7 @@ _spsdk_cmp_SPSDK_TMPL_FUNC() {
         fi
         local _fv="${_vbase}__files"
         if [[ -n "${!_fv}" && " ${!_fv} " == *" $prev "* ]]; then
-            COMPREPLY=($(compgen -f -- "$cur"))
+            _spsdk_files_SPSDK_TMPL_FUNC "$cur"
             return
         fi
         # Non-flag option with unrecognised value type — let shell handle
@@ -386,7 +393,7 @@ _spsdk_cmp_SPSDK_TMPL_FUNC() {
             local _pc=$(( _pidx < ${#_aspecs[@]} ? _pidx : ${#_aspecs[@]} - 1 ))
             local _aspec="${_aspecs[$_pc]:-s}"
             case "$_aspec" in
-                f)   COMPREPLY=($(compgen -f -- "$cur")); return ;;
+                f)   _spsdk_files_SPSDK_TMPL_FUNC "$cur"; return ;;
                 s)   return ;;
                 c=*) local _ch="${_aspec#c=}"
                      COMPREPLY=($(compgen -W "${_ch//|/ }" -- "$cur")); return ;;
@@ -647,6 +654,14 @@ def _ps_arg_entry(arg: dict[str, Any]) -> str:
     return "@{type='string'}"
 
 
+# Path completion is delegated to PowerShell's own filename completer, which
+# keeps the already typed directory part (e.g. ``subfolder/``) in the result,
+# appends separators to directories and quotes names containing spaces.
+_PS_FILE_COMPLETION = (
+    "[System.Management.Automation.CompletionCompleters]::CompleteFilename($wordToComplete)"
+)
+
+
 def generate_powershell_script(tool_name: str, tree: dict[str, Any]) -> str:
     """Generate a static PowerShell ``Register-ArgumentCompleter`` script.
 
@@ -788,16 +803,7 @@ def generate_powershell_script(tool_name: str, tree: dict[str, Any]) -> str:
     lines.append("")
     lines.append("    # File completions for previous option")
     lines.append("    if ($entry.files -and $prevWord -in $entry.files) {")
-    lines.append(
-        '        Get-ChildItem -Path "${wordToComplete}*" -ErrorAction SilentlyContinue | ForEach-Object {'
-    )
-    lines.append(
-        "            $n = if ($_.PSIsContainer) { $_.Name + [System.IO.Path]::DirectorySeparatorChar } else { $_.Name }"
-    )
-    lines.append(
-        "            [System.Management.Automation.CompletionResult]::new($n, $n, 'ProviderItem', $n)"
-    )
-    lines.append("        }")
+    lines.append(f"        {_PS_FILE_COMPLETION}")
     lines.append("        return")
     lines.append("    }")
     lines.append("")
@@ -822,18 +828,7 @@ def generate_powershell_script(tool_name: str, tree: dict[str, Any]) -> str:
     lines.append("            }")
     lines.append("            return")
     lines.append("        } elseif ($pa.type -eq 'file') {")
-    lines.append(
-        '            Get-ChildItem -Path "${wordToComplete}*" -ErrorAction SilentlyContinue | ForEach-Object {'
-    )
-    _ps_container = (
-        "                $n = if ($_.PSIsContainer) "
-        "{ $_.Name + [System.IO.Path]::DirectorySeparatorChar } else { $_.Name }"
-    )
-    lines.append(_ps_container)
-    lines.append(
-        "                [System.Management.Automation.CompletionResult]::new($n, $n, 'ProviderItem', $n)"
-    )
-    lines.append("            }")
+    lines.append(f"            {_PS_FILE_COMPLETION}")
     lines.append("            return")
     lines.append("        }")
     lines.append("    }")

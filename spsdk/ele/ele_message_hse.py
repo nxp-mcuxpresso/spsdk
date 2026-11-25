@@ -65,6 +65,7 @@ class EleMessageHse(EleMessage):
     CMD_HEADER_FORMAT: str = LITTLE_ENDIAN + UINT32 + UINT8 + UINT8 + UINT8 + UINT8
     CMD_DESCRIPTOR_FORMAT: str
     MSG_IDS = cast(type[MessageIDs], HseMessageIDs)
+    RESPONSE_INDICATIONS = HseResponseStatus
 
     class ServiceVersion(SpsdkEnum):
         """HSE service version enumeration.

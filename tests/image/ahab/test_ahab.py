@@ -30,7 +30,7 @@ from spsdk.image.ahab.ahab_data import (
     AHABSignHashAlgorithm,
     create_chip_config,
 )
-from spsdk.image.ahab.ahab_iae import ImageArrayEntry
+from spsdk.image.ahab.ahab_iae import ImageArrayEntry, ImageArrayEntryTemplates, ImageArrayEntryV2
 from spsdk.image.ahab.ahab_image import AHABImage
 from spsdk.image.ahab.ahab_sign_block import SignatureBlock
 from spsdk.image.ahab.ahab_signature import ContainerSignature
@@ -39,6 +39,7 @@ from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
 from spsdk.utils.family import FamilyRevision, get_db
 from spsdk.utils.misc import write_file
+from spsdk.utils.verifier import Verifier, VerifierResult
 
 
 @pytest.fixture
@@ -851,3 +852,215 @@ def test_ahab_certificate_parse_without_padding() -> None:
     parsed = klass.parse(exported, family)
     assert parsed.export() == exported
     assert not parsed.verify().has_errors
+
+
+@pytest.mark.parametrize(
+    "family,load_address",
+    [
+        ("mimxrt2662", 0x60030000),
+        ("mimxrt2663", 0x6000C000),
+        ("mimxrt2660", 0x7000C000),
+        ("mimxrt2661", 0x80020000),
+        ("mimxrt2662", 0x90030000),
+        ("mimxrt2662", 0x60000800),
+        ("mimxrt2662", 0x00000000),
+        ("mimxrt2662", 0x20010000),
+    ],
+)
+@pytest.mark.parametrize(
+    "target_memory", ["standard", "nor", "sd_emmc", "nand_2k", "nand_4k", "fastboot"]
+)
+@pytest.mark.parametrize("image_offset", [None, 0, 0xC000, 0x2F000])
+def test_rt2660_image_layout_independent_of_load_address(
+    tmp_path: Any, family: str, load_address: int, target_memory: str, image_offset: int | None
+) -> None:
+    """Test that load addresses do not override user offsets or sequential data placement.
+
+    :param tmp_path: Temporary directory for the image file.
+    :param family: RT2660 family name or alias.
+    :param load_address: Load address of the image.
+    :param target_memory: Target memory of the AHAB image.
+    :param image_offset: Explicit offset, or None to omit it from the configuration.
+    """
+    image_path = os.path.join(tmp_path, "image.bin")
+    write_file(bytes(0x1000), image_path, mode="wb")
+    image_config: dict[str, Any] = {
+        "image_path": image_path,
+        "load_address": hex(load_address),
+        "entry_point": hex(load_address),
+        "image_type": "executable",
+        "core_id": "cortex-m85",
+    }
+    first_image_config = image_config.copy()
+    if image_offset is not None:
+        first_image_config["image_offset"] = image_offset
+    config = Config(
+        {
+            "family": family,
+            "target_memory": target_memory,
+            "output": "ahab.bin",
+            "containers": [
+                {
+                    "container": {
+                        "srk_set": "none",
+                        "fuse_version": 0,
+                        "sw_version": 0,
+                        "images": [first_image_config, image_config],
+                    }
+                }
+            ],
+        }
+    )
+    config.config_dir = str(tmp_path)
+    ahab = AHABImage.load_from_config(config)
+    ahab.update_fields()
+
+    expected_offset = image_offset or 0x9000
+    images = ahab.ahab_containers[0].image_array
+    assert [image.image_offset for image in images] == [expected_offset, expected_offset + 0x1000]
+    assert all(image.load_address == load_address for image in images)
+    verifier = ahab.verify()
+    verifier.validate()
+    assert not verifier.has_warnings
+
+    ahab.update_fields()
+    binary = ahab.export()
+    parsed = AHABImage.parse(binary, family=FamilyRevision(family), target_memory=target_memory)
+    assert [image.image_offset for image in parsed.ahab_containers[0].image_array] == [
+        expected_offset,
+        expected_offset + 0x1000,
+    ]
+    assert parsed.export() == binary
+
+
+def _create_simple_ahab_config(tmp_path: Any, hash_type: str | None = None) -> Config:
+    """Create a minimal AHAB configuration with one image for mimxrt1189.
+
+    :param tmp_path: Temporary directory for the image file.
+    :param hash_type: Optional value of 'hash_type' image property.
+    :return: AHAB configuration.
+    """
+    image_path = os.path.join(tmp_path, "image.bin")
+    write_file(bytes(0x1000), image_path, mode="wb")
+    image_config: dict[str, Any] = {
+        "image_path": image_path,
+        "load_address": "0x1FFE0000",
+        "entry_point": "0x1FFE0000",
+        "image_type": "executable",
+        "core_id": "cortex-m33",
+    }
+    if hash_type is not None:
+        image_config["hash_type"] = hash_type
+    config = Config(
+        {
+            "family": "mimxrt1189",
+            "target_memory": "standard",
+            "output": "ahab.bin",
+            "containers": [
+                {
+                    "container": {
+                        "srk_set": "none",
+                        "fuse_version": 0,
+                        "sw_version": 0,
+                        "images": [image_config],
+                    }
+                }
+            ],
+        }
+    )
+    config.config_dir = str(tmp_path)
+    return config
+
+
+@pytest.mark.parametrize("hash_type", ["sha256", "sha384", "sha512"])
+def test_ahab_parse_exports_lowercase_hash_type(tmp_path: Any, hash_type: str) -> None:
+    """Test that parsed AHAB config uses lowercase 'hash_type' and passes schema validation.
+
+    :param tmp_path: Temporary directory for the image and parsed data.
+    :param hash_type: Hash type used in the original configuration.
+    """
+    config = _create_simple_ahab_config(tmp_path, hash_type)
+    config.check(AHABImage.get_validation_schemas(FamilyRevision("mimxrt1189")))
+    ahab = AHABImage.load_from_config(config)
+    ahab.update_fields()
+    binary = ahab.export()
+
+    parsed = AHABImage.parse(binary, family=FamilyRevision("mimxrt1189"))
+    parsed_dir = os.path.join(tmp_path, "parsed")
+    parsed_cfg = parsed.get_config(data_path=parsed_dir)
+    image_cfg = parsed_cfg["containers"][0]["container"]["images"][0]
+    assert image_cfg["hash_type"] == hash_type
+
+    # Parsed configuration must be valid for export again
+    parsed_cfg.config_dir = parsed_dir
+    parsed_cfg.search_paths = [parsed_dir]
+    parsed_cfg.check(AHABImage.get_validation_schemas(FamilyRevision("mimxrt1189")))
+    reloaded = AHABImage.load_from_config(parsed_cfg)
+    reloaded.update_fields()
+    assert reloaded.export() == binary
+
+
+@pytest.mark.parametrize("hash_type", ["SHA256", "SHA384", "SHA512"])
+def test_ahab_config_accepts_uppercase_hash_type(tmp_path: Any, hash_type: str) -> None:
+    """Test backward compatibility with uppercase 'hash_type' created by older SPSDK parse.
+
+    :param tmp_path: Temporary directory for the image file.
+    :param hash_type: Uppercase hash type label.
+    """
+    config = _create_simple_ahab_config(tmp_path, hash_type)
+    config.check(AHABImage.get_validation_schemas(FamilyRevision("mimxrt1189")))
+    ahab = AHABImage.load_from_config(config)
+    image = ahab.ahab_containers[0].image_array[0]
+    assert image.get_hash_from_flags(image.flags) == AHABSignHashAlgorithm.from_label(hash_type)
+
+
+def test_ahab_template_shows_lowercase_hash_type_only() -> None:
+    """Test that AHAB template lists only lowercase hash type options."""
+    template = AHABImage.get_config_template(FamilyRevision("mimxrt1189"))
+    hash_lines = [line for line in template.splitlines() if "Possible options: <sha" in line]
+    assert hash_lines
+    assert all("SHA" not in line for line in hash_lines)
+
+
+@pytest.mark.parametrize(
+    "fast_boot,with_v2x_dummy,expected",
+    [
+        ("disabled", False, None),
+        ("hash_and_copy_with_external_accelerator", True, VerifierResult.SUCCEEDED),
+        ("hash_and_copy_with_external_accelerator", False, VerifierResult.WARNING),
+        ("external_accelerator", True, VerifierResult.SUCCEEDED),
+        ("external_accelerator", False, VerifierResult.WARNING),
+        ("hash_and_copy", True, VerifierResult.WARNING),
+    ],
+)
+def test_mimx943_fast_boot_verification(
+    fast_boot: str, with_v2x_dummy: bool, expected: VerifierResult | None
+) -> None:
+    """Verify fast boot flags against presence of the V2X dummy image entry on i.MX943.
+
+    :param fast_boot: Fast boot configuration label.
+    :param with_v2x_dummy: Add the V2X dummy image entry into the container.
+    :param expected: Expected result of the fast boot record, None when no record is expected.
+    """
+    chip_config = AhabChipContainerConfig(base=create_chip_config(FamilyRevision("mimx943")))
+    container = AHABContainerV2(chip_config=chip_config.base)
+    container._load_from_config_flags(Config({"fast_boot": fast_boot}))
+    if with_v2x_dummy:
+        container.image_array = cast(
+            list[ImageArrayEntryV2],
+            ImageArrayEntryTemplates.create_image_array_entries(
+                iae_cls=AHABContainerV2.IAE_TYPE,
+                chip_config=container.chip_config,
+                config=[Config({"v2x_dummy": True})],
+            ),
+        )
+        assert container.image_array[0].flags_image_type_name == "v2x_dummy"
+
+    verifier = Verifier("Fast boot")
+    container._verify_fast_boot(verifier)
+
+    if expected is None:
+        assert not verifier.records
+        return
+    assert verifier.result == expected
+    assert "Fast boot" in str(verifier)

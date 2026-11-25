@@ -1,0 +1,9 @@
+// Example JSONC configuration fixture used to test load_configuration() JSONC/JSON5 support.
+{
+  // device name
+  "name": "test_device",
+  /* list of enabled
+     features for this device */
+  "features": ["a", "b"],
+  "revision": 1,
+}

@@ -15,10 +15,13 @@ key management and cryptographic operations in development environments.
 
 import abc
 import os
+from collections.abc import Sequence
+from typing import Any
 
 from typing_extensions import Self
 
 from spsdk.exceptions import SPSDKNotImplementedError, SPSDKValueError
+from spsdk.sbfile.sb31.constants import EnumCmdTag
 from spsdk.utils.abstract_features import FeatureBaseClass
 from spsdk.utils.database import DatabaseManager
 from spsdk.utils.family import FamilyRevision, get_db
@@ -217,6 +220,24 @@ class DevHsm(FeatureBaseClass):
         :return: Position of the keyblob command in the database as an integer value.
         """
         return self.database.get_int(self.F_DEVHSM, "key_blob_command_position")
+
+    def get_keyblob_index(self, commands: Sequence[Any]) -> int:
+        """Get index where the CUST_MK_SK/SBKEK LoadKeyBlob command belongs in the command list.
+
+        The keyblob position from database is used, but when the keyblob belongs to the end of
+        the command list (position -1), it is placed before any trailing reset commands, as the
+        commands after a reset are never executed.
+
+        :param commands: List of SB file commands.
+        :return: Index of the keyblob command, -1 means the end of the command list.
+        """
+        position = self.get_keyblob_position()
+        if position != -1:
+            return position
+        index = len(commands)
+        while index > 0 and commands[index - 1].CMD_TAG == EnumCmdTag.RESET:
+            index -= 1
+        return -1 if index == len(commands) else index
 
     def get_devbuff_wrapped_cust_mk_sk_key_size(self) -> int:
         """Get the size of wrapped customer master key SK.

@@ -275,7 +275,10 @@ features:
     dac_version_is_swapped: True
     sub_features: ["ele_pqc"]
     dmbox_ap_ix: 0
+    dmbox_ap_shared_with_mem_ap: True # RM: SWJ-DP(AUTH) ISP-AP (mailbox) vs SWJ-DP AHB-AP share AP0
     dac_rot_type: not_available # The Dac packet doesn't contains the ROT hash
+    # OEM_SRK_RVK fuse (fuse63/ELE_MISC_CTRL7 bits 12-15), see fuses.json
+    dac_srk_revoke_mask_bit_offset: 12
 
   # ======== FCB section ========
   fcb:
@@ -283,6 +286,8 @@ features:
       flexspi_nor:
         reg_spec: fcb_flexspi_nor.json
         reg_spec_modification: ../../common/fcb_flexspi_nor_modification.yaml
+        # FCB presets of standard memories, see the referenced file
+        presets_file: fcb_presets_flexspi_nor.yaml
 
   # ======== AHAB section ========
   ahab:
@@ -354,6 +359,9 @@ features:
       v2x: [9, 10]
 
     # AHAB extra images
+    # Double authentication: ELE container is staged in MCU TCM, V2X container in DDR
+    double_authentication_ele_load_address: 0x1ffc0000
+    double_authentication_v2x_load_address: 0x8b000000
     oei_ddr_load_address: 0x1ffc0000
     oei_ddr_entry_point: 0x1ffc0001
     oei_ddr_core_id: cortex-m33
@@ -611,3 +619,6 @@ features:
 
   # ===== TLV =====
   tlv_blob: {}
+
+  # ======== AISEC protected-directory container ========
+  aisec: {}

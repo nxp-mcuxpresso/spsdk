@@ -208,7 +208,11 @@ def binary_extract(binary: str, address: str, size: str, output: str) -> None:
     "--keep-padding",
     is_flag=True,
     default=False,
-    help="Preserve initial padding before the first image region instead of trimming it (default behavior).",
+    help=(
+        "Preserve initial padding before the first image region instead of trimming it "
+        "(default behavior). Applies to BIN and SPARSE output only; HEX/S19/SREC output "
+        "always keeps the original addresses."
+    ),
 )
 @click.option(
     "-s",
@@ -242,7 +246,8 @@ def binary_convert(
     Supports saving to BIN, HEX, S19, and SPARSE formats.
 
     :param input_file: Path to input file (BIN/HEX/S19/ELF/SPARSE).
-    :param keep_padding: Preserve initial padding before first image region.
+    :param keep_padding: Preserve initial padding before first image region (BIN/SPARSE only,
+        HEX/S19/SREC output always keeps the original addresses).
     :param split_image: Split output into individual sub-image files.
     :param output_format: Output format (BIN/HEX/S19/SPARSE).
     :param output: Path to output file.
@@ -253,13 +258,15 @@ def binary_convert(
 
     image = BinaryImage.load_binary_image(input_file)
 
-    if not keep_padding and not split_image:
+    # Only address-less formats (BIN, SPARSE) can have the leading padding trimmed.
+    # HEX/S19/SREC records carry their addresses, so the original addresses are always kept.
+    if not keep_padding and not split_image and output_format.upper() not in ("HEX", "S19", "SREC"):
         image.update_offsets()
         if image.offset:
-            logger.warning(
-                f"Input image base offset 0x{image.offset:X} ({image.offset} bytes) was "
-                "trimmed during conversion. Use '-p/--keep-padding' to preserve the original "
-                "base address."
+            logger.info(
+                f"Leading padding 0x0-0x{image.offset - 1:X} ({image.offset} bytes) before the "
+                f"first data at 0x{image.offset:X} is not included in the output; the output "
+                "starts with the first data byte. Use '-p/--keep-padding' to include the padding."
             )
             image.offset = 0
 

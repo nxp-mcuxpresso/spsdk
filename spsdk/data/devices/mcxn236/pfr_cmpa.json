@@ -168,7 +168,7 @@
                             "width": 5,
                             "id": "field004-bits0-4",
                             "name": "FLASH_REMAP_SIZE",
-                            "description": "Flash remap size. FLASH_REMAP_SIZE defines the size of the secondary boot image (the range of flash addresses that will be remapped)in internal flash, where remapped address end = (FLASH_REMAP_SIZE + 1)"
+                            "description": "Flash remap size. FLASH_REMAP_SIZE defines the size of the secondary boot image (the range of flash addresses that will be remapped)in internal flash, where remapped address end = (FLASH_REMAP_SIZE + 1) * 32 KB. For example, if FLASH_REMAP_SIZE = 2, then the first 96KB of addresses will be remapped to flash bank1 instead of flash bank0 when remap is active. Set this field to 0 if you do not want to use the flash remap feature.* 32 KB. For example, if FLASH_REMAP_SIZE = 2, then the first 96KB of addresses will be remapped to flash bank1 instead of flash bank0 when remap is active. Set this field to 0 if you do not want to use the flash remap feature FLASH_REMAP_SIZE defines the size of the secondary boot image"
                         },
                         {
                             "width": 3,

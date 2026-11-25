@@ -3,8 +3,8 @@
     "groups": [
         {
             "group": {
-                "name": "CFPA",
-                "description": "Customer In-Field Configuration Area."
+                "name": "Configuration",
+                "description": "Configuration"
             },
             "registers": [
                 {
@@ -877,7 +877,15 @@
                     "offset_int": "0x002C",
                     "is_reserved": true,
                     "default_value_int": "0"
-                },
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Monotonic counters",
+                "description": "NPX and IPED context monotonic counters"
+            },
+            "registers": [
                 {
                     "id": "field030",
                     "name": "MCTR_NPX_CTX0",
@@ -961,7 +969,15 @@
                     "description": "Monotonic erase counter for IPED region 7. This value is used by bootloader to dynamically compute region IV. This counter will increment by one, during each erase cycle of the corresponding flash region. User should not write anything in this field. This field is entirely handled by ROM. Final IV value for given region used by IPED for encryption/decryption is computed by ROM bootloader and incorporates device UUID, IPED region number and MCTR_IPED_CTXn. Application should always use ROM APIs to erase whole Prince region to keep IV consistent",
                     "offset_int": "0x005C",
                     "default_value_int": "0"
-                },
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Error Counter",
+                "description": "Error authentication and ITRC counters"
+            },
+            "registers": [
                 {
                     "id": "field060",
                     "name": "ERR_AUTH_FAIL_COUNT",
@@ -975,7 +991,15 @@
                     "description": "Tamper event counter. This monotonic counter field is incremented by boot ROM whenever the reset cause during boot is detected as - ITRC reset caused by security sensors or - WDT 0/1 reset or - Tamper pin reset",
                     "offset_int": "0x0064",
                     "default_value_int": "0"
-                },
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Reserved 00068-0007C",
+                "description": "Reserved 00068-0007C"
+            },
+            "registers": [
                 {
                     "id": "Reserved00068",
                     "name": "Reserved 0x00068",
@@ -1023,7 +1047,15 @@
                     "offset_int": "0x007C",
                     "is_reserved": true,
                     "default_value_int": "0"
-                },
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Customer CRTS and FLAGS",
+                "description": "Customer defined monotonic counters and monotonic flags"
+            },
+            "registers": [
                 {
                     "id": "field080",
                     "name": "MCTR_CUST_CTR0",
@@ -1135,7 +1167,15 @@
                     "description": "Monotonic flags for application use. Once a bit is set in this field it should be set on sub-sequent updates of the page. ROM emulates One Time Programmable (OTP) bits behavior during CFPA-CMAC update. Compared to current value, if the new value has bit cleared, then the update is rejected and CMAC signing is skipped",
                     "offset_int": "0x00BC",
                     "default_value_int": "0"
-                },
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Flash ACL",
+                "description": "Flash access control"
+            },
+            "registers": [
                 {
                     "id": "field0C0",
                     "name": "FLASH_ACL_0_7",
@@ -4663,7 +4703,15 @@
                             "width": 1
                         }
                     ]
-                },
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "CMAC cache",
+                "description": "IMG0 and IMG1 CMAC cache"
+            },
+            "registers": [
                 {
                     "id": "field0E0",
                     "name": "IMG0_CMAC0",
@@ -4719,7 +4767,15 @@
                     "description": "IMG1 CMAC[127:96]",
                     "offset_int": "0x00FC",
                     "default_value_int": "0"
-                },
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Reserved 00100-0018C",
+                "description": "Reserved 00100-0018C"
+            },
+            "registers": [
                 {
                     "id": "Reserved00100",
                     "name": "Reserved 0x00100",
@@ -5007,7 +5063,15 @@
                     "offset_int": "0x018C",
                     "is_reserved": true,
                     "default_value_int": "0"
-                },
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "IPED GCM",
+                "description": "Additional Authentication Data for IPED"
+            },
+            "registers": [
                 {
                     "id": "field190",
                     "name": "IPED_GCM_AAD_CTX0",
@@ -5063,7 +5127,15 @@
                     "description": "IPED_AAD_CTX7: AAD data for IPED_GCM context 7. Use CRC32 value of any un-encrypted data associated with this context. For example when using context for encrypted image stored from offset 0x1000, then use this field to store CRC32 of data present in 0x0000 - 0x1000 area to tie the integrity protection of this un-encrypted pre-fix data area",
                     "offset_int": "0x01AC",
                     "default_value_int": "0"
-                },
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Reserved 001B0-001E8",
+                "description": "Reserved 001B0-001E8"
+            },
+            "registers": [
                 {
                     "id": "Reserved001B0",
                     "name": "Reserved 0x001B0",
@@ -5183,7 +5255,15 @@
                     "offset_int": "0x01E8",
                     "is_reserved": true,
                     "default_value_int": "0"
-                },
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "CFPA CRC32",
+                "description": "CFPA CRC32"
+            },
+            "registers": [
                 {
                     "id": "field1EC",
                     "name": "CFPA_CRC32",
@@ -5191,7 +5271,15 @@
                     "offset_int": "0x01EC",
                     "access": "RO",
                     "default_value_int": "0"
-                },
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "CFPA CMAC",
+                "description": "CFPA CMAC"
+            },
+            "registers": [
                 {
                     "id": "field1F0",
                     "name": "CFPA0_CMAC0",

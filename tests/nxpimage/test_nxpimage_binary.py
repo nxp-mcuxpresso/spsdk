@@ -632,10 +632,13 @@ def test_nxpimage_binary_convert_split_image(
             os.path.isfile(output)
 
 
-def test_nxpimage_binary_convert_warns_on_trimmed_base_offset(
+def test_nxpimage_binary_convert_reports_trimmed_padding(
     cli_runner: CliRunner, tmpdir: str, data_dir: str, caplog: Any
 ) -> None:
-    """Test converter warning when trimming pre-image offset changes base address.
+    """Test converter reports trimmed leading padding as info, not as a warning.
+
+    Trimming the padding before the first data in BIN output is the default behavior and no
+    data is lost, so it must not be reported as a warning.
 
     :param cli_runner: CLI test runner for invoking command line interface.
     :param tmpdir: Temporary directory path for test output files.
@@ -643,14 +646,44 @@ def test_nxpimage_binary_convert_warns_on_trimmed_base_offset(
     :param caplog: Pytest fixture for capturing log messages.
     """
     with use_working_directory(os.path.join(data_dir, "utils", "binary")):
-        caplog.set_level(logging.WARNING)
+        caplog.set_level(logging.INFO)
         output = os.path.join(tmpdir, "output.bin")
         cmd = f"utils binary-image convert -i two_segments_offset.srec -f BIN -o {output}"
         cli_runner.invoke(nxpimage.main, cmd.split())
 
         assert os.path.isfile(output)
-        assert "was trimmed during conversion" in caplog.text
-        assert "-p/--keep-padding" in caplog.text
+        records = [r for r in caplog.records if "Leading padding" in r.getMessage()]
+        assert len(records) == 1
+        assert records[0].levelno == logging.INFO
+        assert "0x0-0xFF" in records[0].getMessage()
+        assert "-p/--keep-padding" in records[0].getMessage()
+        assert not [r for r in caplog.records if r.levelno >= logging.WARNING]
+
+
+@pytest.mark.parametrize("output_format", ["HEX", "S19", "SREC"])
+def test_nxpimage_binary_convert_keeps_addresses(
+    cli_runner: CliRunner, tmpdir: str, data_dir: str, caplog: Any, output_format: str
+) -> None:
+    """Test conversion into address-aware formats keeps the original addresses.
+
+    :param cli_runner: CLI test runner for invoking command line interface.
+    :param tmpdir: Temporary directory path for test output files.
+    :param data_dir: Base directory containing test data files.
+    :param caplog: Pytest fixture for capturing log messages.
+    :param output_format: Output format to convert into.
+    """
+    input_file = os.path.join(data_dir, "utils", "binary", "two_segments_offset.srec")
+    caplog.set_level(logging.INFO)
+    output = os.path.join(tmpdir, f"output.{output_format.lower()}")
+    cmd = f"utils binary-image convert -i {input_file} -f {output_format} -o {output}"
+    cli_runner.invoke(nxpimage.main, cmd.split())
+
+    original = BinaryImage.load_binary_image(input_file)
+    converted = BinaryImage.load_binary_image(output)
+    assert converted.offset == original.offset == 0x100
+    assert converted.export() == original.export()
+    assert "Leading padding" not in caplog.text
+    assert not [r for r in caplog.records if r.levelno >= logging.WARNING]
 
 
 def test_empty_binary_conditions_for_special_handling() -> None:

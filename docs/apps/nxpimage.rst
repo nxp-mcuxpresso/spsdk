@@ -233,6 +233,21 @@ Key commands:
 - ``nxpimage otfad get-kek -f <family>`` — retrieve OTFAD KEK
 
 ---------------------------------------------
+AISEC Protected-Directory Container
+---------------------------------------------
+
+The AISEC dir-v5 container packs a directory of AI/ML model files into a single binary that
+is authenticated and optionally encrypted by a model master key (MMK).
+For full details see the AISEC protected-directory container documentation.
+
+Key commands:
+
+- ``nxpimage aisec get-template -f <family> -o <file>`` — AISEC container template
+- ``nxpimage aisec export -c <config.yaml>`` — build AISEC container
+- ``nxpimage aisec verify -b <container.bin> [-k <mmk>] [--srkh <srkh>]`` — verify AISEC container
+- ``nxpimage aisec parse -f <family> -b <container.bin> -k <mmk> -o <dir>`` — parse AISEC container into configuration and member files
+
+---------------------------------------------
 HSE (Hardware Security Engine)
 ---------------------------------------------
 

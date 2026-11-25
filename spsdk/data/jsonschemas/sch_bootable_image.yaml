@@ -52,7 +52,11 @@ keyblob:
       type: string
       format: optional_file
       title: Key Blob block path
-      description: Key blob block path. It could be used as pre-prepared binary form of a key blob and also YAML configuration file for IPED tables.
+      description: >-
+        Path to a pre-prepared binary keyblob or an OTFAD, IEE or IPED YAML/JSON configuration.
+        A configuration builds the table and encrypts application segments in its configured
+        address ranges. Application inputs must be plaintext. The table address determines
+        the absolute address of the bootable image. Binary keyblobs do not enable encryption.
       template_value: keyblob.bin
 
 fcb:
@@ -234,7 +238,7 @@ secondary_image_container_set:
       oneOf:
         - type: string
           title: Secondary Image Container Set
-          format: file
+          format: optional_file
           description: >
             This is secondary AHAB image that is validated by SPL from primary image.
             It could be used as pre-prepared binary form of AHAB and also YAML configuration file for AHAB.
@@ -261,7 +265,7 @@ secondary_image_container_set:
       oneOf:
         - type: string
           title: Secondary Image Container Set
-          format: file
+          format: optional_file
           description: >
             This is secondary AHAB image that is validated by SPL from primary image.
             It could be used as pre-prepared binary form of AHAB and also YAML configuration file for AHAB.

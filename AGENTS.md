@@ -169,6 +169,14 @@ Full type annotations required (`mypy` with `disallow_untyped_defs = true`). Use
   ```
 - `SPSDK_ENV_CACHE_DISABLED=False` and `SPSDK_DEBUG_LOGGING_DISABLED=True` are set globally in conftest.
 
+### Changelog
+Release notes live in `CHANGELOG.md` in the repository root, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format. The documentation page `docs/release_notes.md` only includes this file — do not add entries anywhere else.
+- Add user-visible changes under the topmost version marked `Unreleased` (e.g. `## 3.14.0 - Unreleased`).
+- Group entries under `### Added`, `### Changed`, `### Deprecated`, `### Removed`, `### Fixed`, `### Security` (and `### Known Issues` where needed), in this order.
+- Group entries per tool where it helps, linking the tool's documentation page, e.g. `- [nxpimage](https://spsdk.readthedocs.io/en/latest/apps/nxpimage.html):` followed by indented `  - ...` items.
+- Use Markdown (not reStructuredText): inline code in single backticks.
+- When a version is released, replace `Unreleased` with the release date (`YYYY-MM-DD`), wrap the version in brackets (`## [X.Y.Z] - YYYY-MM-DD`) and add its link reference at the end of the file.
+
 ### Line Length
 100 characters (black, isort both configured to 100).
 

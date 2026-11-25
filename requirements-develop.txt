@@ -5,6 +5,7 @@ uv<1,>=0.9.5
 -e .
 # testing
 pytest<10
+pytest-timeout<3,>=2.1
 voluptuous<1
 # metrics
 types-requests<3,>=2.26

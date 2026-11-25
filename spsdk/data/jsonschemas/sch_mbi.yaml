@@ -580,7 +580,10 @@ hse_ivt:
     appSwtInit:
       type: boolean
       title: APP SWT Init
-      description: "Application Software Tamper initialization"
+      description:
+        "Boot configuration word APP_SWT_INIT bit. If true, SBAF initializes the SWT0 (Software Watchdog Timer)
+        before passing the control to the application core(s). It is used only when the HSE firmware usage
+        feature flag is enabled and the image is not secure booted."
       template_value: false
     appStartAddress:
       type: [number, string]
@@ -601,17 +604,83 @@ hse_ivt:
       format: number
       template_value: "0x0"
 
-hse_app_boot_header:
+hse_ivt_multicore:
   type: object
-  title: Application Boot Header Settings
-  description: "Configuration for the Application Boot"
+  title: HSE IVT Multicore Settings
+  description:
+    "Start addresses and boot configuration of the additional application cores. The start address of
+    the Cortex-M7_0 core is defined by 'appStartAddress'. The core start addresses are used by SBAF
+    only for non-secure boot (BOOT_SEQ is 0)."
   properties:
-    appStartAddress:
+    cm7_1StartAddress:
       type: [number, string]
-      title: Start Address
-      description: "Start address of the application"
+      title: Cortex-M7_1 Start Address
+      description:
+        "Boot address of the Cortex-M7_1 core application in the code flash memory area. It must honor core
+        VTOR alignment restrictions."
       format: number
-      template_value: "0x00400200"
+      template_value: "0x0"
+    cm7_1Enable:
+      type: boolean
+      title: Cortex-M7_1 Enable
+      description:
+        "Boot configuration word CM7_1_ENABLE bit. If true, the Cortex-M7_1 core clock is ungated after boot.
+        If not defined, the core is enabled when its start address is defined."
+      template_value: false
+    cm7_2StartAddress:
+      type: [number, string]
+      title: Cortex-M7_2 Start Address
+      description:
+        "Boot address of the Cortex-M7_2 core application in the code flash memory area. It must honor core
+        VTOR alignment restrictions."
+      format: number
+      template_value: "0x0"
+    cm7_2Enable:
+      type: boolean
+      title: Cortex-M7_2 Enable
+      description:
+        "Boot configuration word CM7_2_ENABLE bit. If true, the Cortex-M7_2 core clock is ungated after boot.
+        If not defined, the core is enabled when its start address is defined."
+      template_value: false
+    cm7_3StartAddress:
+      type: [number, string]
+      title: Cortex-M7_3 Start Address
+      description:
+        "Boot address of the Cortex-M7_3 core application in the code flash memory area. It must honor core
+        VTOR alignment restrictions."
+      format: number
+      template_value: "0x0"
+    cm7_3Enable:
+      type: boolean
+      title: Cortex-M7_3 Enable
+      description:
+        "Boot configuration word CM7_3_ENABLE bit. If true, the Cortex-M7_3 core clock is ungated after boot.
+        If not defined, the core is enabled when its start address is defined."
+      template_value: false
+
+hse_ivt_extended:
+  type: object
+  title: HSE IVT Extended Settings
+  description: "Additional Image Vector Table fields evaluated by SBAF."
+  properties:
+    xrdcMdacConfigAddr:
+      type: [number, string]
+      title: XRDC MDAC Configuration Address
+      description: "Address of the XRDC input MDAC configuration data."
+      format: number
+      template_value: "0x0"
+    recoveryAppStartAddress:
+      type: [number, string]
+      title: Recovery Application Start Address
+      description: "Start address of the application core recovery application."
+      format: number
+      template_value: "0x0"
+    recoveryAppLength:
+      type: [number, string]
+      title: Recovery Application Length
+      description: "Length of the recovery application in bytes."
+      format: number
+      template_value: "0x0"
 
 hse_signature:
   type: object

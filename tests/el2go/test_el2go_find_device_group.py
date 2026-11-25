@@ -19,7 +19,7 @@ from unittest.mock import patch
 import pytest
 
 from spsdk.el2go.api_utils import EL2GOTPClient
-from spsdk.el2go.client import EL2GOApiResponse
+from spsdk.el2go.client import EL2GOApiResponse, SPSDKHTTPClientError
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.config import Config
 from spsdk.utils.misc import use_working_directory
@@ -98,12 +98,12 @@ def test_00_007_008_extract_device_groups_fail(
 
         generic_dict = {"content": [{"id": device_group_id}]}
 
-        mock_el2go_response = EL2GOApiResponse(status_code=status_code, json_body=generic_dict)
+        mock_error = SPSDKHTTPClientError(status_code=status_code, response=generic_dict)
 
         with (
             patch(
                 "spsdk.el2go.api_utils.EL2GOTPClient._handle_el2go_request",
-                return_value=mock_el2go_response,
+                side_effect=mock_error,
             ),
             pytest.raises(SPSDKError),
         ):
@@ -149,8 +149,8 @@ def test_00_010_find_wrong_device_group(
             "content": [{"id": device_group_id}, {"id": device_group_id}, {"id": device_group_id}]
         }
 
-        mock_el2go_response_not_found = EL2GOApiResponse(
-            status_code=status_code_not_found, json_body=generic_dict
+        mock_error_not_found = SPSDKHTTPClientError(
+            status_code=status_code_not_found, response=generic_dict
         )
 
         mock_el2go_response_found = EL2GOApiResponse(
@@ -161,8 +161,8 @@ def test_00_010_find_wrong_device_group(
             "spsdk.el2go.api_utils.EL2GOTPClient._handle_el2go_request",
             side_effect=[
                 mock_el2go_response_found,
-                mock_el2go_response_not_found,
-                mock_el2go_response_not_found,
+                mock_error_not_found,
+                mock_error_not_found,
                 mock_el2go_response_found,
             ],
         ):
@@ -210,9 +210,7 @@ def test_00_011_012_find_device_group_error(
 
         generic_dict = {"content": [{"id": device_group_id}]}
 
-        mock_el2go_response_not_found = EL2GOApiResponse(
-            status_code=status_code, json_body=generic_dict
-        )
+        mock_error = SPSDKHTTPClientError(status_code=status_code, response=generic_dict)
 
         mock_el2go_response_found = EL2GOApiResponse(
             status_code=status_code_success, json_body=generic_dict
@@ -221,7 +219,7 @@ def test_00_011_012_find_device_group_error(
         with (
             patch(
                 "spsdk.el2go.api_utils.EL2GOTPClient._handle_el2go_request",
-                side_effect=[mock_el2go_response_found, mock_el2go_response_not_found],
+                side_effect=[mock_el2go_response_found, mock_error],
             ),
             pytest.raises(SPSDKError),
         ):
@@ -268,8 +266,8 @@ def test_00_014_find_device_group_corner_case(
             "content": [{"id": device_group_id}, {"id": device_group_id}, {"id": device_group_id}]
         }
 
-        mock_el2go_response_not_found = EL2GOApiResponse(
-            status_code=status_code_not_found, json_body=generic_dict
+        mock_error_not_found = SPSDKHTTPClientError(
+            status_code=status_code_not_found, response=generic_dict
         )
 
         mock_el2go_response_found = EL2GOApiResponse(
@@ -281,9 +279,9 @@ def test_00_014_find_device_group_corner_case(
                 "spsdk.el2go.api_utils.EL2GOTPClient._handle_el2go_request",
                 side_effect=[
                     mock_el2go_response_found,
-                    mock_el2go_response_not_found,
-                    mock_el2go_response_not_found,
-                    mock_el2go_response_not_found,
+                    mock_error_not_found,
+                    mock_error_not_found,
+                    mock_error_not_found,
                 ],
             ),
             pytest.raises(SPSDKError),

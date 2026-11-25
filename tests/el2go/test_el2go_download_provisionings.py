@@ -20,7 +20,7 @@ import pytest
 from utils import mock_time_sleep
 
 from spsdk.el2go.api_utils import EL2GOTPClient
-from spsdk.el2go.client import EL2GOApiResponse
+from spsdk.el2go.client import SPSDKHTTPClientError
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.config import Config
 from spsdk.utils.misc import use_working_directory
@@ -57,12 +57,12 @@ def test_00_018_prov_download_error(
 
         generic_dict = {"mock": "el2go_test", "api": "response"}
 
-        mock_el2go_response = EL2GOApiResponse(status_code=status_code, json_body=generic_dict)
+        mock_error = SPSDKHTTPClientError(status_code=status_code, response=generic_dict)
 
         with (
             patch(
                 "spsdk.el2go.api_utils.EL2GOTPClient._handle_el2go_request",
-                return_value=mock_el2go_response,
+                side_effect=mock_error,
             ),
             pytest.raises(SPSDKError),
         ):

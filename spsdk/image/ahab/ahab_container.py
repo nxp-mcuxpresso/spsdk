@@ -1634,7 +1634,59 @@ class AHABContainerV2(AHABContainer):
                     not self._is_lms_used(),
                     "LMS signing is not supported when parallel verification is enabled.",
                 )
+        else:
+            self._verify_fast_boot(ret)
         return ret
+
+    def _supports_v2x_dummy(self) -> bool:
+        """Return whether the target device defines the V2X (Prime) dummy image type.
+
+        :return: True when the device database contains the ``v2x_dummy`` image type.
+        """
+        return any(
+            "v2x_dummy" in image_types.labels()
+            for image_types in self.chip_config.base.image_types.values()
+        )
+
+    def _verify_fast_boot(self, ret: Verifier) -> None:
+        """Verify Fast Boot flag consistency with the container image array.
+
+        Fast boot and fast hash rely on the external accelerator (V2X/Prime) firmware.
+        The boot ROM requires the V2X (Prime) dummy image entry in the OEM container
+        when the external accelerator is used; otherwise the ROM boot flow fails.
+
+        :param ret: Verifier object to which the records are added.
+        """
+        fast_boot = self.flag_fast_boot
+        if fast_boot == self.FlagsFastBoot.Disabled:
+            return
+        ret.add_record_enum("Flags: Fast boot", fast_boot, self.FlagsFastBoot)
+        if not self._supports_v2x_dummy():
+            return
+        if fast_boot.tag & self.FlagsFastBoot.ExternalAccelerator.tag:
+            has_v2x_dummy = any(
+                image.flags_image_type_name == "v2x_dummy" for image in self.image_array
+            )
+            ret.add_record(
+                "Fast boot: V2X dummy image",
+                VerifierResult.SUCCEEDED if has_v2x_dummy else VerifierResult.WARNING,
+                (
+                    "Present"
+                    if has_v2x_dummy
+                    else "Fast boot with external accelerator is enabled, but the container "
+                    "doesn't contain the 'v2x_dummy' image entry required by the boot ROM. "
+                    "Also make sure that the NXP container set contains the V2X container."
+                ),
+            )
+        else:
+            ret.add_record(
+                "Fast boot: External accelerator",
+                VerifierResult.WARNING,
+                "Fast boot with 'hash_and_copy' only (without external accelerator) is not a "
+                "valid setting on devices with V2X accelerator; the authentication of the "
+                "container fails. Use 'hash_and_copy_with_external_accelerator' (fast boot) "
+                "or 'external_accelerator' (fast hash).",
+            )
 
     def _get_srk_table_fuse_db_index(self, table_ix: int) -> int:
         """Get the device-database fuse index for a given SRK table.

@@ -19,7 +19,7 @@ from unittest.mock import patch
 import pytest
 
 from spsdk.el2go.api_utils import EL2GOTPClient, GenStatus
-from spsdk.el2go.client import EL2GOApiResponse
+from spsdk.el2go.client import EL2GOApiResponse, SPSDKHTTPClientError
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.config import Config
 from spsdk.utils.misc import use_working_directory
@@ -105,12 +105,12 @@ def test_00_015_get_generation_status_error(
 
         generic_dict = {"content": [{"provisioningState": "GENERATION_COMPLETED"}]}
 
-        mock_el2go_response = EL2GOApiResponse(status_code=status_code, json_body=generic_dict)
+        mock_error = SPSDKHTTPClientError(status_code=status_code, response=generic_dict)
 
         with (
             patch(
                 "spsdk.el2go.api_utils.EL2GOTPClient._handle_el2go_request",
-                return_value=mock_el2go_response,
+                side_effect=mock_error,
             ),
             pytest.raises(SPSDKError),
         ):

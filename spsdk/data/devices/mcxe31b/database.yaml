@@ -60,6 +60,8 @@ features:
 
   # ======== MBI section ========
   mbi:
+    # The IVT contains also XRDC MDAC configuration and recovery application fields
+    hse_ivt_extended: true
     ivt_type: Mbi_MixinHseIvt
     mbi_classes:
       plain_xip:

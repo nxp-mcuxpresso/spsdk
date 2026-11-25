@@ -1,0 +1,15 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/ahab_template.yaml
+user_cfg: inputs/configs/mx95_signed_kernel_dtb.yaml
+custom_command: "%! nxpimage ahab get-template -f mimx9596 -o workspace/ahab_template.yaml --force"
+
+comments:
+  target_memory: "Keep the target memory as standard, the kernel container is stored in flash"
+  output: "Change the output file name"
+  signer: "Set your own signing keys (ECC and PQC)"
+  srk_table: "Set your own srk table"
+  images: "Keep only the Linux Kernel Image and Device Tree Blob entries and set their paths"

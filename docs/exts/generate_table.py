@@ -14,6 +14,8 @@ device support, features, MBI configurations, and other documentation assets.
 # Script for generation of table
 import itertools
 import os
+import re
+import shutil
 from functools import lru_cache
 from typing import Any
 
@@ -41,6 +43,7 @@ OTHER_FEATURES_TABLE_FILE = os.path.join(TABLE_DIR, "other_features_table.inc")
 DEVICES_TABLE_FILE = os.path.join(TABLE_DIR, "devices_table.inc")
 DEVICES_TABLE_FILE_README = os.path.join(TABLE_DIR, "devices_table_readme.inc")
 LIST_OF_SUPPORTED_DEVICES = os.path.join(DOC_PATH, "devices_list.rst")
+DEVICES_GROUPS_DIR = os.path.join(DOC_PATH, "devices")
 MBOOT_ERROR_CODES = os.path.join(TABLE_DIR, "mboot_error_codes.inc")
 NXPELE_COMMANDS_TABLE = os.path.join(TABLE_DIR, "nxpele_commands_table.inc")
 
@@ -71,6 +74,7 @@ NXPIMAGE_FEATURES_MAPPING = {
     "sb40": "Secure Binary 4.0",
     "sbc": "Secure Binary C",
     "tlv_blob": "Type-Length-Value blobs",
+    "aisec": "AISEC protected-directory container",
 }
 OTHER_FEATURES_MAPPING = {
     "dat": "nxpdebugmbox",
@@ -568,116 +572,151 @@ def get_filtered_features(device: Device) -> list[str]:
     return sorted(result)
 
 
-def generate_devices_list(output_file: str) -> None:
-    """Generate markdown file containing all supported devices organized by category.
+def get_device_groups() -> dict[str, list[str]]:
+    """Get documented devices split into groups by their database ``info.purpose`` value.
 
-    The method retrieves all devices from the DatabaseManager that are marked for documentation use,
-    sorts them by purpose/category, and generates a comprehensive markdown file with device details,
-    features, and related examples.
+    :return: Dictionary sorted by group name, values are alphabetically sorted device names.
+    """
+    quick_info = DatabaseManager().quick_info
+    devices = [
+        family
+        for family, device_info in quick_info.devices.devices.items()
+        if device_info.info.use_in_doc
+    ]
+    return quick_info.split_devices_to_groups(devices)
 
-    :param output_file: Path to the output markdown file where the device list will be written
+
+def get_group_file_name(group: str) -> str:
+    """Get file name (without extension) of documentation page for a device group.
+
+    :param group: Device group name, e.g. "MCX Series".
+    :return: Lower-case file name with non-alphanumeric characters replaced by underscore.
+    """
+    return re.sub(r"[^a-z0-9]+", "_", group.lower()).strip("_")
+
+
+def get_examples_lines(title: str, jupyters: list[str], doc_dir: str) -> list[str]:
+    """Get RST lines with a bullet list of links to Jupyter notebook examples.
+
+    :param title: Title line placed above the list.
+    :param jupyters: Paths of notebooks relative to documentation root.
+    :param doc_dir: Directory of generated document, used to create relative links.
+    :return: List of RST lines, empty if there are no notebooks.
+    """
+    if not jupyters:
+        return []
+    lines = ["\n", f"{title}\n", "\n"]
+    for jupyter in jupyters:
+        header = get_notebook_header(os.path.join(DOC_PATH, jupyter))
+        link = os.path.relpath(os.path.join(DOC_PATH, jupyter), doc_dir).replace(os.sep, "/")
+        lines.append(f"* `{header} <{link}>`__\n")
+    lines.append("\n")
+    return lines
+
+
+def get_device_lines(device: str, doc_dir: str) -> list[str]:
+    """Get RST lines describing one device: revisions, web link, features and examples.
+
+    :param device: Device name.
+    :param doc_dir: Directory of generated document, used to create relative links.
+    :return: List of RST lines.
+    """
+    device_full = DatabaseManager().db.devices.get(device)
+    features = get_filtered_features(device_full)
+
+    lines = [f"\n{device}\n", "-" * max(len(device), 26) + "\n"]
+    lines.append(f"\nLatest revision: {device_full.latest_rev}\n")
+    lines.append(
+        f"\nAll supported chip revisions: {', '.join(device_full.revisions.revision_names())}\n"
+    )
+    lines.append(f"\nWeblink: {get_link(device, device_full.info.web, False)}\n\n")
+    lines.append(
+        generate_feature_table(device_full, features, "", ALL_FEATURES_MAPPING, use_markdown=False)
+    )
+
+    lines.extend(
+        get_examples_lines(
+            f"Examples for {device}",
+            get_jupyters_for_device(device, device_full.info.spsdk_predecessor_name),
+            doc_dir,
+        )
+    )
+    if device_full.device_alias:
+        lines.extend(
+            get_examples_lines(
+                f"Similar examples for {device_full.device_alias.name}",
+                get_jupyters_for_device(
+                    device_full.device_alias.name,
+                    device_full.device_alias.info.spsdk_predecessor_name,
+                ),
+                doc_dir,
+            )
+        )
+    for feature in features:
+        lines.extend(
+            get_examples_lines(
+                f"Similar examples for {feature}", get_jupyters_for_feature(feature), doc_dir
+            )
+        )
+    return lines
+
+
+def generate_devices_list(output_file: str, groups_dir: str = DEVICES_GROUPS_DIR) -> None:
+    """Generate list of all supported devices organized into groups.
+
+    The devices marked for documentation use are split into groups by their database
+    ``info.purpose`` value. The output file contains an overview of the groups with the
+    devices in each group, and each group has its own page with device details, features
+    and related examples.
+
+    :param output_file: Path to the output RST file with the overview of device groups.
+    :param groups_dir: Directory where the RST pages of individual device groups are written.
     :raises IOError: If the output file cannot be written to
     :raises SPSDKError: If database access fails or device information is corrupted
     """
     print("Processing list of devices")
+    groups = get_device_groups()
 
-    devices = sorted(
-        [
-            family
-            for family in DatabaseManager().quick_info.devices.devices
-            if DatabaseManager().quick_info.devices.devices.get(family).info.use_in_doc  # type: ignore
-        ],
-        key=lambda x: DatabaseManager().quick_info.devices.devices.get(x).info.purpose,  # type: ignore
-    )
+    if os.path.exists(groups_dir):
+        shutil.rmtree(groups_dir)
+    os.makedirs(groups_dir)
+    groups_rel_dir = os.path.relpath(groups_dir, os.path.dirname(output_file)).replace(os.sep, "/")
 
+    title = "List of supported devices"
     lines = [
-        "============================\n",
-        "List of supported devices\n",
-        "============================\n",
+        "=" * len(title) + "\n",
+        f"{title}\n",
+        "=" * len(title) + "\n",
+        "\n",
+        "The supported devices are organized into groups by product line. "
+        "Select a group to see the details of its devices: supported chip revisions, "
+        "features and related examples.\n",
+        "\n",
+        ".. toctree::\n",
+        "    :maxdepth: 1\n",
+        "\n",
     ]
+    lines.extend(f"    {groups_rel_dir}/{get_group_file_name(group)}\n" for group in groups)
 
-    for category, grouped_devices in itertools.groupby(  # type: ignore
-        devices, key=lambda x: DatabaseManager().quick_info.devices.devices.get(x).info.purpose  # type: ignore
-    ):
+    for group, devices in groups.items():
+        file_name = get_group_file_name(group)
         lines.append("\n")
-        lines.extend(
-            [
-                "========================================================\n",
-                f"{category}\n",
-                "========================================================\n",
-            ]
-        )
-        sorted_devices = sorted(grouped_devices)
-        for device in sorted_devices:
+        lines.append(f"{group}\n")
+        lines.append("-" * len(group) + "\n")
+        lines.append("\n")
+        lines.append(f":doc:`{len(devices)} devices <{groups_rel_dir}/{file_name}>`: ")
+        lines.append(", ".join(f"``{device}``" for device in devices) + "\n")
 
-            device_full = DatabaseManager().db.devices.get(device)
-            features = get_filtered_features(device_full)
-
-            lines.append(f"\n{device}\n")
-            lines.append("--------------------------\n")
-            # lines.append(f"\nDevice category: {device.info.purpose}\n")
-            lines.append(f"\nLatest revision: {device_full.latest_rev}\n")
-            lines.append(
-                f"\nAll supported chip revisions: {', '.join(device_full.revisions.revision_names())}\n"
-            )
-            lines.append(f"\nWeblink: {get_link(device, device_full.info.web, False)}\n\n")
-            lines.append(
-                generate_feature_table(
-                    device_full,
-                    features,
-                    "",
-                    ALL_FEATURES_MAPPING,
-                    use_markdown=False,
-                )
-            )
-
-            # Jupyters for device
-            jupyters = get_jupyters_for_device(device, device_full.info.spsdk_predecessor_name)
-
-            if jupyters:
-                lines.append("\n")
-                lines.append(f"Examples for {device}\n")
-                lines.append("\n")
-                for jupyter in jupyters:
-                    header = get_notebook_header(jupyter)
-                    lines.append(f"* `{header} <{jupyter}>`__\n")
-                lines.append("\n")
-
-            # Jupyters for alias
-            jupyters = []
-            if device_full.device_alias:
-                jupyters = get_jupyters_for_device(
-                    device_full.device_alias.name,
-                    device_full.device_alias.info.spsdk_predecessor_name,
-                )
-
-            if jupyters:
-                lines.append("\n")
-                if device_full.device_alias:
-                    lines.append(f"Similar examples for {device_full.device_alias.name}\n")
-                lines.append("\n")
-                for jupyter in jupyters:
-                    header = get_notebook_header(jupyter)
-                    lines.append(f"* `{header} <{jupyter}>`__\n")
-                lines.append("\n")
-
-            # Jupyters for features
-            for feature in features:
-                jupyters = get_jupyters_for_feature(feature)
-
-                if jupyters:
-                    lines.append("\n")
-                    lines.append(f"Similar examples for {feature}\n")
-                    lines.append("\n")
-                    for jupyter in jupyters:
-                        header = get_notebook_header(jupyter)
-                        lines.append(f"* `{header} <{jupyter}>`__\n")
-                    lines.append("\n")
+        group_lines = ["=" * len(group) + "\n", f"{group}\n", "=" * len(group) + "\n"]
+        for device in devices:
+            group_lines.extend(get_device_lines(device, groups_dir))
+        with open(os.path.join(groups_dir, f"{file_name}.rst"), "w", encoding="utf-8") as f:
+            f.writelines(group_lines)
 
     with open(output_file, "w", encoding="utf-8") as f:
         f.writelines(lines)
 
-    print(f"List of devices has been written to {output_file}")
+    print(f"List of devices has been written to {output_file} and {groups_dir}")
 
 
 def generate_nxpele_commands_table() -> None:

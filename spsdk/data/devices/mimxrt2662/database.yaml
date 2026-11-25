@@ -107,12 +107,14 @@ features:
     start_image_address: 0x9000
 
     signature_algorithms:
+      __replace__: true
       ECDSA: [0x27, "ECDSA", "ECDSA signature algorithm"]
       # V2 only
       ML_DSA: [0xD2, "ML-DSA", "ML-DSA PQC algorithm"]
       LMS: [0xD3, "LMS", "Leighton-Micali Signature scheme"]
 
     hash_algorithms:
+      __replace__: true
       SHA256: [0x00, "SHA256", "SHA-256 hash algorithm"]
       SHA384: [0x01, "SHA384", "SHA-384 hash algorithm"]
       SHA512: [0x02, "SHA512", "SHA-512 hash algorithm"]
@@ -122,6 +124,7 @@ features:
       SHA3_512: [0x06, "SHA3_512", "SHA3-512 hash algorithm"]
 
     srk_sets:
+      __replace__: true
       NONE: [0x00, "none", "Image is not signed"]
       NXP: [0x01, "nxp", "Signed by NXP keys"]
       OEM: [0x02, "oem", "Signed by OEM keys"]
@@ -237,12 +240,21 @@ features:
       xspi_ram:
         simplified:
           reg_spec: ../../common/xmcd/xspi_ram_simplified.json
+    fuses:
+      _name: "XMCD CRC"
+      fuse32:
+        fuse32-bit12: 1 # BOOT_CFG8[12] XMC_CRC32_CHECK_EN
+      fuse35: "__crc" # BOOT_CFG11 XMC_CRC32_CHECK_SUM
 
   # ======== FCB section ========
   fcb:
     mem_types:
       xspi_nor:
         reg_spec: fcb_xspi_nor.json
+      xspi_nand:
+        reg_spec: fcb_xspi_nand.json
+        tag_register: fingerprint
+        crc_register: crcChecksum
 
   # ======== Bootable image section ========
   bootable_image:

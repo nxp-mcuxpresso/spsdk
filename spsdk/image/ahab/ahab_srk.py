@@ -737,7 +737,7 @@ class SRKRecordBase(HeaderContainerInverted):
         """Get text key name in SRK record.
 
         The method determines the appropriate key name string based on the signing algorithm
-        and key size. Supports RSA, RSA-PSS, ECDSA, SM2, Dilithium, and ML-DSA algorithms.
+        and key size. Supports RSA, RSA-PSS, ECDSA, SM2, Dilithium, ML-DSA and LMS algorithms.
 
         :return: Formatted key name string for the current signing algorithm and key size,
             or "Unknown Key name!" if algorithm is not recognized.
@@ -755,6 +755,8 @@ class SRKRecordBase(HeaderContainerInverted):
             return f"dilithium{get_key_by_val(self.DILITHIUM_KEY_TYPE, self.key_size)}"
         if self.signing_algorithm == AHABSignAlgorithm.ML_DSA:
             return f"mldsa{get_key_by_val(self.MLDSA_KEY_TYPE, self.key_size)}"
+        if self.signing_algorithm == AHABSignAlgorithm.LMS:
+            return f"lms{get_key_by_val(self.LMS_KEY_TYPE, self.key_size) * 8}"
 
         return "Unknown Key name!"
 
@@ -1869,6 +1871,38 @@ class SRKTable(HeaderContainerInverted):
         """
         return f"AHAB SRK TABLE, keys count: {len(self.srk_records)}"
 
+    @staticmethod
+    def _get_record_name(record: SRKRecordBase) -> str:
+        """Get a human-readable name of the SRK record key for reporting purposes.
+
+        :param record: SRK record.
+        :return: Key name, or signing algorithm label if the key size is not valid for the
+            signing algorithm (e.g. in a corrupted parsed SRK record).
+        """
+        try:
+            return record.get_key_name()
+        except SPSDKError:
+            return record.signing_algorithm.label
+
+    def _unify_default_hash_algorithm(self) -> None:
+        """Use the same hash algorithm in all SRK records created with the default hash.
+
+        The default hash algorithm depends on the key type and size (e.g. SHA256 for P-256 and
+        SHA384 for P-384), but the ROM requires the same hash algorithm in all SRK records of
+        the table. When mixed keys get different defaults, the default hash algorithm of the
+        first SRK record is used for the whole table.
+        """
+        if len({record.hash_algorithm.tag for record in self.srk_records}) <= 1:
+            return
+        hash_algorithm = self.srk_records[0].hash_algorithm
+        logger.info(
+            "The SRK keys have different default hash algorithms, using "
+            f"{hash_algorithm.label} of the first SRK key for the whole SRK table. "
+            "Set 'hash_algorithm' of the SRK table to use another one."
+        )
+        for record in self.srk_records:
+            record.hash_algorithm = hash_algorithm
+
     def __str__(self) -> str:
         """Get string representation of AHAB SRK table.
 
@@ -2083,14 +2117,27 @@ class SRKTable(HeaderContainerInverted):
                 "Mixed SRK key types are allowed for this device",
             )
             del srk_records_info["Signing algorithm"]
-            del srk_records_info["Hash algorithm"]
+            # The hash algorithm must stay the same even for mixed keys, the ROM uses
+            # the single hash algorithm for all SRK records in the table.
             del srk_records_info["Key Size"]
+            # Record length depends on the key type and size
+            del srk_records_info["Length"]
 
         for message, values in srk_records_info.items():
             if len(set(values)) == 1:
                 ret.add_record(message, VerifierResult.SUCCEEDED, "Is same in all SRK records")
             else:
-                ret.add_record(message, VerifierResult.ERROR, "Is not same in all SRK records")
+                error_msg = "Is not same in all SRK records"
+                if message == "Hash algorithm":
+                    used_hashes = ", ".join(
+                        f"[{ix}] {self._get_record_name(record)}: {record.hash_algorithm.label}"
+                        for ix, record in enumerate(self.srk_records)
+                    )
+                    error_msg += (
+                        f" ({used_hashes}). All SRK records must use the same hash algorithm,"
+                        " set the 'hash_algorithm' of the SRK table."
+                    )
+                ret.add_record(message, VerifierResult.ERROR, error_msg)
 
         ret.add_record_bytes("SRK Hash", self.compute_srk_hash())
 
@@ -2191,6 +2238,22 @@ class SRKTable(HeaderContainerInverted):
         return ret_cfg
 
     @classmethod
+    def _check_srk_array_count(cls, srk_count: int) -> None:
+        """Check that the configured SRK array has exactly the required number of keys.
+
+        The SRK table always holds a fixed number of SRK records and the SRK hash is computed
+        over all of them, so a different count would produce a malformed SRK table.
+
+        :param srk_count: Count of SRK keys in the configuration.
+        :raises SPSDKValueError: The count of SRK keys doesn't match the required count.
+        """
+        if srk_count != cls.SRK_RECORDS_CNT:
+            raise SPSDKValueError(
+                f"Invalid count of SRK keys in 'srk_array': {srk_count}. "
+                f"The SRK table requires exactly {cls.SRK_RECORDS_CNT} SRK keys."
+            )
+
+    @classmethod
     def load_from_config(cls, config: Config, chip_config: AhabChipConfig | None = None) -> Self:
         """Load SRK table from configuration.
 
@@ -2199,6 +2262,7 @@ class SRKTable(HeaderContainerInverted):
 
         :param config: Configuration object containing SRK array and optional settings.
         :param chip_config: Optional chip configuration for device-specific enumerations.
+        :raises SPSDKValueError: Invalid count of SRK keys in configuration.
         :return: SRK Table object with loaded public keys and configurations.
         """
         srk_table = cls()
@@ -2220,6 +2284,7 @@ class SRKTable(HeaderContainerInverted):
         legacy_rsa_exponent_size = config.get("rsa_exponent_legacy_size", False)
 
         srk_list = config.get_list("srk_array")
+        cls._check_srk_array_count(len(srk_list))
         for srk_key in srk_list:
             assert isinstance(srk_key, str)
             srk_key_path = find_file(srk_key, search_paths=config.search_paths)
@@ -2234,6 +2299,8 @@ class SRKTable(HeaderContainerInverted):
                 hash_algorithm=cast(AHABSignHashAlgorithm, hash_algorithm),
                 legacy_rsa_exponent_size=legacy_rsa_exponent_size,
             )
+        if hash_algorithm is None:
+            srk_table._unify_default_hash_algorithm()
         return srk_table
 
 
@@ -2278,6 +2345,7 @@ class SRKTableV2(SRKTable):
         :param config: Configuration object containing SRK table settings including
                        srk_array, flags, hash algorithm, and RSA exponent options.
         :param chip_config: Optional chip configuration for device-specific enumerations.
+        :raises SPSDKValueError: Invalid count of SRK keys in configuration.
         :return: Configured SRK Table object with loaded public keys and records.
         """
         srk_table = cls()
@@ -2302,6 +2370,7 @@ class SRKTableV2(SRKTable):
         legacy_rsa_exponent_size = config.get("rsa_exponent_legacy_size", False)
 
         srk_list = config.get_list("srk_array")
+        cls._check_srk_array_count(len(srk_list))
         for ix, srk_key in enumerate(srk_list):
             assert isinstance(srk_key, str)
             srk_key_path = find_file(srk_key, search_paths=config.search_paths)
@@ -2320,6 +2389,8 @@ class SRKTableV2(SRKTable):
             cast(SRKRecordV2, srk_table.srk_records[ix]).srk_data = SRKData.create_from_key(
                 pub_key, ix, legacy_rsa_exponent_size=legacy_rsa_exponent_size
             )
+        if hash_algorithm is None:
+            srk_table._unify_default_hash_algorithm()
         return srk_table
 
     def get_config(self, data_path: str, index: int, srk_table_index: int = 0) -> Config:

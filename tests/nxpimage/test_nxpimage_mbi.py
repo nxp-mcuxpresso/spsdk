@@ -46,6 +46,7 @@ from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
 from spsdk.utils.family import FamilyRevision, get_db
 from spsdk.utils.misc import Endianness, load_binary, load_configuration, use_working_directory
+from spsdk.utils.verifier import VerifierResult
 from tests.cli_runner import CliRunner
 
 mbi_basic_tests = [
@@ -285,6 +286,24 @@ def test_fcf_verify_mcxe247(nxpimage_data_dir: str) -> None:
     assert "FSEC" in verification_report
     assert "SEC(Succeeded): UNSECURE" in verification_report
     assert "MEEN(Succeeded): ENABLED_3" in verification_report
+
+
+def test_mbi_bca_verify_mcxc444(nxpimage_data_dir: str) -> None:
+    """Test MCXC444 plain MBI with BCA verification has no BCA fallback warning.
+
+    :param nxpimage_data_dir: Directory containing nxpimage test data.
+    """
+    mbi_path = os.path.join(
+        nxpimage_data_dir, "workspace", "output_images", "mcxc444", "mb_xip_plain_bca.bin"
+    )
+    mbi = MasterBootImage.parse(load_binary(mbi_path), family=FamilyRevision("mcxc444"))
+
+    verifier = mbi.verify()
+    verification_report = verifier.draw(colorize=False)
+
+    assert "Not implemented" not in verification_report
+    assert "Bootloader Configuration Area (BCA)(Succeeded)" in verification_report
+    assert verifier.result == VerifierResult.SUCCEEDED
 
 
 def test_mbi_misr_alignment(cli_runner: CliRunner, tmpdir: str, nxpimage_data_dir: str) -> None:

@@ -1,0 +1,23 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ==========================  Master Boot Image configuration for mcxn236 (signed XIP)  ==========================
+# NXP chip family identifier.
+family: mcxn236
+# Revision of silicon.
+revision: latest
+# Execute-in-place image (runs directly from internal flash).
+outputImageExecutionTarget: xip
+# Signed authentication - the boot ROM verifies the image against the RKTH stored in CMPA.
+outputImageAuthenticationType: signed
+# The path for the resulting signed master boot image.
+masterBootOutputFile: ../workspace/mcxn236_signed_green.bin
+# Plain input application image (hello world, green LED blinking), raw binary linked at 0x0.
+inputImageFile: frdm_mcxn236_hello_world_green.bin
+# XIP load/execution address (start of internal flash).
+outputImageExecutionAddress: 0
+# Path to the certificate block configuration holding the Root of Trust.
+certBlock: cert_block_mcxn236.yaml
+# Private key used to sign the image (must match the root certificate in the cert block).
+signer: ../workspace/keys/rotk0_p256.pem

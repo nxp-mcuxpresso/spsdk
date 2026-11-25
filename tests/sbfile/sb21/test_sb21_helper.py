@@ -12,6 +12,7 @@ file commands in SPSDK. Tests verify proper command generation, error handling,
 and parameter validation for SB2.1 file creation workflows.
 """
 
+import logging
 from typing import Any
 from unittest.mock import patch
 
@@ -393,3 +394,73 @@ def test_version_check_with_various_inputs(
     assert isinstance(result, CmdVersionCheck)
     assert result.type == expected_ver_type
     assert result.version == expected_fw_version
+
+
+def _keyblob(keyblob_id: int, start: int, end: int) -> dict[str, Any]:
+    """Create SB2.1 keyblob definition for tests.
+
+    :param keyblob_id: Keyblob ID.
+    :param start: Start address of the keyblob.
+    :param end: End address of the keyblob including flags.
+    :return: Keyblob definition dictionary.
+    """
+    content = {
+        "start": start,
+        "end": end,
+        "key": "EC4E5EEB6DBF8C5D6C0E4D93DE42FAD4",
+        "counter": "E8DC90BD9BD6188F",
+    }
+    return {"keyblob_id": keyblob_id, "keyblob_content": [content]}
+
+
+# Dual image boot configuration from SPSDK-7292
+DUAL_BOOT_KEYBLOBS = [
+    _keyblob(0, 0x08001000, 0x08004FFF),
+    _keyblob(1, 0x08201000, 0x08204FFF),
+    _keyblob(2, 0, 0x3FC),
+]
+
+
+@pytest.mark.parametrize(
+    "keyblob_id, address, expected_warning",
+    [
+        (0, 0x08001000, None),
+        (1, 0x08201000, None),
+        (
+            0,
+            0x08201000,
+            "Encrypt command (keyblob_id=0, file=image.bin): Image address range "
+            "0x8201000-0x82043ff is not within key blob: 0x8001000-0x8004fff. "
+            "The image is within key blob [1]. Ignore this if flash remap feature is used.",
+        ),
+        (
+            0,
+            0x08401000,
+            "Encrypt command (keyblob_id=0, file=image.bin): Image address range "
+            "0x8401000-0x84043ff is not within key blob: 0x8001000-0x8004fff. "
+            "Ignore this if flash remap feature is used.",
+        ),
+    ],
+)
+def test_encrypt_keyblob_range_warning(
+    caplog: pytest.LogCaptureFixture, keyblob_id: int, address: int, expected_warning: str | None
+) -> None:
+    """Test the warning for an encrypt command image not within its keyblob (SPSDK-7292).
+
+    :param caplog: Pytest fixture for capturing log messages.
+    :param keyblob_id: Keyblob ID used by the encrypt command.
+    :param address: Target address of the encrypt command.
+    :param expected_warning: Expected warning message, None if no warning is expected.
+    """
+    cmd_args = {
+        "keyblob_id": keyblob_id,
+        "address": address,
+        "file": "image.bin",
+        "keyblobs": DUAL_BOOT_KEYBLOBS,
+    }
+    with patch("spsdk.sbfile.sb2.sb_21_helper.load_binary", return_value=bytes(0x33D0)):
+        with caplog.at_level(logging.WARNING):
+            result = SB21Helper()._encrypt(cmd_args)
+    assert result.address == address
+    warnings = [rec.getMessage() for rec in caplog.records if rec.levelno == logging.WARNING]
+    assert warnings == ([expected_warning] if expected_warning else [])

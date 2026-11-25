@@ -1,5 +1,5 @@
 {
-    "cpu": "LPC5534",
+    "cpu": "lpc5534",
     "groups": [
         {
             "group": {
@@ -1314,7 +1314,7 @@
                             "width": 10,
                             "id": "field084-bits7-16",
                             "name": "FLEXSPI_IMAGE_OFFSET",
-                            "description": "Any offset in memory mapped Q/Octal-SPI Flash area could be remapped to offset zero to support eXecute In Place (XIP) of image programmed at different offset. This allows to build all update images with same RO base address, which are programmed at offset 0 or higher offset. FlLEXSPI_IMAGE_OFFSET field specifies the offset location of second image. FLEXSPI_IMAGE_SIZE field specifies the size multiple to determine the size of area to be remapped. If this field is left blank boot ROM assumes that application intends to not use redundant image boot feature. The physical flash offset is computed as below: physical offset = FLEXSPI_IMAGE_OFFSET"
+                            "description": "Any offset in memory mapped Q/Octal-SPI Flash area could be remapped to offset zero to support eXecute In Place (XIP) of image programmed at different offset. This allows to build all update images with same RO base address, which are programmed at offset 0 or higher offset. FlLEXSPI_IMAGE_OFFSET field specifies the offset location of second image. FLEXSPI_IMAGE_SIZE field specifies the size multiple to determine the size of area to be remapped. If this field is left blank boot ROM assumes that application intends to not use redundant image boot feature. The physical flash offset is computed as below: physical offset = FLEXSPI_IMAGE_OFFSET * 256KByte; physical offset = FLEXSPI_IMAGE_OFFSET * 256KByte;"
                         },
                         {
                             "width": 4,

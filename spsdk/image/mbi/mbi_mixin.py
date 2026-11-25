@@ -51,7 +51,7 @@ from spsdk.image.mbi.mbi_classes import (
     MultipleImageTable,
     T_Manifest,
 )
-from spsdk.image.mbi.mbi_data import MbiImageTypeEnum
+from spsdk.image.mbi.mbi_data import MAP_IMAGE_TARGETS, MbiImageTypeEnum
 from spsdk.image.mbi.utils import get_ahab_supported_hashes, get_mbi_ahab_validation_schemas
 from spsdk.image.trustzone import TrustZone, TrustZoneType, TrustZoneV2
 from spsdk.utils.binary_image import BinaryImage
@@ -1272,6 +1272,7 @@ class Mbi_MixinIvt(Mbi_Mixin):
 
     trust_zone: TrustZone | None
     IMAGE_TYPE: MbiImageTypeEnum
+    IMAGE_TARGET: str
     load_address: int | None
     user_hw_key_enabled: bool | None
     app_table: "MultipleImageTable | None"
@@ -1864,6 +1865,34 @@ class Mbi_MixinIvt(Mbi_Mixin):
                 name="Parsed IVT total length",
                 result=VerifierResult.WARNING,
                 value="Parsed: is zero and should be set to correct value",
+                important=True,
+            )
+        elif self.total_len < parsed_total_length:
+            # The IVT declares more data than the parsed container provides. For XIP images this
+            # is a common and valid situation: the declared length is the area reserved by the
+            # linker, while the available data is just what the input container carries (e.g. an
+            # ELF/AXF file does not materialize the trailing padding, and a bootable image hands
+            # over only the remaining part of the flash image). The missing bytes are padding
+            # that the device never executes, so report it only as a warning.
+            # For load-to-RAM images the length drives how many bytes the boot ROM copies into
+            # RAM, therefore missing data means the ROM would read past the end of the image.
+            # That is a real defect and has to stay an error.
+            xip_target = self.IMAGE_TARGET == MAP_IMAGE_TARGETS["targets"]["xip"][0]
+            ver.add_record(
+                name="Parsed IVT total length",
+                result=VerifierResult.WARNING if xip_target else VerifierResult.ERROR,
+                value=(
+                    f"Declared length (0x{parsed_total_length:08X}) is greater than the available "
+                    f"data length (0x{self.total_len:08X}). The image is probably stripped of the "
+                    "trailing padding."
+                    if xip_target
+                    else (
+                        f"Declared length (0x{parsed_total_length:08X}) is greater than the "
+                        f"available data length (0x{self.total_len:08X}). The "
+                        f"'{self.IMAGE_TARGET}' image is incomplete, the boot ROM would load "
+                        "data beyond the end of the image."
+                    )
+                ),
                 important=True,
             )
         else:

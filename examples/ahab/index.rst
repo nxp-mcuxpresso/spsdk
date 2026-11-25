@@ -1,6 +1,20 @@
 ================
 AHAB
 ================
+
+AHAB (Advanced High Assurance Boot) is used by i.MX 8ULP, i.MX 8QM/8QXP/8DXL,
+i.MX 9x and i.MX RT118x devices. For an overview of the other mechanisms and device
+families, see :doc:`/secure_boot`.
+
+Choose the workflow matching your starting point:
+
+* **Signing existing images:** use an already-built AHAB boot image, including an
+    ``imx-boot`` image from the Yocto BSP. See the
+    :doc:`i.MX95 signing example </examples/ahab/imx95/imx95_ahab_sign>`.
+* **Building and signing:** assemble containers from individual bootloader and firmware
+    binaries. See :ref:`Mapping Yocto BSP Output Files to SPSDK Inputs` for their Yocto names
+    and locations, then choose a device-specific example below.
+
 .. note::
     **Important: File Availability and Requirements**
 
@@ -15,20 +29,38 @@ AHAB
 
     This approach ensures you have access to all necessary proprietary firmware components while complying with licensing requirements.
 
+Unsigned
+========
+
 .. toctree::
     :maxdepth: 1
 
+    imx8ulp/imx8ulp_ahab_uboot
+    imx93/imx93_ahab_uboot
+    imx95/imx95_ahab_uboot
+
+Signed
+======
+
+.. toctree::
+    :maxdepth: 1
+
+    i.MX95: Signing an Existing Boot Image (ML-DSA and ECC) <imx95/imx95_ahab_sign>
+    imx93/imx93_signed_kernel
+    imx95/imx95_signed_ahab_uboot
+    imx95/imx95_signed_kernel
     rt118x_signed_flashloader/rt118x_signed_flashloader
     rt118x_secure_boot/rt118x_secure_boot
-    imx93/imx93_ahab_uboot
-    imx93/imx93_signed_ahab_uboot
-    imx93/imx93_signed_kernel
     imx943/imx943_srk_revocation
-    imx95/imx95_ahab_uboot
     imx95/imx95_ahab_load_tcm
-    imx95/imx95_signed_ahab_uboot
-    imx95/imx95_ahab_sign
-    imx95/imx95_encrypted_signed_ahab_uboot
     imx95/imx95_anti_rollback_protection
     srk_table/srk_table
-    imx8ulp/imx8ulp_ahab_uboot
+
+Signed+Encrypted
+================
+
+.. toctree::
+    :maxdepth: 1
+
+    imx93/imx93_signed_ahab_uboot
+    imx95/imx95_encrypted_signed_ahab_uboot

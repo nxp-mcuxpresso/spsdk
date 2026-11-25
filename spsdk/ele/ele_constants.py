@@ -25,6 +25,7 @@ class MessageIDs(SpsdkSoftEnum):
 
     PING_REQ = (0x01, "PING_REQ", "Ping request.")
     ELE_FW_AUTH_REQ = (0x02, "ELE_FW_AUTH_REQ", "ELE firmware authenticate request.")
+    RESTART_RST_TIMER_REQ = (0x04, "RESTART_RST_TIMER_REQ", "Restart reset timer request.")
     SESSION_OPEN_REQ = (0x10, "SESSION_OPEN_REQ", "Session Open Request")
     SESSION_CLOSE_REQ = (0x11, "SESSION_CLOSE_REQ", "Session Close Request")
     SAB_INIT_REQ = (0x17, "SAB_INIT_REQ", "SAB Init Request")
@@ -54,11 +55,40 @@ class MessageIDs(SpsdkSoftEnum):
     ELE_COMMIT_REQ = (0xA8, "ELE_COMMIT_REQ", "EdgeLock Enclave commit request.")
     ELE_DERIVE_KEY_REQ = (0xA9, "ELE_DERIVE_KEY_REQ", "Derive key")
     GENERATE_KEY_BLOB_REQ = (0xAF, "GENERATE_KEY_BLOB_REQ", "Generate KeyBlob request.")
+    START_CLOCK_VOLTAGE_CHANGE_REQ = (
+        0xC0,
+        "START_CLOCK_VOLTAGE_CHANGE_REQ",
+        "Start clock/voltage change request.",
+    )
+    STOP_CLOCK_VOLTAGE_CHANGE_REQ = (
+        0xC1,
+        "STOP_CLOCK_VOLTAGE_CHANGE_REQ",
+        "Stop clock/voltage change request.",
+    )
+    ENABLE_PATCH_REQ = (0xC3, "ENABLE_PATCH_REQ", "Enable patch request.")
+    RELEASE_RDC_REQ = (0xC4, "RELEASE_RDC_REQ", "Release RDC request.")
     GET_FW_STATUS_REQ = (0xC5, "GET_FW_STATUS_REQ", "Get ELE FW status request.")
+    ENABLE_DECRYPT_REQ = (0xC6, "ENABLE_DECRYPT_REQ", "Enable decrypt request.")
+    UPDATE_OTP_CLK_DIV_REQ = (0xD0, "UPDATE_OTP_CLK_DIV_REQ", "Update OTP clock divider request.")
+    POWER_DONE_REQ = (0xD1, "POWER_DONE_REQ", "Power done request.")
     ELE_ENABLE_APC_REQ = (0xD2, "ELE_ENABLE_APC_REQ", "Enable APC (Application processor)")
     ELE_ENABLE_RTC_REQ = (0xD3, "ELE_ENABLE_RTC_REQ", "Enable RTC (Runtime processor)")
+    DEEP_POWER_DOWN_REQ = (0xD4, "DEEP_POWER_DOWN_REQ", "Deep power down request.")
+    STOP_RST_TIMER_REQ = (0xD5, "STOP_RST_TIMER_REQ", "Stop reset timer request.")
+    RELEASE_CAAM_REQ = (0xD7, "RELEASE_CAAM_REQ", "Release CAAM request.")
+    MOVE_TO_UNSECURE_REQ = (0xD9, "MOVE_TO_UNSECURE_REQ", "Move to unsecure request.")
     GET_INFO_REQ = (0xDA, "GET_INFO_REQ", "Get ELE Information request.")
     ELE_RESET_APC_CTX_REQ = (0xD8, "ELE_RESET_APC_CTX_REQ", "Reset APC Context")
+    ATTEST_REQ = (0xDB, "ATTEST_REQ", "Attestation request.")
+    RELEASE_PATCH_REQ = (0xDC, "RELEASE_PATCH_REQ", "Release patch request.")
+    OTP_SEQ_SWITCH_REQ = (0xDD, "OTP_SEQ_SWITCH_REQ", "OTP sequence switch request.")
+    FAST_BOOT_STATUS_REQ = (0xE0, "FAST_BOOT_STATUS_REQ", "Fast boot status request.")
+    GENERIC_CONTAINER_AUTH_REQ = (
+        0xE1,
+        "GENERIC_CONTAINER_AUTH_REQ",
+        "Generic container authenticate request.",
+    )
+    FAST_VERIFY_IMAGE_REQ = (0xE2, "FAST_VERIFY_IMAGE_REQ", "Fast verify image request.")
     START_RNG_REQ = (0xA3, "START_RNG_REQ", "Start True Random Generator request.")
     GET_TRNG_STATE_REQ = (0xA4, "GET_TRNG_STATE_REQ", "Get True Random Generator state request.")
     RESET_REQ = (0xC7, "RESET_REQ", "System reset request.")
@@ -165,10 +195,42 @@ class ResponseIndication(SpsdkSoftEnum):
 
     This enumeration defines response indication codes returned by the EdgeLock Enclave (ELE)
     to indicate various failure conditions and error states during message processing.
+    An indication returned together with a successful status represents a warning
+    (e.g. a not-authenticated container accepted in open lifecycle).
     """
 
     ELE_ROM_PING_FAILURE_IND = (0x0A, "ELE_ROM_PING_FAILURE_IND", "ROM ping failure")
     ELE_FW_PING_FAILURE_IND = (0x1A, "ELE_FW_PING_FAILURE_IND", "Firmware ping failure")
+    ELE_BAD_COMMAND_FAILURE_IND = (
+        0x56,
+        "ELE_BAD_COMMAND_FAILURE_IND",
+        "Bad command: invalid parameters",
+    )
+    ELE_FASTBOOT_DISABLE_FAILURE_IND = (
+        0x90,
+        "ELE_FASTBOOT_DISABLE_FAILURE_IND",
+        "Fastboot disable failure",
+    )
+    ELE_FASTBOOT_ILLEGAL_STATE_FAILURE_IND = (
+        0x91,
+        "ELE_FASTBOOT_ILLEGAL_STATE_FAILURE_IND",
+        "Fastboot illegal state failure",
+    )
+    ELE_FW_AUTH_FAILURE_IND = (
+        0x92,
+        "ELE_FW_AUTH_FAILURE_IND",
+        "Generic firmware authentication failure",
+    )
+    ELE_OEM_AUTH_FAILURE_IND = (
+        0x93,
+        "ELE_OEM_AUTH_FAILURE_IND",
+        "Generic OEM authentication failure",
+    )
+    ELE_FAST_VERIFY_FAILURE_IND = (
+        0x94,
+        "ELE_FAST_VERIFY_FAILURE_IND",
+        "Fast image verification failure",
+    )
     ELE_UNALIGNED_PAYLOAD_FAILURE_IND = (
         0xA6,
         "ELE_UNALIGNED_PAYLOAD_FAILURE_IND",
@@ -188,7 +250,7 @@ class ResponseIndication(SpsdkSoftEnum):
         "ELE_OTP_INVALID_IDX_FAILURE_IND",
         "OTP Invalid IDX failure",
     )
-    ELE_TIME_OUT_FAILURE_IND = (0xB0, "ELE_TIME_OUT_FAILURE_IND", "Timeout  failure")
+    ELE_TIME_OUT_FAILURE_IND = (0xB0, "ELE_TIME_OUT_FAILURE_IND", "Timeout failure")
     ELE_BAD_PAYLOAD_FAILURE_IND = (0xB1, "ELE_BAD_PAYLOAD_FAILURE_IND", "Bad payload failure")
     ELE_WRONG_ADDRESS_FAILURE_IND = (
         0xB4,
@@ -208,10 +270,11 @@ class ResponseIndication(SpsdkSoftEnum):
         "Random number generator not started failure",
     )
     ELE_CRC_ERROR_IND = (0xB9, "ELE_CRC_ERROR_IND", "CRC error")
+    ELE_SENSOR_FAILURE_IND = (0xBA, "ELE_SENSOR_FAILURE_IND", "Sensor general error")
     ELE_AUTH_SKIPPED_OR_FAILED_FAILURE_IND = (
         0xBB,
         "ELE_AUTH_SKIPPED_OR_FAILED_FAILURE_IND",
-        "Authentication skipped or failed failure",
+        "Authentication skipped or failed",
     )
     ELE_INCONSISTENT_PAR_FAILURE_IND = (
         0xBC,
@@ -256,6 +319,12 @@ class ResponseIndication(SpsdkSoftEnum):
         "ELE_BAD_IMAGE_TYPE_FAILURE_IND",
         "Bad image type failure",
     )
+    ELE_RDC_FAILURE_IND = (0xC7, "ELE_RDC_FAILURE_IND", "RDC failure")
+    ELE_FW_MISSING_FAILURE_IND = (
+        0xCA,
+        "ELE_FW_MISSING_FAILURE_IND",
+        "Firmware is mandatory and missing",
+    )
     ELE_APC_ALREADY_ENABLED_FAILURE_IND = (
         0xCB,
         "ELE_APC_ALREADY_ENABLED_FAILURE_IND",
@@ -278,17 +347,28 @@ class ResponseIndication(SpsdkSoftEnum):
         "ELE_CORRUPTED_SRK_FAILURE_IND",
         "Corrupted SRK failure",
     )
-    ELE_OUT_OF_MEMORY_IND = (0xD1, "ELE_OUT_OF_MEMORY_IND", "Out of memory failure")
+    ELE_OUT_OF_MEMORY_IND = (0xD1, "ELE_OUT_OF_MEMORY_IND", "Internal out of memory failure")
+    ELE_UNSUPPORTED_TIMER_FAILURE_IND = (
+        0xD2,
+        "ELE_UNSUPPORTED_TIMER_FAILURE_IND",
+        "Unsupported timer failure",
+    )
 
     ELE_MUST_SIGNED_FAILURE_IND = (
         0xE0,
         "ELE_MUST_SIGNED_FAILURE_IND",
         "Must be signed failure",
     )
+    ELE_BAD_ALGORITHM_FAILURE_IND = (
+        0xE1,
+        "ELE_BAD_ALGORITHM_FAILURE_IND",
+        "Bad algorithm failure",
+    )
     ELE_NO_AUTHENTICATION_FAILURE_IND = (
         0xEE,
         "ELE_NO_AUTHENTICATION_FAILURE_IND",
-        "No authentication failure",
+        "No authentication - container not authenticated (accepted in open lifecycle only);"
+        " container is considered as unsigned",
     )
     ELE_BAD_SRK_SET_FAILURE_IND = (0xEF, "ELE_BAD_SRK_SET_FAILURE_IND", "Bad SRK set failure")
     ELE_BAD_SIGNATURE_FAILURE_IND = (
@@ -306,7 +386,8 @@ class ResponseIndication(SpsdkSoftEnum):
     ELE_INVALID_MESSAGE_FAILURE_IND = (
         0xF4,
         "ELE_INVALID_MESSAGE_FAILURE_IND",
-        "Invalid message failure",
+        "Invalid message: content not well filled, message not supported by the loaded"
+        " firmware, or ELE is in abort state",
     )
     ELE_BAD_VALUE_FAILURE_IND = (0xF5, "ELE_BAD_VALUE_FAILURE_IND", "Bad value failure")
     ELE_BAD_FUSE_ID_FAILURE_IND = (0xF6, "ELE_BAD_FUSE_ID_FAILURE_IND", "Bad fuse ID failure")
@@ -319,7 +400,7 @@ class ResponseIndication(SpsdkSoftEnum):
     ELE_INVALID_KEY_FAILURE_IND = (
         0xF9,
         "ELE_INVALID_KEY_FAILURE_IND",
-        "The key in the container is invalid",
+        "The key in the container is invalid or the SRK is revoked",
     )
     ELE_BAD_KEY_HASH_FAILURE_IND = (
         0xFA,
@@ -343,6 +424,111 @@ class ResponseIndication(SpsdkSoftEnum):
         "Bad monotonic counter failure",
     )
     ELE_ABORT_IND = (0xFF, "ELE_ABORT_IND", "Abort")
+
+
+class HsmResponseIndication(SpsdkSoftEnum):
+    """ELE HSM (SAB) Message Response indication enumeration.
+
+    HSM API messages (session, key store, key management) report failures using the SAB
+    rating codes instead of the baseline ELE response indications.
+    """
+
+    SAB_INVALID_MESSAGE = (
+        0x01,
+        "SAB_INVALID_MESSAGE",
+        "The received message is invalid or unknown",
+    )
+    SAB_INVALID_ADDRESS = (
+        0x02,
+        "SAB_INVALID_ADDRESS",
+        "The provided address is invalid or doesn't respect the API requirements",
+    )
+    SAB_UNKNOWN_ID = (0x03, "SAB_UNKNOWN_ID", "The provided identifier is not known")
+    SAB_INVALID_PARAM = (
+        0x04,
+        "SAB_INVALID_PARAM",
+        "Message unit sanity check failed or invalid parameters",
+    )
+    SAB_NVM_ERROR = (0x05, "SAB_NVM_ERROR", "NVM generic issue")
+    SAB_OUT_OF_MEMORY = (
+        0x06,
+        "SAB_OUT_OF_MEMORY",
+        "There is not enough memory to handle the requested operation",
+    )
+    SAB_UNKNOWN_HANDLE = (0x07, "SAB_UNKNOWN_HANDLE", "Unknown session or service handle")
+    SAB_UNKNOWN_KEY_STORE = (
+        0x08,
+        "SAB_UNKNOWN_KEY_STORE",
+        "The key store identified by the provided key store ID doesn't exist and the create"
+        " flag is not set",
+    )
+    SAB_KEY_STORE_AUTH = (0x09, "SAB_KEY_STORE_AUTH", "Key store authentication fails")
+    SAB_KEY_STORAGE_ERROR = (
+        0x0A,
+        "SAB_KEY_STORAGE_ERROR",
+        "An error occurred in the key storage internal processing",
+    )
+    SAB_ID_CONFLICT = (
+        0x0B,
+        "SAB_ID_CONFLICT",
+        "An element (key store, key...) with the provided ID already exists",
+    )
+    SAB_RNG_NOT_STARTED = (0x0C, "SAB_RNG_NOT_STARTED", "The internal RNG is not started")
+    SAB_CMD_NOT_SUPPORTED = (
+        0x0D,
+        "SAB_CMD_NOT_SUPPORTED",
+        "The functionality is not supported for the current session, service or key store"
+        " configuration",
+    )
+    SAB_INVALID_LIFECYCLE = (
+        0x0E,
+        "SAB_INVALID_LIFECYCLE",
+        "Invalid lifecycle for requested operation",
+    )
+    SAB_KEY_STORE_CONFLICT = (
+        0x0F,
+        "SAB_KEY_STORE_CONFLICT",
+        "A key store with the same attributes already exists",
+    )
+    SAB_KEY_STORE_COUNTER = (
+        0x10,
+        "SAB_KEY_STORE_COUNTER",
+        "An issue occurred while updating the key store counter",
+    )
+    SAB_FEATURE_NOT_SUPPORTED = (
+        0x11,
+        "SAB_FEATURE_NOT_SUPPORTED",
+        "The HSM feature is not supported",
+    )
+    SAB_SELF_TEST_FAILURE = (
+        0x12,
+        "SAB_SELF_TEST_FAILURE",
+        "An issue occurred during the self-test execution",
+    )
+    SAB_NOT_READY = (
+        0x13,
+        "SAB_NOT_READY",
+        "HSM is not ready to provide the requested service (SAB Init not done)",
+    )
+    SAB_FEATURE_DISABLED = (0x14, "SAB_FEATURE_DISABLED", "The feature is currently disabled")
+    SAB_KEY_GROUP_FULL = (
+        0x19,
+        "SAB_KEY_GROUP_FULL",
+        "Not enough space to store the key in the key group",
+    )
+    SAB_CANNOT_RETRIEVE_KEY_GROUP = (
+        0x1A,
+        "SAB_CANNOT_RETRIEVE_KEY_GROUP",
+        "Impossible to retrieve the key group",
+    )
+    SAB_KEY_NOT_SUPPORTED = (0x1B, "SAB_KEY_NOT_SUPPORTED", "Key not supported")
+    SAB_CANNOT_DELETE_PERMANENT_KEY = (
+        0x1C,
+        "SAB_CANNOT_DELETE_PERMANENT_KEY",
+        "Trying to delete a permanent key",
+    )
+    SAB_OUT_TOO_SMALL = (0x1D, "SAB_OUT_TOO_SMALL", "Output buffer size is too small")
+    SAB_FATAL_FAILURE = (0xFF, "SAB_FATAL_FAILURE", "Fatal failure")
 
 
 class EleFwStatus(SpsdkSoftEnum):

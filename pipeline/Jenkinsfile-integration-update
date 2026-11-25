@@ -6,6 +6,10 @@ pipeline {
         cron('0 2 * * 0')
     }
 
+    options {
+        buildDiscarder(logRotator(daysToKeepStr: '30'))   // discard builds older than one month
+    }
+
     parameters {
         booleanParam(
             name: 'DRY_RUN',

@@ -106,8 +106,11 @@ features:
   # where 0x1D00 is the NXP debug mailbox AP base on this SoC.
   dat:
     based_on_ele: True # DAT is implemented on top of the EdgeLock Enclave
+    ele_cnt_version: 2 # DAT container is based on New AHAB container version 2
+    sub_features: ["ele_pqc"] # Debug credential with hybrid (ECC + PQC) AHAB v2 certificate
     dat_is_using_sha256_always: True # ELE DAT uses SHA-256
     dac_rot_type: not_available # DAC packet does not contain the ROT hash
+    auth_beacon_length: 4 # The length in bytes of authentication beacon
     # dmbox_ap_ix is left at the default (-1). On ADIv6 the debug mailbox AP is
     # auto-discovered by the ROM walk via its AP IDR (0x002A0000). If the
     # auto-enumeration fails on HW, uncomment the line below to force the debug

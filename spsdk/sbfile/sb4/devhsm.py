@@ -321,14 +321,19 @@ class DevHsmSB4(DevHsm):
             if isinstance(command, CmdLoadKeyBlob):
                 if command.plain_input:
                     self.info_print(" 3.2.1 PlainText keyblob found, performing key wrapping")
-                    command.data = self.wrap_key(command.data)
+                    command.data = self.wrap_key(
+                        command.data, command.key_type, command.key_properties
+                    )
                 if command.address == self.get_keyblob_offset():
                     cust_mk_sk_blob_found = True
 
         self.info_print(" 3.3 Handling CUST_MK_SK/SBKEK keyblob")
         if cust_mk_sk_blob_found:
             self.info_print(" 3.3.1 CUST_MK_SK/SBKEK key blob found in configuration")
-            expected_position = self.get_keyblob_position()
+            expected_position = self.get_keyblob_index(sb4_data.commands)
+            if expected_position > 0 and self.get_keyblob_position() == -1:
+                # the keyblob is expected right before the trailing reset commands
+                expected_position -= 1
             if (
                 not isinstance(sb4_data.commands[expected_position], CmdLoadKeyBlob)
                 and not self._keyblob_pos_warning_logged
@@ -343,7 +348,7 @@ class DevHsmSB4(DevHsm):
             self.wrapped_cust_mk_sk = self.wrap_key(self.cust_mk_sk)
             self.info_print(" 3.3.3: Adding wrapped CUST_MK_SK LoadKeyBlob command into SB file.")
             sb4_data.insert_command(
-                index=self.get_keyblob_position(),
+                index=self.get_keyblob_index(sb4_data.commands),
                 command=CmdLoadKeyBlob(
                     offset=self.get_keyblob_offset(),
                     data=self.wrapped_cust_mk_sk,
@@ -382,7 +387,8 @@ class DevHsmSB4(DevHsm):
         ahab.signature_block = signature_block
         # 3.5 Set ahab container SRk set to DEVHSM
         ahab.set_flags(srk_set="devhsm")
-        core_id = chip_config.core_ids.from_label("cortex-m33")
+        # The SB4 descriptor is processed by the boot core, which is the first defined core ID
+        core_id = chip_config.core_ids.from_label(chip_config.core_ids.labels()[0])
         # 3.6 Add SB4 descriptor as a AHAB image
         data_iae_flags = ImageArrayEntryV2.create_flags(
             image_type=ImageArrayEntryV2.get_image_types(ahab.chip_config, core_id.tag)
@@ -605,26 +611,42 @@ class DevHsmSB4(DevHsm):
 
         return oem_master_input[: self.DEVBUFF_GEN_MASTER_ENC_SHARE_OUTPUT_SIZE]
 
-    def wrap_key(self, cust_mk_sk: bytes) -> bytes:
-        """Wrap the Customer Master Key Symmetric Key using device HSM.
+    def wrap_key(
+        self,
+        key: bytes,
+        key_type: TrustProvKeyType = TrustProvKeyType.CKDFK,
+        key_properties: int | None = None,
+    ) -> bytes:
+        """Wrap the plain key using device HSM.
 
-        This method writes the CUST_MK_SK to device buffer, uses HSM store key command
-        to wrap it according to RFC3396 standard, and retrieves the wrapped result.
+        This method writes the plain key to device memory, uses the HSM store key command
+        to wrap it by NXP_CUST_KEK_EXT_SK into RFC3394 key blob, and retrieves the wrapped
+        result. The wrapped key is also stored as a temporary file for debugging.
 
-        :param cust_mk_sk: Customer Master Key Symmetric Key to be wrapped.
-        :raises SPSDKError: If memory write/read fails or HSM store key command fails.
-        :return: Wrapped CUST_MK_SK key according to RFC3396 standard.
+        :param key: Plain key to be wrapped (16 or 32 bytes), by default the CUST_MK_SK.
+        :param key_type: Type of the key, defaults to CKDFK (CUST_MK_SK).
+        :param key_properties: HSM_STORE_KEY key properties (bit 0: key size, bit 30: PPROT0,
+            bit 31: PPROT1). If not set, the key size is derived from the key length.
+        :raises SPSDKError: If memory write/read fails, HSM store key command fails,
+            or wrapped key size validation fails
+        :return: Wrapped key according to RFC3394 standard
         """
-        if not self.mboot.write_memory(self.devbuff_base, cust_mk_sk):
+        key_properties = CmdLoadKeyBlob.get_plain_key_properties(key, key_properties)
+        if not self.mboot.write_memory(self.devbuff_base, key):
             raise SPSDKError(
-                f"Cannot write CUST_MK_SK into device. Error: {self.mboot.status_string}"
+                f"Cannot write {key_type.label} key into device. Error: {self.mboot.status_string}"
             )
-        wrapped_key_size = self.get_devbuff_wrapped_cust_mk_sk_key_size()
+        # the wrapped key size from database belongs to the 256-bit CUST_MK_SK
+        wrapped_key_size = (
+            self.get_devbuff_wrapped_cust_mk_sk_key_size()
+            - self.DEVBUFF_CUST_MK_SK_KEY_SIZE
+            + len(key)
+        )
         hsm_store_key_res = self.mboot.tp_hsm_store_key(
-            TrustProvKeyType.CKDFK.tag,
-            0x01,
+            key_type.tag,
+            key_properties,
             self.devbuff_base,
-            self.DEVBUFF_CUST_MK_SK_KEY_SIZE,
+            len(key),
             self.get_devbuff_base_address(1),
             wrapped_key_size,
         )
@@ -635,19 +657,23 @@ class DevHsmSB4(DevHsm):
         if hsm_store_key_res[1] != wrapped_key_size:
             raise SPSDKError("HSM Store Key command has invalid results.")
 
-        wrapped_cust_mk_sk = self.mboot.read_memory(
+        wrapped_key = self.mboot.read_memory(
             self.get_devbuff_base_address(1),
             wrapped_key_size,
         )
 
-        if not wrapped_cust_mk_sk:
+        if not wrapped_key:
             raise SPSDKError(
-                f"Cannot read WRAPPED CUST_MK_SK from device. Error: {self.mboot.status_string}"
+                f"Cannot read wrapped {key_type.label} key from device. "
+                f"Error: {self.mboot.status_string}"
             )
 
-        self.store_temp_res("CUST_MK_SK.bin", wrapped_cust_mk_sk)
+        file_name = (
+            "CUST_MK_SK.bin" if key_type == TrustProvKeyType.CKDFK else f"{key_type.label}_BLOB.bin"
+        )
+        self.store_temp_res(file_name, wrapped_key)
 
-        return wrapped_cust_mk_sk
+        return wrapped_key
 
     def sign_data_blob(self, data_to_sign: bytes) -> bytes:
         """Sign data blob using HSM encryption.

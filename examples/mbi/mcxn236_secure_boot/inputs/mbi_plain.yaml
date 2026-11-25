@@ -1,0 +1,21 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ==========================  Master Boot Image configuration for mcxn236 (plain XIP)  ==========================
+# This plain (unsigned) image is used only to demonstrate what happens when an unsigned image
+# is loaded into a device with secure boot enabled - the boot ROM refuses to execute it.
+# NXP chip family identifier.
+family: mcxn236
+# Revision of silicon.
+revision: latest
+# Execute-in-place image (runs directly from internal flash).
+outputImageExecutionTarget: xip
+# Plain image - no authentication.
+outputImageAuthenticationType: plain
+# The path for the resulting plain master boot image.
+masterBootOutputFile: ../workspace/mcxn236_plain_red.bin
+# Plain input application image (hello world, red LED blinking), raw binary linked at 0x0.
+inputImageFile: frdm_mcxn236_hello_world_red.bin
+# XIP load/execution address (start of internal flash).
+outputImageExecutionAddress: 0

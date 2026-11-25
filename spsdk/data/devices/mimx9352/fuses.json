@@ -1,5 +1,5 @@
 {
-    "cpu": "MIMX9352",
+    "cpu": "mimx9352",
     "groups": [
         {
             "group": {
@@ -81,52 +81,7 @@
                             ]
                         },
                         {
-                            "width": 3,
-                            "id": "fuse0-bits-3-5",
-                            "name": "HSW_CFG_LOCK",
-                            "description": "Hardware and Software Configuration Lock",
-                            "values": [
-                                {
-                                    "name": "UNLOCKED",
-                                    "value": 0,
-                                    "description": "Unlocked (fuses can be read, sensed, burned or over-ridden in the corresponding OTP shadow register)"
-                                },
-                                {
-                                    "name": "WP",
-                                    "value": 1,
-                                    "description": "Write Protect, the controlled field can not be burned"
-                                },
-                                {
-                                    "name": "OP",
-                                    "value": 2,
-                                    "description": "Over-ride Protect, the controlled field shadow registers can not be over-written"
-                                },
-                                {
-                                    "name": "OP_WP",
-                                    "value": 3,
-                                    "description": "Over-ride + Write Protect, the controlled field can not be overridden nor burned"
-                                },
-                                {
-                                    "name": "RP",
-                                    "value": 4,
-                                    "description": "Read Protect, the controlled field can be sensed only, but can't be read from shadow registers"
-                                },
-                                {
-                                    "name": "RP_WP",
-                                    "value": 5,
-                                    "description": "Read + Write Protect, the controlled field can be sensed, overridden, but can't be read nor burned"
-                                },
-                                {
-                                    "name": "RP_OP",
-                                    "value": 6,
-                                    "description": "Read + Over-ride Protect, the controlled field can be sensed, burned, but can't be read nor over-written"
-                                },
-                                {
-                                    "name": "ALL_LOCKS",
-                                    "value": 7,
-                                    "description": "The controlled field can't be read, sensed, burned or overridden in corresponding OTP shadow register"
-                                }
-                            ]
+                            "width": 3
                         },
                         {
                             "width": 3
@@ -1110,49 +1065,25 @@
                     "id": "fuse12",
                     "name": "ECID3",
                     "description": "Device Unique ID",
-                    "index_int": "0x000C",
-                    "lock": {
-                        "register_id": "fuse0",
-                        "write_lock_int": "0x0008",
-                        "read_lock_int": "0x0020",
-                        "operation_lock_int": "0x0010"
-                    }
+                    "index_int": "0x000C"
                 },
                 {
                     "id": "fuse13",
                     "name": "ECID2",
                     "description": "Device Unique ID",
-                    "index_int": "0x000D",
-                    "lock": {
-                        "register_id": "fuse0",
-                        "write_lock_int": "0x0008",
-                        "read_lock_int": "0x0020",
-                        "operation_lock_int": "0x0010"
-                    }
+                    "index_int": "0x000D"
                 },
                 {
                     "id": "fuse14",
                     "name": "ECID1",
                     "description": "Device Unique ID",
-                    "index_int": "0x000E",
-                    "lock": {
-                        "register_id": "fuse0",
-                        "write_lock_int": "0x0008",
-                        "read_lock_int": "0x0020",
-                        "operation_lock_int": "0x0010"
-                    }
+                    "index_int": "0x000E"
                 },
                 {
                     "id": "fuse15",
                     "name": "ECID0",
                     "description": "Device Unique ID",
-                    "index_int": "0x000F",
-                    "lock": {
-                        "register_id": "fuse0",
-                        "write_lock_int": "0x0008",
-                        "read_lock_int": "0x0020",
-                        "operation_lock_int": "0x0010"
-                    }
+                    "index_int": "0x000F"
                 }
             ]
         },
@@ -1229,12 +1160,6 @@
                     "name": "HW_CFG1",
                     "description": "HW_CFG1",
                     "index_int": "0x0013",
-                    "lock": {
-                        "register_id": "fuse0",
-                        "write_lock_int": "0x0008",
-                        "read_lock_int": "0x0020",
-                        "operation_lock_int": "0x0010"
-                    },
                     "bitfields": [
                         {
                             "width": 4,
@@ -1894,10 +1819,10 @@
                             "width": 1,
                             "id": "fuse24-bit-16",
                             "name": "SD_Loopback_Clock_Source_Sel",
-                            "description": "SD Loopback clock Source Sel",
                             "deprecated_names": [
                                 "SD_Loopback_Clock_Source_Sel "
                             ],
+                            "description": "SD Loopback clock Source Sel",
                             "values": [
                                 {
                                     "name": "THROUGH_SD_PAD",
@@ -6099,32 +6024,28 @@
                     ]
                 },
                 {
-                    "id": "Reserved48",
-                    "name": "Reserved 0x30",
-                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
-                    "index_int": "0x0030",
-                    "is_reserved": true
+                    "id": "fuse48",
+                    "name": "OTP_UNIQ_ID3",
+                    "description": "Used by EdgeLock Enclave for:\n1. JTAG ID Debug Authentication\n2. Unique ID for UDF",
+                    "index_int": "0x0030"
                 },
                 {
-                    "id": "Reserved49",
-                    "name": "Reserved 0x31",
-                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
-                    "index_int": "0x0031",
-                    "is_reserved": true
+                    "id": "fuse49",
+                    "name": "OTP_UNIQ_ID2",
+                    "description": "Used by EdgeLock Enclave for:\n1. JTAG ID Debug Authentication\n2. Unique ID for UDF",
+                    "index_int": "0x0031"
                 },
                 {
-                    "id": "Reserved50",
-                    "name": "Reserved 0x32",
-                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
-                    "index_int": "0x0032",
-                    "is_reserved": true
+                    "id": "fuse50",
+                    "name": "OTP_UNIQ_ID1",
+                    "description": "Used by EdgeLock Enclave for:\n1. JTAG ID Debug Authentication\n2. Unique ID for UDF",
+                    "index_int": "0x0032"
                 },
                 {
-                    "id": "Reserved51",
-                    "name": "Reserved 0x33",
-                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
-                    "index_int": "0x0033",
-                    "is_reserved": true
+                    "id": "fuse51",
+                    "name": "OTP_UNIQ_ID0",
+                    "description": "Used by EdgeLock Enclave for:\n1. JTAG ID Debug Authentication\n2. Unique ID for UDF",
+                    "index_int": "0x0033"
                 },
                 {
                     "id": "Reserved52",
@@ -6616,14 +6537,14 @@
                             "description": "OEM GDET DISABLE",
                             "values": [
                                 {
-                                    "name": "ENABLED",
+                                    "name": "GDET_ENABLED",
                                     "value": 0,
-                                    "description": "Disable ELE-AP Glitch detector. This bit should only be set if security is not of concern. This bit can only be set in OEM OPEN"
+                                    "description": "ELE-AP Glitch detector is enabled (default secure state). Values 0b00, 0b01 and 0b10 keep the Glitch detector enabled"
                                 },
                                 {
-                                    "name": "DISABLED",
-                                    "value": 1,
-                                    "description": "ELE-AP Glitch detector is enabled (default secure state)"
+                                    "name": "GDET_DISABLED",
+                                    "value": 3,
+                                    "description": "Disable ELE-AP Glitch detector. This should only be set if security is not of concern. This can only be set in OEM OPEN"
                                 }
                             ]
                         },
@@ -6681,11 +6602,10 @@
                     ]
                 },
                 {
-                    "id": "Reserved59",
-                    "name": "Reserved 0x3B",
-                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
+                    "id": "fuse59",
+                    "name": "ELE_MISC_CTRL3",
+                    "description": "NXP controlled.",
                     "index_int": "0x003B",
-                    "is_reserved": true,
                     "bitfields": [
                         {
                             "width": 1
@@ -6694,7 +6614,22 @@
                             "width": 2
                         },
                         {
-                            "width": 2
+                            "width": 2,
+                            "id": "fuse59-bits-3-4",
+                            "name": "FASTBOOT_ENABLE",
+                            "description": "FastBoot Enablement",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "FastBoot is disabled (values 0b10 and 0b11 also disable FastBoot)"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "FastBoot is enabled"
+                                }
+                            ]
                         },
                         {
                             "width": 1
@@ -6854,7 +6789,7 @@
         },
         {
             "group": {
-                "name": "Reserved 0x3E-0x3F",
+                "name": "Reserved 0x3E-0x7F",
                 "description": "Reserved for future use."
             },
             "registers": [
@@ -6933,71 +6868,63 @@
                             "width": 1
                         }
                     ]
-                }
-            ]
-        },
-        {
-            "group": {
-                "name": "ELE_SRKH",
-                "description": "ELE SRK Hash"
-            },
-            "registers": [
-                {
-                    "id": "fuse64",
-                    "name": "ELE_SRKH0",
-                    "description": "ELE_SRKH0",
-                    "index_int": "0x0040"
                 },
                 {
-                    "id": "fuse65",
-                    "name": "ELE_SRKH1",
-                    "description": "ELE_SRKH1",
-                    "index_int": "0x0041"
+                    "id": "Reserved64",
+                    "name": "Reserved 0x40",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
+                    "index_int": "0x0040",
+                    "is_reserved": true
                 },
                 {
-                    "id": "fuse66",
-                    "name": "ELE_SRKH2",
-                    "description": "ELE_SRKH2",
-                    "index_int": "0x0042"
+                    "id": "Reserved65",
+                    "name": "Reserved 0x41",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
+                    "index_int": "0x0041",
+                    "is_reserved": true
                 },
                 {
-                    "id": "fuse67",
-                    "name": "ELE_SRKH3",
-                    "description": "ELE_SRKH3",
-                    "index_int": "0x0043"
+                    "id": "Reserved66",
+                    "name": "Reserved 0x42",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
+                    "index_int": "0x0042",
+                    "is_reserved": true
                 },
                 {
-                    "id": "fuse68",
-                    "name": "ELE_SRKH4",
-                    "description": "ELE_SRKH4",
-                    "index_int": "0x0044"
+                    "id": "Reserved67",
+                    "name": "Reserved 0x43",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
+                    "index_int": "0x0043",
+                    "is_reserved": true
                 },
                 {
-                    "id": "fuse69",
-                    "name": "ELE_SRKH5",
-                    "description": "ELE_SRKH5",
-                    "index_int": "0x0045"
+                    "id": "Reserved68",
+                    "name": "Reserved 0x44",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
+                    "index_int": "0x0044",
+                    "is_reserved": true
                 },
                 {
-                    "id": "fuse70",
-                    "name": "ELE_SRKH6",
-                    "description": "ELE_SRKH6",
-                    "index_int": "0x0046"
+                    "id": "Reserved69",
+                    "name": "Reserved 0x45",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
+                    "index_int": "0x0045",
+                    "is_reserved": true
                 },
                 {
-                    "id": "fuse71",
-                    "name": "ELE_SRKH7",
-                    "description": "ELE_SRKH7",
-                    "index_int": "0x0047"
-                }
-            ]
-        },
-        {
-            "group": {
-                "name": "Reserved 0x48-0x7F",
-                "description": "Reserved for future use."
-            },
-            "registers": [
+                    "id": "Reserved70",
+                    "name": "Reserved 0x46",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
+                    "index_int": "0x0046",
+                    "is_reserved": true
+                },
+                {
+                    "id": "Reserved71",
+                    "name": "Reserved 0x47",
+                    "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
+                    "index_int": "0x0047",
+                    "is_reserved": true
+                },
                 {
                     "id": "Reserved72",
                     "name": "Reserved 0x48",
@@ -8067,7 +7994,7 @@
                 {
                     "id": "fuse187",
                     "name": "OTFAD1_KEY0",
-                    "description": "On the Fly Decryption module Key bits  31 - 0",
+                    "description": "On the Fly Decryption module Key bits 31 - 0",
                     "index_int": "0x00BB",
                     "lock": {
                         "register_id": "fuse2",

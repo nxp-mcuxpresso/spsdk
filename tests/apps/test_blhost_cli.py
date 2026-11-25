@@ -14,12 +14,17 @@ Note: blhost's spsdk_mboot_interface decorator checks sys.argv for '--help'
 to skip the hardware interface requirement. Tests must patch sys.argv accordingly.
 """
 
+import contextlib
+import os
 import sys
+from collections.abc import Iterator
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from spsdk.apps.blhost import main
+from spsdk.apps.blhost_helper import MIN_ERASE_PROGRESS_LENGTH, get_erase_chunk_size
+from spsdk.utils.misc import write_file
 from tests.cli_runner import CliRunner
 
 # ---------------------------------------------------------------------------
@@ -268,3 +273,144 @@ def test_prove_genuinity_mode_selects_correct_mcuboot_method(
         address=0x1000, buffer_size=0x100
     )
     getattr(mock_mboot, other_method).assert_not_called()
+
+
+@contextlib.contextmanager
+def _mocked_flash_image_mboot(sector_size: int = 0x1000) -> Iterator[MagicMock]:
+    """Provide a mocked McuBoot instance for flash-image tests.
+
+    :param sector_size: Flash sector size reported by the simulated target.
+    :return: Mocked McuBoot instance used by the flash-image command.
+    """
+    with (
+        patch(
+            "spsdk.apps.utils.common_cli_options.load_interface_config",
+            return_value=MagicMock(IDENTIFIER="usb", get_scan_args=dict),
+        ),
+        patch(
+            "spsdk.apps.utils.common_cli_options.MbootProtocolBase.get_interface_class"
+        ) as get_cls,
+        patch("spsdk.apps.blhost.McuBoot") as mock_mboot_class,
+    ):
+        get_cls.return_value.scan_single.return_value = MagicMock()
+        mock_mboot = MagicMock()
+        mock_mboot.__enter__.return_value = mock_mboot
+        mock_mboot.status_code = 0
+        mock_mboot.get_property.return_value = [sector_size]
+        mock_mboot.interface.device.timeout = 5000
+        mock_mboot_class.return_value = mock_mboot
+        yield mock_mboot
+
+
+def test_flash_image_erase_only_does_not_write(cli_runner: CliRunner, data_dir: str) -> None:
+    """Test that --erase-only erases the image regions but writes no data."""
+    image = os.path.join(data_dir, "zeros.bin")
+    args = ["flash-image", image, "--erase-only"]
+
+    with _mocked_flash_image_mboot() as mock_mboot:
+        cli_runner.invoke(main, args)
+
+    mock_mboot.flash_erase_region.assert_called_once_with(address=0, length=0x1000, mem_id=0)
+    mock_mboot.write_memory.assert_not_called()
+
+
+def test_flash_image_erase_only_with_memory_id(cli_runner: CliRunner, data_dir: str) -> None:
+    """Test that --erase-only honors the memory ID and the external memory sector size."""
+    image = os.path.join(data_dir, "zeros.bin")
+    args = ["flash-image", image, "none", "9", "--erase-only"]
+
+    with _mocked_flash_image_mboot() as mock_mboot:
+        # external memory attributes reporting a 64 kiB sector size
+        mock_mboot.get_property.return_value = [0x08, 0, 0, 0, 0x10000, 0]
+        cli_runner.invoke(main, args)
+
+    mock_mboot.flash_erase_region.assert_called_once_with(address=0, length=0x10000, mem_id=9)
+    mock_mboot.write_memory.assert_not_called()
+
+
+def test_flash_image_erase_uses_target_sector_size(cli_runner: CliRunner, data_dir: str) -> None:
+    """Test that the erase region is aligned to the sector size reported by the target."""
+    image = os.path.join(data_dir, "zeros.bin")
+    args = ["flash-image", image, "erase"]
+
+    with _mocked_flash_image_mboot(sector_size=0x8000) as mock_mboot:
+        cli_runner.invoke(main, args)
+
+    mock_mboot.flash_erase_region.assert_called_once_with(address=0, length=0x8000, mem_id=0)
+    mock_mboot.write_memory.assert_called_once()
+
+
+def test_flash_image_erase_alignment_override(cli_runner: CliRunner, data_dir: str) -> None:
+    """Test that --erase-alignment overrides the value read from the target."""
+    image = os.path.join(data_dir, "zeros.bin")
+    args = ["flash-image", image, "erase", "--erase-alignment", "0x10000"]
+
+    with _mocked_flash_image_mboot(sector_size=0x1000) as mock_mboot:
+        cli_runner.invoke(main, args)
+
+    mock_mboot.get_property.assert_not_called()
+    mock_mboot.flash_erase_region.assert_called_once_with(address=0, length=0x10000, mem_id=0)
+
+
+def test_flash_image_no_erase(cli_runner: CliRunner, data_dir: str) -> None:
+    """Test that the image is written without erasing when erase is not requested."""
+    image = os.path.join(data_dir, "zeros.bin")
+    args = ["flash-image", image]
+
+    with _mocked_flash_image_mboot() as mock_mboot:
+        cli_runner.invoke(main, args)
+
+    mock_mboot.flash_erase_region.assert_not_called()
+    mock_mboot.write_memory.assert_called_once()
+
+
+def test_flash_image_erase_only_failure_reports_error(cli_runner: CliRunner, data_dir: str) -> None:
+    """Test that a failing erase operation is reported and no data is written."""
+    image = os.path.join(data_dir, "zeros.bin")
+    args = ["flash-image", image, "--erase-only"]
+
+    with _mocked_flash_image_mboot() as mock_mboot:
+        mock_mboot.status_code = 10205  # Memory Not Configured
+        cli_runner.invoke(main, args, expected_code=1)
+
+    mock_mboot.flash_erase_region.assert_called_once()
+    mock_mboot.write_memory.assert_not_called()
+
+
+def test_flash_image_erase_large_image_reports_progress(cli_runner: CliRunner, tmpdir: str) -> None:
+    """Test that erasing a large region is split into several commands reporting progress."""
+    image = os.path.join(tmpdir, "large.bin")
+    # an image large enough to be erased by several chunks
+    length = 16 * MIN_ERASE_PROGRESS_LENGTH
+    write_file(bytes(length), image, mode="wb")
+    args = ["flash-image", image, "--erase-only"]
+
+    with _mocked_flash_image_mboot(sector_size=0x1000) as mock_mboot:
+        cli_runner.invoke(main, args)
+
+    chunk = get_erase_chunk_size(length, 0x1000)
+    assert mock_mboot.flash_erase_region.call_count == -(-length // chunk)
+    # the erased chunks cover the whole region exactly once
+    erased = [
+        (call.kwargs["address"], call.kwargs["length"])
+        for call in mock_mboot.flash_erase_region.call_args_list
+    ]
+    assert erased[0][0] == 0
+    assert sum(item[1] for item in erased) == length
+    for previous, current in zip(erased, erased[1:]):
+        assert current[0] == previous[0] + previous[1]
+    mock_mboot.write_memory.assert_not_called()
+
+
+def test_flash_image_erase_progress_suppressed_in_json_mode(
+    cli_runner: CliRunner, data_dir: str
+) -> None:
+    """Test that the erase still works when the progress bar is suppressed."""
+    image = os.path.join(data_dir, "zeros.bin")
+    args = ["-j", "flash-image", image, "--erase-only"]
+
+    with _mocked_flash_image_mboot() as mock_mboot:
+        cli_runner.invoke(main, args)
+
+    mock_mboot.flash_erase_region.assert_called_once_with(address=0, length=0x1000, mem_id=0)
+    mock_mboot.write_memory.assert_not_called()

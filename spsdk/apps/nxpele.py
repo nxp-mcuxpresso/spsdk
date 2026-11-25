@@ -54,7 +54,6 @@ from spsdk.ele.ele_constants import (
 from spsdk.exceptions import SPSDKError
 from spsdk.image.iee.iee import Iee, IeeKeyBlobLockAttributes, IeeKeyBlobModeAttributes
 from spsdk.image.otfad.otfad import KeyBlob, Otfad
-from spsdk.mboot.exceptions import McuBootCommandError
 from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
@@ -296,15 +295,14 @@ def ele_reset(ele_handler: EleMessageHandler) -> None:
     """ELE Reset command.
 
     :param ele_handler: ELE handler class
+    :raises SPSDKError: When the reset request cannot be delivered to the ELE.
     """
     reset = ele_message.EleMessageReset()
     with ele_handler:
-        try:
-            ele_handler.send_message(reset)
-            click.echo("ELE Reset ends successfully")
-        except (McuBootCommandError, SPSDKError) as exc:
-            logger.debug(f"Reset by ELE failed: {exc!s}")
-            click.echo("ELE reset failed", err=True, color=True)
+        # A missing response caused by the chip reset itself is tolerated by the handler,
+        # any other failure is propagated to report a non-zero exit code.
+        ele_handler.send_message(reset)
+    click.echo("ELE Reset ends successfully")
 
 
 @main.command(name="get-ele-fw-status", no_args_is_help=False)
@@ -595,7 +593,7 @@ def ele_read_common_fuse(ele_handler: EleMessageHandler, index: int) -> None:
     "--index",
     type=INT(),
     required=True,
-    help="Fuse index.",
+    help="Shadow fuse word index (32-bit word offset, not bit position).",
 )
 @click.pass_obj
 def cmd_read_shadow_fuse(handler: EleMessageHandler, index: int) -> None:
@@ -612,7 +610,7 @@ def ele_read_shadow_fuse(ele_handler: EleMessageHandler, index: int) -> None:
     Not all fuses could be read by this command, just some of them are supported.
 
     :param ele_handler: ELE handler class
-    :param index: Fuse Id
+    :param index: Shadow fuse word index
     """
     read_shadow_fuse_msg = ele_message.EleMessageReadShadowFuse(index)
     with ele_handler:
@@ -1669,7 +1667,7 @@ def write_fuse(ele_handler: EleMessageHandler, data: int, index: int, lock: bool
     "--index",
     type=INT(),
     required=True,
-    help="Index of the fuse to be written",
+    help="Shadow fuse word index (32-bit word offset, not bit position).",
 )
 @click.pass_obj
 def cmd_write_shadow_fuse(handler: EleMessageHandler, data: int, index: int) -> None:
@@ -1682,7 +1680,7 @@ def write_shadow_fuse(ele_handler: EleMessageHandler, data: int, index: int) -> 
 
     :param ele_handler: ELE handler class
     :param data: Data to be written in fuse (32 bit)
-    :param index: Index of the fuse to be written (32 bit)
+    :param index: Shadow fuse word index (32-bit word offset, not bit position)
     """
     ele_fw_write_fuse_msg = ele_message.EleMessageWriteShadowFuse(index, data)
     with ele_handler:
@@ -1712,14 +1710,15 @@ def ele_session_open(ele_handler: EleMessageHandler) -> int:
     """ELE Session Open command.
 
     :param ele_handler: ELE handler class
-    :return: Session handle if successful, 0 otherwise
+    :return: Session handle
+    :raises SPSDKError: When no valid session handle is returned
     """
     session_open = ele_message.EleMessageSessionOpen()
     with ele_handler:
         ele_handler.send_message(session_open)
 
     if not session_open.is_session_valid():
-        click.echo("Warning: Session open failed - no valid session handle returned")
+        raise SPSDKError("ELE Session Open failed - no valid session handle returned")
 
     return session_open.get_session_handle()
 
@@ -1883,7 +1882,8 @@ def ele_keystore_open(
     :param shared: True for shared keystore
     :param sync: True for SYNC operation
     :param monotonic_counter: True to increment monotonic counter
-    :return: Key store handle if successful, 0 otherwise
+    :return: Key store handle
+    :raises SPSDKError: When no valid key store handle is returned
     """
     keystore_open = ele_message.EleMessageKeyStoreOpen(
         session_handle=session_handle,
@@ -1898,7 +1898,7 @@ def ele_keystore_open(
         ele_handler.send_message(keystore_open)
 
     if not keystore_open.is_key_store_valid():
-        click.echo("Warning: Key store open failed - no valid key store handle returned")
+        raise SPSDKError("ELE Key Store Open failed - no valid key store handle returned")
 
     return keystore_open.get_key_store_handle()
 
@@ -1987,17 +1987,14 @@ def cmd_public_key_export(
     """
     public_key = ele_public_key_export(handler, keystore_handle, key_id, buffer_size)
 
-    if public_key:
-        if output:
-            write_file(public_key, output, mode="wb")
-            click.echo(
-                f"ELE Public Key Export ends successfully. Public key saved to: {get_printable_path(output)}"
-            )
-        else:
-            click.echo("ELE Public Key Export ends successfully.")
-            click.echo(f"Public key ({len(public_key)} bytes): {public_key.hex()}")
+    if output:
+        write_file(public_key, output, mode="wb")
+        click.echo(
+            f"ELE Public Key Export ends successfully. Public key saved to: {get_printable_path(output)}"
+        )
     else:
-        click.echo("ELE Public Key Export failed - no public key data received")
+        click.echo("ELE Public Key Export ends successfully.")
+        click.echo(f"Public key ({len(public_key)} bytes): {public_key.hex()}")
 
 
 def ele_public_key_export(
@@ -2012,7 +2009,8 @@ def ele_public_key_export(
     :param keystore_handle: Key store handle from keystore open
     :param key_id: ID of the asymmetric key stored in the key store
     :param buffer_size: Length in bytes of the output public key buffer
-    :return: Public key bytes if successful, empty bytes otherwise
+    :return: Public key bytes
+    :raises SPSDKError: When no public key data is returned
     """
     public_key_export = ele_message.EleMessagePublicKeyExport(
         key_store_handle=keystore_handle,
@@ -2023,7 +2021,7 @@ def ele_public_key_export(
         ele_handler.send_message(public_key_export)
 
     if not public_key_export.get_public_key():
-        click.echo("Warning: Public key export failed - no public key data returned")
+        raise SPSDKError("ELE Public Key Export failed - no public key data returned")
 
     return public_key_export.get_public_key()
 
@@ -2089,24 +2087,14 @@ def cmd_export_nxp_prod_ka_puk(
     The exported key is typically 64 bytes for ECC P-256 keys (32 bytes x + 32 bytes y)
     in non-compressed form, big-endian order.
     """
-    try:
-        public_key = ele_export_nxp_prod_ka_puk(
-            handler, nonce, keystore_id, key_id, buffer_size, keep_session
-        )
+    public_key = ele_export_nxp_prod_ka_puk(
+        handler, nonce, keystore_id, key_id, buffer_size, keep_session
+    )
 
-        if public_key:
-            write_file(public_key, output, mode="wb")
-            click.echo(
-                f"NXP Production Key Agreement Public Key exported successfully to: {output}"
-            )
-            click.echo(f"Key size: {len(public_key)} bytes")
-            click.echo(f"Key (hex): {public_key.hex()}")
-        else:
-            click.echo("Failed to export NXP Production Key Agreement Public Key")
-
-    except Exception as e:
-        click.echo(f"Error exporting NXP Production Key Agreement Public Key: {e}")
-        raise
+    write_file(public_key, output, mode="wb")
+    click.echo(f"NXP Production Key Agreement Public Key exported successfully to: {output}")
+    click.echo(f"Key size: {len(public_key)} bytes")
+    click.echo(f"Key (hex): {public_key.hex()}")
 
 
 def ele_export_nxp_prod_ka_puk(
@@ -2127,12 +2115,11 @@ def ele_export_nxp_prod_ka_puk(
     :param key_id: Key ID for the NXP production key agreement public key
     :param buffer_size: Output buffer size in bytes
     :param keep_session: Keep session and keystore open after export
-    :return: Public key bytes if successful, empty bytes otherwise
+    :return: Public key bytes
+    :raises SPSDKError: When any step of the export sequence fails
     """
     session_handle = 0
     keystore_handle = 0
-    public_key = b""
-
     try:
         # Step 1: SAB Init
         click.echo("Step 1/4: Initializing SAB...")
@@ -2141,8 +2128,7 @@ def ele_export_nxp_prod_ka_puk(
             ele_handler.send_message(sab_init)
 
         if sab_init.status != ResponseStatus.ELE_SUCCESS_IND:
-            click.echo(f"SAB Init failed: {sab_init.status_string}")
-            return b""
+            raise SPSDKError(f"SAB Init failed: {sab_init.status_string}")
         click.echo("SAB Init successful")
 
         # Step 2: Session Open
@@ -2152,13 +2138,11 @@ def ele_export_nxp_prod_ka_puk(
             ele_handler.send_message(session_open)
 
         if session_open.status != ResponseStatus.ELE_SUCCESS_IND:
-            click.echo(f"Session Open failed: {session_open.status_string}")
-            return b""
+            raise SPSDKError(f"Session Open failed: {session_open.status_string}")
 
         session_handle = session_open.get_session_handle()
         if session_handle == 0:
-            click.echo("Session Open failed: Invalid session handle")
-            return b""
+            raise SPSDKError("Session Open failed: Invalid session handle")
         click.echo(f"Session opened successfully. Handle: 0x{session_handle:08X}")
 
         # Step 3: Keystore Open
@@ -2176,13 +2160,11 @@ def ele_export_nxp_prod_ka_puk(
             ele_handler.send_message(keystore_open)
 
         if keystore_open.status != ResponseStatus.ELE_SUCCESS_IND:
-            click.echo(f"Keystore Open failed: {keystore_open.status_string}")
-            return b""
+            raise SPSDKError(f"Keystore Open failed: {keystore_open.status_string}")
 
         keystore_handle = keystore_open.get_key_store_handle()
         if keystore_handle == 0:
-            click.echo("Keystore Open failed: Invalid keystore handle")
-            return b""
+            raise SPSDKError("Keystore Open failed: Invalid keystore handle")
         click.echo(f"Keystore opened successfully. Handle: 0x{keystore_handle:08X}")
 
         # Step 4: Public Key Export
@@ -2194,23 +2176,16 @@ def ele_export_nxp_prod_ka_puk(
             ele_handler.send_message(public_key_export)
 
         if public_key_export.status != ResponseStatus.ELE_SUCCESS_IND:
-            click.echo(f"Public Key Export failed: {public_key_export.status_string}")
-            return b""
+            raise SPSDKError(f"Public Key Export failed: {public_key_export.status_string}")
 
         public_key = public_key_export.get_public_key()
         if not public_key:
-            click.echo("Public Key Export failed: No key data returned")
-            return b""
+            raise SPSDKError("Public Key Export failed: No key data returned")
 
         click.echo(f"Public key exported successfully. Size: {len(public_key)} bytes")
 
         return public_key
 
-    except Exception as e:  # noqa: BLE001
-        click.echo(f"Error during NXP Production Key Agreement Public Key export: {e}")
-        return b""
-
-    # Update the cleanup section in ele_export_nxp_prod_ka_puk function:
     finally:
         # Cleanup (unless keep_session is requested)
         if not keep_session:

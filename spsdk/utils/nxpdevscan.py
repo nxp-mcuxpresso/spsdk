@@ -13,9 +13,11 @@ MCU development and provisioning workflows.
 """
 
 import array
+import inspect
 import logging
 import platform
 import struct
+from collections.abc import Callable, Sequence
 from typing import Any
 
 from libusbsio import LIBUSBSIO_Exception, usbsio
@@ -31,11 +33,14 @@ from spsdk.exceptions import (
 )
 from spsdk.mboot.interfaces.sdio import MbootSdioInterface
 from spsdk.mboot.interfaces.uart import MbootUARTInterface
+from spsdk.mboot.protocol.base import MbootProtocolBase
 from spsdk.sdp.interfaces.uart import SdpUARTInterface
+from spsdk.sdp.protocol.base import SDPProtocolBase
 from spsdk.sdp.sdp import SDP
 from spsdk.uboot.spsdk_uuu import SPSDKUUU
 from spsdk.uboot.uboot import UbootSerial
 from spsdk.utils.devicedescription import (
+    PluginDeviceDescription,
     SDIODeviceDescription,
     SIODeviceDescription,
     UartDeviceDescription,
@@ -45,7 +50,7 @@ from spsdk.utils.devicedescription import (
     get_usb_device_name,
 )
 from spsdk.utils.interfaces.device.serial_device import SerialDevice
-from spsdk.utils.interfaces.protocol.protocol_base import SpsdkNoDeviceFoundError
+from spsdk.utils.interfaces.protocol.protocol_base import ProtocolBase, SpsdkNoDeviceFoundError
 
 NXP_USB_DEVICE_VIDS = [
     0x1FC9,
@@ -372,4 +377,67 @@ def search_libusbsio_devices() -> list[SIODeviceDescription]:
     except (LIBUSBSIO_Exception, SPSDKError) as exc:
         raise SPSDKError(f"LIBUSBSIO search devices fails: [{exc!s}]") from exc
 
+    return retval
+
+
+def _scan_plugin_interface(
+    protocol: str, iface_cls: type[ProtocolBase]
+) -> list[PluginDeviceDescription]:
+    """Scan devices using a single plugin interface class.
+
+    The interface ``scan`` method is called without arguments. Interfaces whose ``scan``
+    method requires mandatory parameters are skipped.
+
+    :param protocol: Protocol name of the interface (e.g. "mboot", "sdp").
+    :param iface_cls: Plugin interface class to scan with.
+    :raises SPSDKError: When the scan method is missing or can't be called without parameters.
+    :return: List of device descriptions found by the interface.
+    """
+    scan = getattr(iface_cls, "scan", None)
+    if not callable(scan):
+        raise SPSDKError("The interface does not implement the 'scan' method")
+    required = [
+        param.name
+        for param in inspect.signature(scan).parameters.values()
+        if param.default is inspect.Parameter.empty
+        and param.kind not in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD)
+    ]
+    if required:
+        raise SPSDKError(f"The 'scan' method requires parameters: {', '.join(required)}")
+    return [
+        PluginDeviceDescription(
+            protocol=protocol, identifier=iface_cls.identifier, device=str(iface.device)
+        )
+        for iface in scan()
+    ]
+
+
+def search_plugin_devices() -> list[PluginDeviceDescription]:
+    """Search for devices using all registered device interface plugins.
+
+    All interface classes provided by ``spsdk.device.interface`` plugins are used to scan
+    for connected devices. Failure of a single plugin is logged and the search continues
+    with the remaining plugins.
+
+    :return: List of PluginDeviceDescription objects representing found devices.
+    """
+    retval: list[PluginDeviceDescription] = []
+    protocols: list[tuple[str, Callable[[], Sequence[type[ProtocolBase]]]]] = [
+        ("mboot", MbootProtocolBase.get_plugin_interface_classes),
+        ("sdp", SDPProtocolBase.get_plugin_interface_classes),
+    ]
+    for protocol, get_interface_classes in protocols:
+        try:
+            iface_classes = get_interface_classes()
+        except Exception as exc:  # pylint: disable=broad-except
+            logger.warning(f"Loading of {protocol} interface plugins failed: {exc}")
+            continue
+        for iface_cls in iface_classes:
+            identifier = getattr(iface_cls, "identifier", iface_cls.__name__)
+            try:
+                retval.extend(_scan_plugin_interface(protocol, iface_cls))
+            except Exception as exc:  # pylint: disable=broad-except
+                logger.warning(
+                    f"Scanning with {protocol} interface plugin '{identifier}' failed: {exc}"
+                )
     return retval

@@ -17,6 +17,7 @@ import sys
 import click
 
 from spsdk.apps.nxpimage_apps.nxpimage_ahab import ahab_group
+from spsdk.apps.nxpimage_apps.nxpimage_aisec import aisec_group
 from spsdk.apps.nxpimage_apps.nxpimage_bca import bca_group
 from spsdk.apps.nxpimage_apps.nxpimage_bee import bee_group
 from spsdk.apps.nxpimage_apps.nxpimage_bimg import bootable_image_group
@@ -69,6 +70,7 @@ main.add_command(tz_group)
 main.add_command(signed_msg_group)
 main.add_command(otfad_group)
 main.add_command(hse_group)
+main.add_command(aisec_group)
 
 
 @catch_spsdk_error

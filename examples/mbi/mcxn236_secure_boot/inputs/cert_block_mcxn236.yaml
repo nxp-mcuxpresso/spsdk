@@ -1,0 +1,17 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ===============================  Certification Block V21 configuration for mcxn236  =================================
+# MCU family name.
+family: mcxn236
+# Do not use an ISK certificate in this example - the image is signed directly with the root key
+# (the signer is defined in the MBI configuration).
+useIsk: false
+# Root certificate 0. The hash of the root key table (RKTH) is written into CMPA.ROTKH.
+# Only one root key is used, therefore RoTK1..3 are marked as KEY_SLOT_NOT_USED in the CMPA.
+rootCertificate0File: ../workspace/keys/rotk0_p256.pub
+# Index of the root certificate that matches the signer private key.
+mainRootCertId: 0
+# Generated cert block filename.
+containerOutputFile: ../workspace/cert_block.bin

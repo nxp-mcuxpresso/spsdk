@@ -344,6 +344,30 @@ def _load_der_private_key(data: bytes, password: bytes | None) -> Any:
     raise SPSDKError(f"Cannot load DER private key. Attempted methods failed: {error_details}")
 
 
+def _load_private_key_ignoring_password(
+    load_function: Callable[[bytes, bytes | None], Any], data: bytes, password: bytes | None
+) -> Any:
+    """Load private key, ignoring a password given for a plain (unencrypted) key.
+
+    A password provided for an unencrypted private key is not a security issue, so instead of
+    failing, a warning is logged and the key is loaded without the password.
+
+    :param load_function: Cryptography load function (PEM or DER private key loader).
+    :param data: Raw key data in bytes.
+    :param password: Optional password for encrypted private keys.
+    :return: Loaded private key object.
+    """
+    try:
+        return load_function(data, password)
+    except TypeError as exc:
+        if password is None or "private key is not encrypted" not in str(exc):
+            raise
+    logger.warning(
+        "A password was provided for a private key that is not encrypted; the password is ignored."
+    )
+    return load_function(data, None)
+
+
 def _crypto_load_private_key(encoding: SPSDKEncoding, data: bytes, password: bytes | None) -> Any:
     """Load private key from encoded data.
 
@@ -365,7 +389,7 @@ def _crypto_load_private_key(encoding: SPSDKEncoding, data: bytes, password: byt
         SPSDKEncoding.PEM: crypto_load_pem_private_key,
     }[encoding]
     try:
-        private_key = crypto_load_function(data, password)
+        private_key = _load_private_key_ignoring_password(crypto_load_function, data, password)
         assert isinstance(
             private_key,
             (ec.EllipticCurvePrivateKey, rsa.RSAPrivateKey) + MLDSA_PRIVATE_KEY_TYPES,
@@ -3035,11 +3059,13 @@ if MLDSA_PUBLIC_KEY_TYPES:
             normalized = _normalize_mldsa_pem(data)
             native_nxp_error: SPSDKError | None = None
             try:
-                loaded_key = {
-                    SPSDKEncoding.PEM: crypto_load_pem_private_key,
-                    SPSDKEncoding.DER: crypto_load_der_private_key,
-                }[SPSDKEncoding.get_file_encodings(normalized)](
-                    normalized, password.encode("utf-8") if password else None
+                loaded_key = _load_private_key_ignoring_password(
+                    {
+                        SPSDKEncoding.PEM: crypto_load_pem_private_key,
+                        SPSDKEncoding.DER: crypto_load_der_private_key,
+                    }[SPSDKEncoding.get_file_encodings(normalized)],
+                    normalized,
+                    password.encode("utf-8") if password else None,
                 )
                 if isinstance(loaded_key, MLDSA_PRIVATE_KEY_TYPES):
                     return cls(loaded_key)

@@ -252,8 +252,8 @@ def test_nxpwpc_get_template(cli_runner: CliRunner, tmp_path: Path) -> None:
     from spsdk.apps.nxpwpc import WPC
 
     family = WPC.get_supported_families()[0].name
-    service_type = next(iter(WPC.SERVICES.keys()))
-    target_type = next(iter(WPC.TARGETS.keys()))
+    service_type = next(iter(WPC.SERVICES().keys()))
+    target_type = next(iter(WPC.TARGETS().keys()))
     out = str(tmp_path / "wpc_template.yaml")
     result = cli_runner.invoke(
         nxpwpc_main,

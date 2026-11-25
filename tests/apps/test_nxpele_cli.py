@@ -18,13 +18,19 @@ uses ``--help`` so that the guard correctly bypasses ELE communication setup.
 """
 
 import sys
-from unittest.mock import patch
+from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from spsdk.apps.nxpele import main, safe_main
-from spsdk.ele.ele_comm import SPSDKEleMessageError
+from spsdk.ele.ele_comm import EleMessageHandler, EleMessageHandlerMBoot, SPSDKEleMessageError
 from spsdk.ele.ele_constants import ResponseIndication, ResponseStatus
+from spsdk.exceptions import SPSDKConnectionError, SPSDKError
+from spsdk.mboot.error_codes import StatusCode
+from spsdk.mboot.exceptions import McuBootCommandError
+from spsdk.mboot.mcuboot import McuBoot
+from spsdk.utils.family import FamilyRevision
 from tests.cli_runner import CliRunner
 
 # Family available in nxpele (see `nxpele --help`)
@@ -233,3 +239,70 @@ def test_nxpele_ele_failure_unknown_indication_exits_with_one() -> None:
         safe_main()
 
     assert exc_info.value.code == 1
+
+
+def _run_nxpele_with_mboot(args: list, device: MagicMock) -> int | str | None:
+    """Run nxpele through safe_main with an mBoot ELE handler over a mocked device.
+
+    :param args: nxpele sub-command arguments.
+    :param device: Mocked McuBoot device used by the ELE handler.
+    :return: Exit code of the application.
+    """
+    handler = EleMessageHandlerMBoot(device=device, family=FamilyRevision(ELE_FAMILY))
+    with (
+        patch.object(sys, "argv", ["nxpele", "-f", ELE_FAMILY, *args]),
+        patch.object(EleMessageHandler, "get_message_handler", return_value=handler),
+        pytest.raises(SystemExit) as exc_info,
+    ):
+        safe_main()
+    return exc_info.value.code
+
+
+def test_nxpele_reset_tolerates_missing_response() -> None:
+    """Reset exits with zero when the chip resets before answering the ELE message."""
+    device = MagicMock(spec=McuBoot)
+    device.ele_message.side_effect = McuBootCommandError("EleMessage", StatusCode.NO_RESPONSE.tag)
+
+    assert _run_nxpele_with_mboot(["reset"], device) == 0
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        SPSDKConnectionError("Device is not opened for writing"),
+        McuBootCommandError("WriteMemory", StatusCode.NO_RESPONSE.tag),
+    ],
+)
+def test_nxpele_reset_failure_exits_with_error(error: SPSDKError) -> None:
+    """Reset must exit with a non-zero code when the request cannot be delivered."""
+    device = MagicMock(spec=McuBoot)
+    device.write_memory.side_effect = error
+
+    assert _run_nxpele_with_mboot(["reset"], device) == 2
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        ["session-open"],
+        ["keystore-open", "-s", "0x1", "-i", "0x1", "-n", "0x1"],
+        ["public-key-export", "-k", "0x1", "-i", "0x1"],
+    ],
+)
+def test_nxpele_invalid_result_exits_with_error(args: list) -> None:
+    """Commands that get no valid handle or key data must exit with a non-zero code."""
+    with patch.object(EleMessageHandlerMBoot, "send_message"):
+        assert _run_nxpele_with_mboot(args, MagicMock(spec=McuBoot)) == 2
+
+
+def test_nxpele_export_nxp_prod_ka_puk_failure_exits_with_error(tmp_path: Path) -> None:
+    """A failing step of the NXP production KA PUK export must exit with a non-zero code."""
+    output = tmp_path / "puk.bin"
+    with patch.object(
+        EleMessageHandlerMBoot, "send_message", side_effect=SPSDKError("ELE failure")
+    ):
+        exit_code = _run_nxpele_with_mboot(
+            ["export-nxp-prod-ka-puk", "-o", str(output)], MagicMock(spec=McuBoot)
+        )
+    assert exit_code == 2
+    assert not output.exists()

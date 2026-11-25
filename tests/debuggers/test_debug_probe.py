@@ -20,6 +20,8 @@ import pytest
 
 import spsdk.debuggers.debug_probe as DP
 import spsdk.debuggers.debug_probe_arm as DP_ARM
+import spsdk.debuggers.utils as debug_utils
+from spsdk.debuggers.debug_probe import SPSDKDebugProbeError
 from spsdk.debuggers.utils import render_debug_access_status_table
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.exceptions import SPSDKTimeoutError
@@ -493,6 +495,43 @@ def test_dbgmlbx_ap_fixed_index_invalid_idr_raises() -> None:
         probe.dbgmlbx_reg_read(0)
 
 
+def test_dbgmlbx_ap_shared_with_mem_ap_raises_specific_error_for_mem_ap_idr() -> None:
+    """Test shared dbgmlbx/mem-ap flag raises a specific error when a MEM-AP IDR is found.
+
+    IDR 0x74770001 is a real ARM AHB5-AP (ARMv8-M MEM-AP) identifier observed on
+    RT1180 (SPSDK-7099): ap_class = (idr & 0x1E000) >> 13 == 8 (MEM-AP), ap_type == 1 (AHB-AP).
+    """
+    probe = DummyDebugMailboxApProbe(idr=0x74770001)
+    probe.dbgmlbx_ap_shared_with_mem_ap = True
+
+    with pytest.raises(
+        DP.SPSDKDebugMailboxApNotPresentError, match="Debug Mailbox AP2 is not present"
+    ):
+        probe.dbgmlbx_reg_read(0)
+
+
+def test_dbgmlbx_ap_shared_with_mem_ap_still_raises_generic_error_for_non_mem_ap_idr() -> None:
+    """Test shared dbgmlbx/mem-ap flag does not mask a genuine unrelated IDR mismatch."""
+    probe = DummyDebugMailboxApProbe(idr=0xDEADBEEF)
+    probe.dbgmlbx_ap_shared_with_mem_ap = True
+
+    # ap_class = (0xDEADBEEF & 0x1E000) >> 13 != 8, so this must stay a generic error,
+    # not the specific SPSDKDebugMailboxApNotPresentError.
+    with pytest.raises(SPSDKError) as exc_info:
+        probe.dbgmlbx_reg_read(0)
+    assert not isinstance(exc_info.value, DP.SPSDKDebugMailboxApNotPresentError)
+    assert "doesn't match the expected value" in str(exc_info.value)
+
+
+def test_dbgmlbx_ap_shared_with_mem_ap_default_false_raises_generic_error() -> None:
+    """Test the default (flag disabled) behavior is unaffected by the new logic."""
+    probe = DummyDebugMailboxApProbe(idr=0x74770001)
+
+    assert probe.dbgmlbx_ap_shared_with_mem_ap is False
+    with pytest.raises(SPSDKError, match="doesn't match the expected value"):
+        probe.dbgmlbx_reg_read(0)
+
+
 def test_debug_access_status_dict_exists_on_base_probe() -> None:
     """Test debug_access_status dict exists even for a plain (non-ARM) probe."""
     probe = DummyBaseProbe("dummy")
@@ -750,3 +789,118 @@ def test_direct_import_of_concrete_probe_module_does_not_raise(module_name: str)
     assert (
         result.returncode == 0
     ), f"import {module_name} failed as the first debuggers import:\n{result.stderr}"
+
+
+class DummyImx91SystemBusProbe(DummyCoreSightProbe):
+    """Dummy i.MX91-like probe: AP0 is a system-bus AHB-AP without Cortex-M PPB.
+
+    On i.MX91 (Cortex-A55 only, no Cortex-M core) the AHB-AP on AP0 targets the system
+    bus, where 0xE000_EDF0 is not a Cortex-M DHCSR register but a DRAM address. Any
+    DHCSR access is simulated as a bus fault, while the OCRAM test address is accessible.
+    """
+
+    def __init__(self, family: str = "mimx9131") -> None:
+        """Initialize dummy i.MX91-like probe."""
+        super().__init__("dummy", {"family": family, "test_address": 0x2048_0000})
+        self.memory: dict[int, int] = {0x2048_0000: 0x1234_5678}
+        self.dhcsr_accesses = 0
+
+    def coresight_reg_read(self, access_port: bool = True, addr: int = 0) -> int:
+        """Return AHB-AP IDR on AP0 so the MEM-AP scan can select it."""
+        ap0_idr_addr = self.get_coresight_ap_address(access_port=0, address=self.AP_IDR_REG)
+        if access_port and addr == ap0_idr_addr:
+            return 0x00010001
+        return super().coresight_reg_read(access_port=access_port, addr=addr)
+
+    def _mem_reg_read(self, mem_ap_ix: int, addr: int = 0) -> int:
+        """Fault on DHCSR, read simulated memory otherwise."""
+        if addr == self.DHCSR_REG:
+            self.dhcsr_accesses += 1
+            raise SPSDKError("Simulated system bus fault at 0xE000EDF0")
+        return self.memory.get(addr, 0)
+
+    def _mem_reg_write(self, mem_ap_ix: int, addr: int = 0, data: int = 0) -> None:
+        """Fault on DHCSR, write simulated memory otherwise."""
+        if addr == self.DHCSR_REG:
+            self.dhcsr_accesses += 1
+            raise SPSDKError("Simulated system bus fault at 0xE000EDF0")
+        self.memory[addr] = data
+
+
+def test_imx91_core_halt_not_supported_from_database() -> None:
+    """Test i.MX91 database disables Cortex-M DHCSR core debug on the MEM-AP."""
+    probe = DummyImx91SystemBusProbe()
+
+    assert probe.core_halt_supported is False
+    assert "core_dhcsr_ok" in probe.get_not_applicable_debug_access_gates()
+
+
+def test_cortex_m_family_keeps_core_halt_supported() -> None:
+    """Test Cortex-M families keep DHCSR-based core halt support by default."""
+    probe = DummyCoreSightProbe("dummy", {"family": "mimx9352"})
+
+    assert probe.core_halt_supported is True
+    assert "core_dhcsr_ok" not in probe.get_not_applicable_debug_access_gates()
+
+
+def test_imx91_ahb_access_does_not_use_cortex_m_dhcsr() -> None:
+    """Test post-auth AHB check on i.MX91 tests system memory without touching DHCSR."""
+    probe = DummyImx91SystemBusProbe()
+
+    assert debug_utils.test_ahb_access(probe) is True
+    assert probe.dhcsr_accesses == 0
+    assert probe.memory[0x2048_0000] == 0x1234_5678
+    assert probe.debug_access_status["ahb_system_bus_ok"] is True
+    assert probe.debug_access_status["core_dhcsr_ok"] is None
+
+
+def test_imx91_ahb_access_reports_real_memory_fault() -> None:
+    """Test i.MX91 AHB check still fails when the system memory itself is not accessible."""
+
+    class FaultingMemoryProbe(DummyImx91SystemBusProbe):
+        """Probe failing system-memory accesses as well."""
+
+        def _mem_reg_read(self, mem_ap_ix: int, addr: int = 0) -> int:
+            raise SPSDKError("Simulated AHB fault")
+
+    probe = FaultingMemoryProbe()
+
+    assert debug_utils.test_ahb_access(probe) is False
+    assert probe.debug_access_status["ahb_system_bus_ok"] is False
+
+
+@pytest.mark.parametrize("method", ["debug_halt", "debug_resume", "debug_step", "is_cpu_halted"])
+def test_imx91_core_halt_methods_raise_explicit_error(method: str) -> None:
+    """Test Cortex-M DHCSR core debug methods refuse to run on i.MX91."""
+    probe = DummyImx91SystemBusProbe()
+
+    with pytest.raises(SPSDKDebugProbeError, match="Cortex-M core halt"):
+        getattr(probe, method)()
+    assert probe.dhcsr_accesses == 0
+
+
+def test_cortex_m_family_ahb_access_still_halts_and_resumes() -> None:
+    """Test default Cortex-M families keep the DHCSR halt/resume around the AHB check."""
+
+    class CortexMProbe(DummyImx91SystemBusProbe):
+        """Cortex-M probe where DHCSR is accessible."""
+
+        def __init__(self) -> None:
+            super().__init__(family="mimx9352")
+            self.memory[0x2048_0000] = 0xCAFE_0000
+            self.memory[self.DHCSR_REG] = 0
+
+        def _mem_reg_read(self, mem_ap_ix: int, addr: int = 0) -> int:
+            return self.memory.get(addr, 0)
+
+        def _mem_reg_write(self, mem_ap_ix: int, addr: int = 0, data: int = 0) -> None:
+            if addr == self.DHCSR_REG:
+                self.dhcsr_accesses += 1
+            self.memory[addr] = data
+
+    probe = CortexMProbe()
+
+    assert debug_utils.test_ahb_access(probe) is True
+    assert probe.dhcsr_accesses > 0
+    assert probe.memory[probe.DHCSR_REG] == probe.DHCSR_DEBUGKEY
+    assert probe.memory[0x2048_0000] == 0xCAFE_0000

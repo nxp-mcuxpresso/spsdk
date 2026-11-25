@@ -164,6 +164,39 @@ IPED Table Creator
    :undoc-members:
    :show-inheritance:
 
+AISEC Protected-Directory Container
+----------------------------------------------
+
+.. automodule:: spsdk.image.aisec
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: spsdk.image.aisec.aisec_dir
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: spsdk.image.aisec.aisec_dir_blocks
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: spsdk.image.aisec.aisec_dir_crypto
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: spsdk.image.aisec.aisec_dir_parser
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: spsdk.image.aisec.aisec_dir_types
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 On-the-Fly AES Decryption (OTFAD)
 -------------------------------------------------
 

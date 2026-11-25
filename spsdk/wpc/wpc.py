@@ -542,8 +542,22 @@ class WPC(FeatureBaseClassComm):
     """
 
     FEATURE = "wpc"
-    SERVICES = WPCCertificateService.get_providers()
-    TARGETS = WPCTarget.get_providers()
+    _SERVICES: dict[str, type[WPCCertificateService]] | None = None
+    _TARGETS: dict[str, type[WPCTarget]] | None = None
+
+    @classmethod
+    def SERVICES(cls) -> dict[str, type[WPCCertificateService]]:
+        """Get available WPC certificate service providers."""
+        if cls._SERVICES is None:
+            cls._SERVICES = WPCCertificateService.get_providers()
+        return cls._SERVICES
+
+    @classmethod
+    def TARGETS(cls) -> dict[str, type[WPCTarget]]:
+        """Get available WPC target providers."""
+        if cls._TARGETS is None:
+            cls._TARGETS = WPCTarget.get_providers()
+        return cls._TARGETS
 
     def __init__(
         self,
@@ -612,14 +626,14 @@ class WPC(FeatureBaseClassComm):
             service_sch = get_schema_file(DatabaseManager.WPC)["service_config"]
             service_schema = service.get_validation_schemas(family)
             service_sch["properties"]["service_type"]["template_value"] = service.identifier
-            service_sch["properties"]["service_type"]["enum"] = list(cls.SERVICES.keys())
+            service_sch["properties"]["service_type"]["enum"] = list(cls.SERVICES().keys())
             service_sch["properties"]["service_parameters"].update(service_schema[0])
             sch.append(service_sch)
         if target:
             target_sch = get_schema_file(DatabaseManager.WPC)["target_config"]
             target_schema = target.get_validation_schemas(family)
             target_sch["properties"]["target_type"]["template_value"] = target.identifier
-            target_sch["properties"]["target_type"]["enum"] = list(cls.TARGETS.keys())
+            target_sch["properties"]["target_type"]["enum"] = list(cls.TARGETS().keys())
             target_sch["properties"]["target_parameters"].update(target_schema[0])
             sch.append(target_sch)
         return sch
@@ -640,14 +654,14 @@ class WPC(FeatureBaseClassComm):
         target = None
         if "service_type" in config:
             service_type = config.get_str("service_type")
-            if service_type not in cls.SERVICES:
+            if service_type not in cls.SERVICES():  # pylint: disable=unsupported-membership-test
                 raise SPSDKWPCError(f"WPC service {service_type} is not supported.")
-            service = cls.SERVICES[service_type]
+            service = cls.SERVICES()[service_type]  # pylint: disable=unsubscriptable-object
         if "target_type" in config:
             target_type = config.get_str("target_type")
-            if target_type not in cls.TARGETS:
-                raise SPSDKWPCError(f"WPC service {target_type} is not supported.")
-            target = cls.TARGETS[target_type]
+            if target_type not in cls.TARGETS():  # pylint: disable=unsupported-membership-test
+                raise SPSDKWPCError(f"WPC target {target_type} is not supported.")
+            target = cls.TARGETS()[target_type]  # pylint: disable=unsubscriptable-object
         return cls.get_validation_schemas(family=family, service=service, target=target)
 
     def _get_validation_schemas(self) -> list[dict[str, Any]]:
@@ -708,10 +722,12 @@ class WPC(FeatureBaseClassComm):
         service = None
         target = None
         if "service_type" in config:
-            service_cls = cls.SERVICES[config.get_str("service_type")]
+            # pylint:disable=unsubscriptable-object
+            service_cls = cls.SERVICES()[config.get_str("service_type")]
             service = service_cls.load_from_config(config)
         if "target_type" in config:
-            target_cls = cls.TARGETS[config.get_str("target_type")]
+            # pylint:disable=unsubscriptable-object
+            target_cls = cls.TARGETS()[config.get_str("target_type")]
             target = target_cls.load_from_config(config)
         return cls(family=family, service=service, target=target)
 

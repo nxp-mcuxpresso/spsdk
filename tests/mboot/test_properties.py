@@ -394,7 +394,43 @@ def test_mcxc353_two_word_lifecycle_property() -> None:
     assert get_properties(family)[0x11] == PropertyTag.LIFE_CYCLE_STATE
 
 
-@pytest.mark.parametrize("family_name", ["mcxc151", "mcxa156"])
+@pytest.mark.parametrize("family_name", ["mcxc151", "mcxc161", "mcxc162"])
+@pytest.mark.parametrize(
+    "lc_byte, expected",
+    [
+        (0x03, "Life Cycle State = DEVELOP (0x3)"),
+        (0x07, "Life Cycle State = IN_FIELD1 (0x7)"),
+        (0x0F, "Life Cycle State = IN_FIELD2 (0xf)"),
+        (0xCF, "Life Cycle State = IN_FIELD_LOCKED (0xcf)"),
+        (0xFF, "Life Cycle State = SHREDDED (alias BRICKED) (0xff)"),
+        (0xBADBADBA, "Life Cycle State = 0xbadbadba"),
+    ],
+)
+def test_mcxc151_two_word_lifecycle_property(family_name: str, lc_byte: int, expected: str) -> None:
+    """MCXC151 property 0x11 returns the lifecycle byte in the second response word.
+
+    The lifecycle byte must be translated to its symbolic name (SPSDK-7311); an unknown
+    value falls back to the raw hexadecimal value.
+    """
+    family = FamilyRevision(family_name)
+    value = parse_property_value(0x11, [0x5AA55AA5, lc_byte], family=family)
+
+    assert isinstance(value, LifeCycleStateValue)
+    assert value.status == 0x5AA55AA5
+    assert value.to_int() == lc_byte
+    assert str(value) == expected
+    assert get_properties(family)[0x11] == PropertyTag.LIFE_CYCLE_STATE
+
+
+def test_lifecycle_property_without_family_is_security_state() -> None:
+    """Without a family, property 0x11 keeps the generic Security State interpretation."""
+    value = parse_property_value(0x11, [0x5AA55AA5, 0x03])
+
+    assert isinstance(value, BoolValue)
+    assert str(value) == "Security State = UNSECURE"
+
+
+@pytest.mark.parametrize("family_name", ["mcxa457", "mcxa156"])
 def test_single_word_lifecycle_property_is_backward_compatible(family_name: str) -> None:
     """Legacy one-word lifecycle responses keep their established labels."""
     value = parse_property_value(0x11, [0], family=FamilyRevision(family_name))

@@ -1,0 +1,12 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+family: mimxrt798s
+revision: latest
+outputImageExecutionTarget: load-to-ram
+outputImageAuthenticationType: crc
+masterBootOutputFile: mbi.bin
+inputImageFile: application.bin
+outputImageExecutionAddress: 0x20080000
+imageVersion: 0

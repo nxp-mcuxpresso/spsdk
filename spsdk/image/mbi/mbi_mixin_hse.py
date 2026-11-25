@@ -24,6 +24,7 @@ from spsdk.image.mbi.mbi_data import MbiImageTypeEnum
 from spsdk.image.mbi.mbi_mixin import Mbi_ExportMixin, Mbi_Mixin, Mbi_MixinApp
 from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.config import Config
+from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.family import FamilyRevision, get_db
 from spsdk.utils.misc import Endianness, extend_block
 from spsdk.utils.spsdk_enum import SpsdkEnum
@@ -38,15 +39,17 @@ class BootConfig:
 
     This class manages boot configuration settings for HSE (Hardware Security Engine)
     Initial Vector Table, providing bitfield manipulation for various boot parameters
-    including CM7 core enable, boot sequence, and application software timer initialization.
+    including CM7 cores enable, boot sequence, and application software watchdog initialization.
 
+    :cvar CM7_ENABLE_BITS: Bit positions of CM7 cores enable flags indexed by core number.
     :cvar CM7_0_ENABLE_BIT: Bit position for CM7 core 0 enable flag.
     :cvar BOOT_SEQ_BIT: Bit position for boot sequence configuration.
-    :cvar APP_SWT_INIT_BIT: Bit position for application software timer initialization.
+    :cvar APP_SWT_INIT_BIT: Bit position for application software watchdog initialization.
     """
 
     # Bit positions for Boot Configuration
-    CM7_0_ENABLE_BIT = 0
+    CM7_ENABLE_BITS: ClassVar[tuple[int, ...]] = (0, 1, 2, 8)
+    CM7_0_ENABLE_BIT = CM7_ENABLE_BITS[0]
     BOOT_SEQ_BIT = 3
     APP_SWT_INIT_BIT = 5
 
@@ -56,7 +59,7 @@ class BootConfig:
         :param value: Initial boot config value, defaults to 0.
         """
         # Bitfield values
-        self.cm7_0_enable = True
+        self.cm7_enable = [True] + [False] * (len(self.CM7_ENABLE_BITS) - 1)
         self.boot_seq = False
         self.app_swt_init = False
 
@@ -67,18 +70,35 @@ class BootConfig:
             self.value = value
 
     @property
+    def cm7_0_enable(self) -> bool:
+        """Get the CM7_0 core enable flag.
+
+        :return: True if the CM7_0 core clock is ungated after boot.
+        """
+        return self.cm7_enable[0]
+
+    @cm7_0_enable.setter
+    def cm7_0_enable(self, value: bool) -> None:
+        """Set the CM7_0 core enable flag.
+
+        :param value: True if the CM7_0 core clock shall be ungated after boot.
+        """
+        self.cm7_enable[0] = value
+
+    @property
     def value(self) -> int:
         """Get the boot config value.
 
-        Calculates the boot configuration value by combining bit fields for CM7_0 enable,
+        Calculates the boot configuration value by combining bit fields for CM7 cores enable,
         boot sequence, and application SWT initialization settings.
 
         :return: Boot config value as integer.
         """
         # Calculate the value from bit fields
         value = 0
-        if self.cm7_0_enable:
-            value |= 1 << self.CM7_0_ENABLE_BIT
+        for enable, bit in zip(self.cm7_enable, self.CM7_ENABLE_BITS):
+            if enable:
+                value |= 1 << bit
         if self.boot_seq:
             value |= 1 << self.BOOT_SEQ_BIT
         if self.app_swt_init:
@@ -92,14 +112,14 @@ class BootConfig:
         """Set the boot config value and update bitfields.
 
         This method updates the internal boot configuration value and automatically
-        updates the corresponding bitfield properties (cm7_0_enable, boot_seq,
+        updates the corresponding bitfield properties (cm7_enable, boot_seq,
         app_swt_init) based on the bit positions defined in the class constants.
 
         :param value: Boot configuration value as integer bitmask.
         """
         self._value = value
         # Update bit fields from value
-        self.cm7_0_enable = bool(value & (1 << self.CM7_0_ENABLE_BIT))
+        self.cm7_enable = [bool(value & (1 << bit)) for bit in self.CM7_ENABLE_BITS]
         self.boot_seq = bool(value & (1 << self.BOOT_SEQ_BIT))
         self.app_swt_init = bool(value & (1 << self.APP_SWT_INIT_BIT))
 
@@ -107,13 +127,14 @@ class BootConfig:
         """Return string representation of Boot Config.
 
         Provides a formatted multi-line string showing the boot configuration value
-        and its individual field interpretations including CM7_0 enable status,
+        and its individual field interpretations including CM7 cores enable status,
         boot sequence type, and APP SWT initialization setting.
 
         :return: Multi-line string representation of the boot configuration.
         """
         result = [f"Boot Config: 0x{self.value:08X}"]
-        result.append(f"  CM7_0 Enable: {self.cm7_0_enable}")
+        for core, enable in enumerate(self.cm7_enable):
+            result.append(f"  CM7_{core} Enable: {enable}")
         result.append(f"  Boot Sequence: {'Secure Boot' if self.boot_seq else 'Non-Secure Boot'}")
         result.append(f"  APP SWT Init: {self.app_swt_init}")
 
@@ -123,17 +144,14 @@ class BootConfig:
         """Get configuration of the boot config.
 
         This method creates a configuration dictionary containing the current boot configuration
-        settings including CM7 core enable status, boot sequence, and application SWT initialization.
+        settings including CM7 cores enable status, boot sequence, and application SWT initialization.
 
         :return: Configuration dictionary with boot settings.
         """
-        return Config(
-            {
-                "cm7_0Enable": self.cm7_0_enable,
-                "bootSeq": self.boot_seq,
-                "appSwtInit": self.app_swt_init,
-            }
-        )
+        cfg = Config({f"cm7_{core}Enable": enable for core, enable in enumerate(self.cm7_enable)})
+        cfg["bootSeq"] = self.boot_seq
+        cfg["appSwtInit"] = self.app_swt_init
+        return cfg
 
 
 class Ivt:
@@ -146,11 +164,13 @@ class Ivt:
     :cvar FORMAT: Binary format string for IVT structure packing/unpacking.
     :cvar SIZE: Size of the IVT structure in bytes.
     :cvar DEFAULT_IVT_MARKER: Default marker value identifying valid IVT structure.
+    :cvar CORES_COUNT: Maximal count of application cores described in IVT.
     """
 
-    FORMAT = "<IIIIIIIIIIIII204s"
+    FORMAT = "<18I184s"
     SIZE = struct.calcsize(FORMAT)
     DEFAULT_IVT_MARKER = 0x5AA55AA5
+    CORES_COUNT = len(BootConfig.CM7_ENABLE_BITS)
 
     def __init__(self, family: FamilyRevision) -> None:
         """Initialize HSE IVT.
@@ -164,9 +184,14 @@ class Ivt:
         self._ivt_marker = self.DEFAULT_IVT_MARKER
         self.boot_config = BootConfig()
         self.app_start_addr: int | None = None
+        # Start addresses of the additional application cores (CM7_1, CM7_2, CM7_3)
+        self.cores_start_addr: list[int] = [0] * (self.CORES_COUNT - 1)
         self.lc_config_addr: int | None = None
         self.hse_fw_addr: int | None = None
         self.app_boot_header_addr: int | None = None
+        self.xrdc_mdac_config_addr = 0
+        self.recovery_app_start_addr = 0
+        self.recovery_app_length = 0
         self.authentication_tag = b""
 
     def __len__(self) -> int:
@@ -188,9 +213,17 @@ class Ivt:
         result.append(f"  IVT Marker: 0x{self._ivt_marker:08X}")
         result.append(str(self.boot_config))
         result.append(f"  Start Address: 0x{(self.app_start_addr or 0x0):08X}")
+        for core, address in enumerate(self.cores_start_addr, start=1):
+            if address:
+                result.append(f"  CM7_{core} Start Address: 0x{address:08X}")
         result.append(f"  LC Config Address: 0x{(self.lc_config_addr or 0x0):08X}")
         result.append(f"  HSE FW Address: 0x{(self.hse_fw_addr or 0x0):08X}")
         result.append(f"  App Boot Header Address: 0x{(self.app_boot_header_addr or 0x0):08X}")
+        if self.xrdc_mdac_config_addr:
+            result.append(f"  XRDC MDAC Config Address: 0x{self.xrdc_mdac_config_addr:08X}")
+        if self.recovery_app_start_addr or self.recovery_app_length:
+            result.append(f"  Recovery App Start Address: 0x{self.recovery_app_start_addr:08X}")
+            result.append(f"  Recovery App Length: 0x{self.recovery_app_length:08X}")
         if self.authentication_tag:
             result.append(f"  Authentication Tag: {self.authentication_tag.hex()}")
         return "\n".join(result)
@@ -251,6 +284,15 @@ class Ivt:
                 value=f"Wrong IVT marker: {hex(self._ivt_marker)}, expected {hex(self.DEFAULT_IVT_MARKER)}",
             )
         ret.add_record_range(name="Application Start Address", value=self.app_start_addr)
+        for core, address in enumerate(self.cores_start_addr, start=1):
+            if self.boot_config.cm7_enable[core] and not address:
+                ret.add_record(
+                    name=f"CM7_{core} Start Address",
+                    result=VerifierResult.ERROR,
+                    value=f"The CM7_{core} core is enabled, but its start address is not defined",
+                )
+            elif address:
+                ret.add_record_range(name=f"CM7_{core} Start Address", value=address)
         return ret
 
     def export(self) -> bytes:
@@ -267,18 +309,23 @@ class Ivt:
             self.FORMAT,
             self._ivt_marker,
             self.boot_config.value,
-            0,  # reserved0
+            0,  # reserved
             self.app_start_addr or 0x0,
-            0,  # reserved1
-            0,  # reserved2
-            0,  # reserved3
-            0,  # reserved4
-            0,  # reserved5
+            0,  # reserved
+            self.cores_start_addr[0],
+            0,  # reserved
+            self.cores_start_addr[1],
+            0,  # reserved
             self.lc_config_addr or 0x0,
-            0,  # reserved6
+            self.cores_start_addr[2],
             self.hse_fw_addr or 0x0,
             self.app_boot_header_addr or 0x0,
-            bytes(204),  # reserved7
+            0,  # reserved
+            self.xrdc_mdac_config_addr,
+            0,  # reserved
+            self.recovery_app_start_addr,
+            self.recovery_app_length,
+            bytes(184),  # reserved
         )
 
     @classmethod
@@ -298,18 +345,23 @@ class Ivt:
         (
             ivt._ivt_marker,
             boot_config_value,
-            _,  # reserved0
+            _,  # reserved
             ivt.app_start_addr,
-            _,  # reserved1
-            _,  # reserved2
-            _,  # reserved3
-            _,  # reserved4
-            _,  # reserved5
+            _,  # reserved
+            ivt.cores_start_addr[0],
+            _,  # reserved
+            ivt.cores_start_addr[1],
+            _,  # reserved
             ivt.lc_config_addr,
-            _,  # reserved6
+            ivt.cores_start_addr[2],
             ivt.hse_fw_addr,
             ivt.app_boot_header_addr,
-            _,  # reserved7
+            _,  # reserved
+            ivt.xrdc_mdac_config_addr,
+            _,  # reserved
+            ivt.recovery_app_start_addr,
+            ivt.recovery_app_length,
+            _,  # reserved
         ) = struct.unpack_from(cls.FORMAT, data)
 
         # Validate IVT marker
@@ -401,6 +453,53 @@ class Mbi_MixinHseIvt(Mbi_Mixin):
 
     ivt: Ivt
 
+    @staticmethod
+    def _get_additional_cores(family: FamilyRevision) -> list[int]:
+        """Get indexes of the additional application cores available on the family.
+
+        :param family: Family revision.
+        :return: List of additional core indexes (1..3) supported by the family.
+        """
+        return [
+            core.tag
+            for core in CoreId.get_available_core_ids(family)
+            if 0 < core.tag < Ivt.CORES_COUNT
+        ]
+
+    @staticmethod
+    def _has_extended_ivt(family: FamilyRevision) -> bool:
+        """Check whether the family IVT contains XRDC MDAC and recovery application fields.
+
+        :param family: Family revision.
+        :return: True if the extended IVT fields are supported.
+        """
+        return get_db(family).get_bool(DatabaseManager.MBI, "hse_ivt_extended", False)
+
+    @classmethod
+    def mix_get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
+        """Get validation schemas from mixin.
+
+        Besides the basic HSE IVT schema, the multicore settings are added for the additional
+        cores available on the family and the extended IVT settings if supported by the family.
+
+        :param family: Family revision to get schemas for.
+        :return: List of validation schema dictionaries.
+        """
+        schema_cfg = get_schema_file(DatabaseManager.MBI)
+        schemas = [schema_cfg["hse_ivt"]]
+        cores = cls._get_additional_cores(family)
+        if cores:
+            multicore = schema_cfg["hse_ivt_multicore"]
+            multicore["properties"] = {
+                key: value
+                for key, value in multicore["properties"].items()
+                if any(key.startswith(f"cm7_{core}") for core in cores)
+            }
+            schemas.append(multicore)
+        if cls._has_extended_ivt(family):
+            schemas.append(schema_cfg["hse_ivt_extended"])
+        return schemas
+
     def mix_len(self) -> int:
         """Compute length of individual mixin.
 
@@ -432,6 +531,15 @@ class Mbi_MixinHseIvt(Mbi_Mixin):
             self.ivt.lc_config_addr = config.get_int("lcConfigAddr")
         if "hseFwAddr" in config:
             self.ivt.hse_fw_addr = config.get_int("hseFwAddr")
+        boot_cfg.app_swt_init = config.get("appSwtInit", False)
+        for core in self._get_additional_cores(self.ivt.family):
+            address = config.get_int(f"cm7_{core}StartAddress", 0)
+            self.ivt.cores_start_addr[core - 1] = address
+            boot_cfg.cm7_enable[core] = config.get(f"cm7_{core}Enable", bool(address))
+        if self._has_extended_ivt(self.ivt.family):
+            self.ivt.xrdc_mdac_config_addr = config.get_int("xrdcMdacConfigAddr", 0)
+            self.ivt.recovery_app_start_addr = config.get_int("recoveryAppStartAddress", 0)
+            self.ivt.recovery_app_length = config.get_int("recoveryAppLength", 0)
         # boot header address is set automatically as it is is located right in front of application
         if auth_type == "signed" and self.ivt.app_start_addr is not None:
             self.ivt.app_boot_header_addr = self.ivt.app_start_addr - AppBootHeader.ALIGNMENT
@@ -473,6 +581,21 @@ class Mbi_MixinHseIvt(Mbi_Mixin):
             cfg["lcConfigAddr"] = hex(self.ivt.lc_config_addr)
         if self.ivt.hse_fw_addr:
             cfg["hseFwAddr"] = hex(self.ivt.hse_fw_addr)
+        if self.ivt.boot_config.app_swt_init:
+            cfg["appSwtInit"] = True
+        for core in self._get_additional_cores(self.ivt.family):
+            address = self.ivt.cores_start_addr[core - 1]
+            enable = self.ivt.boot_config.cm7_enable[core]
+            if address or enable:
+                cfg[f"cm7_{core}StartAddress"] = hex(address)
+                cfg[f"cm7_{core}Enable"] = enable
+        if not self._has_extended_ivt(self.ivt.family):
+            return cfg
+        if self.ivt.xrdc_mdac_config_addr:
+            cfg["xrdcMdacConfigAddr"] = hex(self.ivt.xrdc_mdac_config_addr)
+        if self.ivt.recovery_app_start_addr or self.ivt.recovery_app_length:
+            cfg["recoveryAppStartAddress"] = hex(self.ivt.recovery_app_start_addr)
+            cfg["recoveryAppLength"] = hex(self.ivt.recovery_app_length)
         return cfg
 
     def export(self) -> bytes:
@@ -633,12 +756,10 @@ class Mbi_MixinHseAppBootHeader(Mbi_Mixin):
     validation, and binary parsing of signed image authentication.
 
     :cvar APP_BOOT_HEADER_IMAGE_NAME: Display name for boot header image.
-    :cvar VALIDATION_SCHEMAS: List of validation schemas for HSE app boot header.
     :cvar NEEDED_MEMBERS: Required member dictionary for HSE app boot header.
     """
 
     APP_BOOT_HEADER_IMAGE_NAME = "Boot Header"
-    VALIDATION_SCHEMAS: ClassVar[list[str]] = ["hse_app_boot_header"]
     NEEDED_MEMBERS: ClassVar[dict[str, Any]] = {"hse_app_boot_header": None}
     ivt: Ivt
     hse_app_boot_header: AppBootHeader
@@ -1060,6 +1181,25 @@ class Mbi_MixinHseApp(Mbi_MixinApp):
             if ivt.app_boot_header_addr and not self.ivt.app_boot_header_addr:
                 logger.info("Updating HSE boot header address from IVT found in input image file")
                 self.ivt.app_boot_header_addr = ivt.app_boot_header_addr
+            self._update_cores_from_ivt(ivt, config)
         except SPSDKVerificationError:
             logger.debug("No IVT header detected in input image, using raw application data")
             return
+
+    def _update_cores_from_ivt(self, ivt: Ivt, config: Config) -> None:
+        """Update the additional cores settings from IVT found in the input image.
+
+        The core start address is taken from input IVT only if it is not defined in the
+        configuration. The core enable flag is taken from input IVT together with the start
+        address, unless the enable flag is explicitly defined in the configuration.
+
+        :param ivt: IVT parsed from the input image.
+        :param config: Configuration of the image.
+        """
+        for core in range(1, Ivt.CORES_COUNT):
+            address = ivt.cores_start_addr[core - 1]
+            if address and not self.ivt.cores_start_addr[core - 1]:
+                logger.info(f"Updating CM7_{core} start address from IVT found in input image file")
+                self.ivt.cores_start_addr[core - 1] = address
+                if f"cm7_{core}Enable" not in config:
+                    self.ivt.boot_config.cm7_enable[core] = ivt.boot_config.cm7_enable[core]

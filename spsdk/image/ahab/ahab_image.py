@@ -34,7 +34,7 @@ from spsdk.image.ahab.ahab_data import (
     AhabTargetMemory,
     create_chip_config,
 )
-from spsdk.image.ahab.ahab_iae import ImageArrayEntryTemplates
+from spsdk.image.ahab.ahab_iae import ImageArrayEntry, ImageArrayEntryTemplates
 from spsdk.utils.abstract_features import FeatureBaseClass
 from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.config import Config
@@ -667,12 +667,13 @@ class AHABImage(FeatureBaseClass):
                 ahab_bin = load_binary(binary_container.get_input_file_name("path"))
                 # Get container type of first container
                 base_container_type = container_type = cls._parse_container_type(ahab_bin)
+                binary_containers: list[AHABContainer | AHABContainerV2] = []
                 for j in range(ahab.chip_config.containers_max_cnt):
                     try:
                         container_data = ahab_bin[container_type.get_container_offset(i) :]
                         if base_container_type == AHABContainerV2:
                             container_type = cls._parse_container_type(container_data)
-                        ahab.add_container(
+                        binary_containers.append(
                             container_type.parse(
                                 ahab_bin,
                                 chip_config=ahab.chip_config,
@@ -680,6 +681,7 @@ class AHABImage(FeatureBaseClass):
                                 container_offset=container_type.get_container_offset(i),
                             )
                         )
+                        ahab.add_container(binary_containers[-1])
                         i += 1
                     except SPSDKError as exc:
                         if j == 0:
@@ -687,6 +689,7 @@ class AHABImage(FeatureBaseClass):
                                 f"AHAB Binary Container parsing failed. ({exc!s})"
                             ) from exc
                         break
+                ahab._restore_gaps_after_images(ahab_bin, binary_containers)
 
             else:
                 container_type = ahab._container_type_from_config(config)
@@ -769,7 +772,49 @@ class AHABImage(FeatureBaseClass):
         if len(ret.ahab_containers) == 0:
             raise SPSDKError("No AHAB Container has been found in binary data.")
 
+        ret._restore_gaps_after_images(data, ret.ahab_containers)
+
         return ret
+
+    def _restore_gaps_after_images(
+        self, data: bytes, containers: list[AHABContainer | AHABContainerV2]
+    ) -> None:
+        """Restore the content of the gaps between the parsed images.
+
+        The container headers describe only the images, so the data stored between two images
+        (for example a payload prefilled by ``gap_after_image_file``) would be lost on the next
+        export. The method stores the whole space up to the next image into ``gap_after_image``
+        of the preceding image and its content, without the trailing zero padding, into
+        ``gap_after_image_binary``. A gap containing only padding (zeros or the erased pattern
+        of the target memory) gets no binary. The offsets of the parsed images are preserved,
+        so the re-exported image is identical to the parsed one. The gap behind the last image
+        is not known, so it stays empty.
+
+        :param data: Binary data the containers have been parsed from.
+        :param containers: Parsed containers whose image gaps are restored.
+        """
+        erased_byte = BinaryPattern(self.chip_config.target_memory.erased_pattern).get_block(1)
+        images: list[ImageArrayEntry] = []
+        for container in containers:
+            for image in container.image_array:
+                image.gap_after_image = 0
+                image.gap_after_image_binary = b""
+                # Empty images hold no data and images placed before the data cannot own a gap
+                if image.image_size > 0 and image.image_offset >= 0:
+                    images.append(image)
+        images.sort(key=lambda image: image.image_offset)
+        # The gap belongs to the image that reaches the furthest, as the images may overlap
+        owner: ImageArrayEntry | None = None
+        covered_end = 0
+        for image in images:
+            if owner is not None and image.image_offset > covered_end:
+                gap_binary = data[covered_end : image.image_offset].rstrip(b"\x00")
+                owner.gap_after_image = image.image_offset - covered_end
+                owner.gap_after_image_binary = gap_binary if gap_binary.strip(erased_byte) else b""
+            image_end = image.image_offset + image.image_size
+            if owner is None or image_end > covered_end:
+                owner = image
+                covered_end = image_end
 
     @staticmethod
     def pre_parse_verify(data: bytes) -> Verifier:
@@ -859,7 +904,13 @@ class AHABImage(FeatureBaseClass):
                 image["properties"]["core_id"]["enum"] = core_ids.labels()
                 image["properties"]["core_id"]["template_value"] = core_ids.labels()[0]
                 image["properties"]["image_type"]["enum"] = image_types
-                image["properties"]["hash_type"]["enum"] = hash_algo_labels
+                # Uppercase variants are accepted for backward compatibility with configurations
+                # created by older SPSDK parse, which exported e.g. 'SHA256'. Only lowercase labels
+                # are shown in templates.
+                image["properties"]["hash_type"]["enum"] = hash_algo_labels + [
+                    x.upper() for x in hash_algo_labels
+                ]
+                image["properties"]["hash_type"]["enum_template"] = hash_algo_labels
                 image["properties"]["hash_type"]["template_value"] = (
                     hash_algo_labels[0] if hash_algo_labels else "sha256"
                 )
@@ -1045,7 +1096,8 @@ class AHABImage(FeatureBaseClass):
         """Build a binary blob containing NXP containers and their image data.
 
         Constructs a raw binary with each NXP container header placed at its original offset
-        and all referenced image payloads at their original image_offset positions.
+        and all referenced image payloads at their original image_offset positions, followed
+        by the data stored in the gaps behind the images.
         This binary can be referenced via ``binary_container`` in a parsed config so that
         the image can be re-assembled without requiring the NXP signing keys.
 
@@ -1061,7 +1113,12 @@ class AHABImage(FeatureBaseClass):
             )
             for image_entry in container.image_array:
                 if image_entry.image:
-                    max_end = max(max_end, image_entry.image_offset + image_entry.image_size)
+                    max_end = max(
+                        max_end,
+                        image_entry.image_offset
+                        + image_entry.image_size
+                        + len(image_entry.gap_after_image_binary),
+                    )
 
         binary = bytearray(max_end)
         for cnt_ix, container in nxp_container_list:
@@ -1070,9 +1127,12 @@ class AHABImage(FeatureBaseClass):
             binary[container_offset : container_offset + len(container_binary)] = container_binary
             for image_entry in container.image_array:
                 if image_entry.image:
-                    binary[
-                        image_entry.image_offset : image_entry.image_offset + image_entry.image_size
-                    ] = image_entry.image[: image_entry.image_size]
+                    image_end = image_entry.image_offset + image_entry.image_size
+                    binary[image_entry.image_offset : image_end] = image_entry.image[
+                        : image_entry.image_size
+                    ]
+                    gap_binary = image_entry.gap_after_image_binary
+                    binary[image_end : image_end + len(gap_binary)] = gap_binary
 
         return bytes(binary)
 

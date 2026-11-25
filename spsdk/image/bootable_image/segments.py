@@ -32,8 +32,12 @@ from spsdk.image.ahab.ahab_image import AHABImage
 from spsdk.image.exceptions import SPSDKSegmentNotPresent
 from spsdk.image.fcb.fcb import FCB
 from spsdk.image.hab.hab_image import HabImage
+from spsdk.image.iee.iee import Iee, IeeKeyBlobModeAttributes
+from spsdk.image.iped.iped import Iped, IpedV1, IpedV2
+from spsdk.image.iped.iped_v2 import IpedMode
 from spsdk.image.mbi.mbi import MasterBootImage
 from spsdk.image.mem_type import MemoryType
+from spsdk.image.otfad.otfad import Otfad
 from spsdk.image.xmcd.xmcd import XMCD
 from spsdk.sbfile.sb2.images import BootImageV21
 from spsdk.sbfile.sb31.images import SecureBinary31
@@ -42,7 +46,7 @@ from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
 from spsdk.utils.family import FamilyRevision, get_db
-from spsdk.utils.misc import BinaryPattern, Endianness, align, value_to_int, write_file
+from spsdk.utils.misc import BinaryPattern, Endianness, align, align_block, value_to_int, write_file
 from spsdk.utils.schema_validator import SPSDKErrorValidationFailed
 from spsdk.utils.spsdk_enum import SpsdkEnum
 from spsdk.utils.verifier import Verifier, VerifierResult
@@ -95,6 +99,8 @@ class Segment(BaseClass):
     :cvar NAME: Segment type identifier from BootableImageSegment enumeration.
     :cvar BOOT_HEADER: Flag indicating if segment requires boot header.
     :cvar INIT_SEGMENT: Flag indicating if this is an initialization segment.
+    :cvar UNIQUE_IDENTIFIER: Flag indicating the segment content is recognized by an
+        unambiguous identifier (e.g. a magic tag).
     :cvar CFG_NAME: Configuration name for the segment type.
     :cvar IMAGE_PATTERNS: Supported image patterns for segment generation.
     :cvar OFFSET_ALIGNMENT: Required alignment for segment offset positioning.
@@ -103,6 +109,7 @@ class Segment(BaseClass):
     NAME = BootableImageSegment.UNKNOWN
     BOOT_HEADER = True
     INIT_SEGMENT = False
+    UNIQUE_IDENTIFIER = False
     CFG_NAME: str | None = None
     ALT_NAME: str | None = None
     IMAGE_PATTERNS: ClassVar[list[str]] = ["zeros", "ones"]
@@ -337,7 +344,7 @@ class Segment(BaseClass):
         self.not_parsed = False
         self.raw_block = BinaryImage(
             name=self.NAME.label + "_parsed",
-            size=self.size,
+            size=max(self.size, 0),
             binary=binary[: self.size] if self.size > 0 else binary,
         )
 
@@ -366,9 +373,18 @@ class Segment(BaseClass):
         """
         if not self.is_present:
             return ""
+        return self.create_binary_config(output_dir, self.export())
+
+    def create_binary_config(self, output_dir: str, binary: bytes) -> str:
+        """Store binary data with the standard segment filename.
+
+        :param output_dir: Directory path where the segment data file should be stored.
+        :param binary: Binary data to store.
+        :return: Filename of the created binary file.
+        """
         name = self.ALT_NAME or self.NAME.label
         ret = f"segment_{name}.bin"
-        write_file(self.export(), os.path.join(output_dir, ret), mode="wb")
+        write_file(binary, os.path.join(output_dir, ret), mode="wb")
         return ret
 
     def _load_binary_from_config(self, config: Config, config_key: str) -> None:
@@ -465,7 +481,7 @@ class SegmentKeyBlob(Segment):
     """Bootable Image KeyBlob Segment.
 
     This segment represents a key blob section in bootable images, containing
-    cryptographic keys and security data with a fixed size of 256 bytes.
+    cryptographic keys and security data for OTFAD, IEE or IPED.
 
     :cvar NAME: Segment type identifier for keyblob segments.
     """
@@ -487,7 +503,12 @@ class SegmentKeyBlob(Segment):
         :param raw_block: Raw binary data of the segment, optional.
         """
         super().__init__(offset, family, mem_type, raw_block)
-        self._iped: Any | None = None
+        self.encryption: Otfad | Iee | IpedV1 | IpedV2 | None = None
+
+    def clear(self) -> None:
+        """Clear both the binary table and its encryption configuration."""
+        super().clear()
+        self.encryption = None
 
     @property
     def size(self) -> int:
@@ -495,16 +516,50 @@ class SegmentKeyBlob(Segment):
 
         :return: Size of the keyblob segment in bytes.
         """
+        if isinstance(self.encryption, Iee):
+            return Iee.IEE_KEY_BLOBS_SIZE
         db = get_db(self.family)
+        if (
+            DatabaseManager.IEE in db.features
+            and self.raw_block is not None
+            and len(self.raw_block) == Iee.IEE_KEY_BLOBS_SIZE
+        ):
+            return Iee.IEE_KEY_BLOBS_SIZE
         if DatabaseManager.IPED in db.features:
             return db.get_int(DatabaseManager.IPED, "table_size")
         return 256
 
+    def parse_binary(self, binary: bytes, dek_map: dict[int | None, str] | None = None) -> None:
+        """Parse a keyblob, detecting the extended IEE table when present.
+
+        :param binary: Bootable image data starting at the keyblob offset.
+        :param dek_map: Optional map of container DEKs.
+        :raises SPSDKParsingError: If the keyblob is truncated.
+        :raises SPSDKSegmentNotPresent: If the keyblob contains only padding.
+        """
+        db = get_db(self.family)
+        if (
+            DatabaseManager.IEE in db.features
+            and len(binary) >= Iee.IEE_KEY_BLOBS_SIZE
+            and not any(
+                binary[256 : Iee.IEE_KEY_BLOBS_SIZE] == BinaryPattern(pattern).get_block(128)
+                for pattern in self.IMAGE_PATTERNS
+            )
+        ):
+            self.not_parsed = False
+            self.raw_block = BinaryImage(
+                name=self.NAME.label + "_parsed",
+                size=Iee.IEE_KEY_BLOBS_SIZE,
+                binary=binary[: Iee.IEE_KEY_BLOBS_SIZE],
+            )
+            return
+        super().parse_binary(binary, dek_map=dek_map)
+
     def load_config(self, config: Config) -> None:
         """Load keyblob segment from configuration.
 
-        The keyblob segment accepts the historical raw binary input and, for IPED-enabled
-        families, an IPED YAML configuration that is exported into the keyblob area.
+        Binary input is preserved. A YAML/JSON configuration builds the corresponding
+        OTFAD, IEE or IPED table and enables application encryption during image assembly.
 
         :param config: Configuration object containing segment settings and file paths.
         :raises SPSDKSegmentNotPresent: When the segment is not present in config file.
@@ -516,42 +571,220 @@ class SegmentKeyBlob(Segment):
                 f"The segment '{self.NAME.label}' is not present in the config file"
             )
 
+        self.clear()
         file_path = config.get_input_file_name(self.cfg_key())
-        self._iped = None
         try:
-            iped_config = Config.create_from_file(file_path)
-            from spsdk.image.iped.iped import Iped  # pylint: disable=import-outside-toplevel
+            encryption_config = Config.create_from_file(file_path)
+        except SPSDKError as exc:
+            if os.path.splitext(file_path)[1].lower() in (
+                ".yaml",
+                ".yml",
+                ".json",
+                ".jsonc",
+                ".json5",
+            ):
+                raise SPSDKValueError(f"Cannot load keyblob configuration: {exc}") from exc
+            super().load_config(config)
+            return
 
-            iped = Iped.load_from_config(iped_config)
-            if iped.family.name != self.family.name:
+        try:
+            family = FamilyRevision.load_from_config(encryption_config)
+            if family.name != self.family.name:
                 raise SPSDKValueError(
-                    f"IPED keyblob family {iped.family.name} does not match "
+                    f"Keyblob family {family.name} does not match "
                     f"bootable image family {self.family.name}."
                 )
-            self.raw_block = BinaryImage(
-                name=self.NAME.label + "_data", binary=iped.export(), size=iped.table_size
-            )
-            self._iped = iped
-        except (SPSDKNotTextFileError, SPSDKParsingError):
-            try:
-                self.raw_block = BinaryImage.load_binary_image(
-                    path=file_path, name=self.NAME.label + "_data"
+            encryption_cls: type[Otfad] | type[Iee] | type[Iped]
+            if "otfad_table_address" in encryption_config:
+                encryption_cls = Otfad
+            elif "key_blobs" in encryption_config or "key_blob" in encryption_config:
+                encryption_cls = Iee
+            elif "contexts" in encryption_config or "regions" in encryption_config:
+                encryption_cls = Iped
+            else:
+                raise SPSDKValueError("Expected an OTFAD, IEE or IPED configuration.")
+            encryption_config.check(encryption_cls.get_validation_schemas(family))
+            encryption = encryption_cls.load_from_config(encryption_config)
+            if isinstance(encryption, Otfad):
+                if any(
+                    blob.is_encrypted and blob.end_addr % 0x400 not in (0, 0x3FF)
+                    for blob in iter(encryption)
+                ):
+                    raise SPSDKValueError(
+                        "OTFAD region ends must be 1 KB boundaries or their preceding byte."
+                    )
+                table = encryption.encrypt_key_blobs(
+                    encryption.kek,
+                    encryption.key_scramble_mask,
+                    encryption.key_scramble_align,
+                    encryption.keyblob_byte_swap_cnt,
                 )
-            except SPSDKError as exc:
-                raise SPSDKValueError(
-                    f"The binary file path to load {self.NAME.label} segment expected."
-                ) from exc
+            elif isinstance(encryption, Iee):
+                if not encryption.generate_keyblob:
+                    raise SPSDKValueError("This family does not support an IEE keyblob table.")
+                table = encryption.export_key_blobs()
+            else:
+                table = encryption.export()
+                if isinstance(encryption, IpedV2):
+                    table = align_block(table, encryption.table_size, padding=0)
+            self.encryption = encryption
+            ranges = sorted(self.encryption_ranges)
+            if any(left[1] > right[0] for left, right in zip(ranges, ranges[1:])):
+                raise SPSDKValueError("Overlapping keyblob encryption regions are not supported.")
+            self.raw_block = BinaryImage(name=self.NAME.label + "_data", binary=table)
         except SPSDKError as exc:
-            raise SPSDKValueError(f"Cannot load IPED keyblob configuration: {exc!s}") from exc
+            self.clear()
+            raise SPSDKValueError(f"Cannot load keyblob configuration: {exc!s}") from exc
+
+    @property
+    def encryption_ranges(self) -> list[tuple[int, int]]:
+        """Get active encryption ranges with exclusive end addresses.
+
+        :return: Absolute memory ranges encrypted by the configured engine.
+        """
+        encryption = self.encryption
+        if isinstance(encryption, Otfad):
+            return [
+                (blob.start_addr, align(blob.end_addr, 16))
+                for blob in iter(encryption)
+                if blob.is_encrypted
+            ]
+        if isinstance(encryption, Iee):
+            return [
+                (blob.start_addr, align(blob.end_addr, 16))
+                for blob in iter(encryption)
+                if blob.attributes.aes_mode != IeeKeyBlobModeAttributes.Bypass
+            ]
+        if isinstance(encryption, IpedV1):
+            return [(region.start_address, region.end_address) for region in encryption.regions]
+        if isinstance(encryption, IpedV2):
+            return [
+                (context.start_address, context.end_address)
+                for context in encryption.contexts
+                if context.mode != IpedMode.BYPASS
+            ]
+        return []
+
+    @property
+    def image_base_address(self) -> int:
+        """Get the absolute address of offset zero in the full bootable image.
+
+        :raises SPSDKValueError: If no encryption configuration is loaded.
+        :return: Image base address derived from the table address and segment offset.
+        """
+        if self.encryption is None:
+            raise SPSDKValueError("No keyblob encryption configuration is loaded.")
+        table_address = (
+            self.encryption.table_address
+            if isinstance(self.encryption, Otfad)
+            else self.encryption.keyblob_address
+        )
+        return table_address - self.full_image_offset
+
+    def encrypt_image(self, data: bytes, image_offset: int) -> bytes:
+        """Encrypt configured portions of one assembled application segment.
+
+        Uncovered bytes are preserved. Padding or authentication tags may extend only
+        the end of the segment, never relocate subsequent plaintext within it.
+
+        :param data: Assembled plaintext segment.
+        :param image_offset: Segment offset in the full image, before init_offset trimming.
+        :raises SPSDKValueError: If expansion would relocate data within the segment.
+        :return: Encrypted segment, including any required trailing padding or tags.
+        """
+        encryption = self.encryption
+        if encryption is None:
+            return data
+        base_address = self.image_base_address + image_offset
+        output = bytearray(data)
+        for start, end in sorted(self.encryption_ranges):
+            start = max(start, base_address)
+            end = min(end, base_address + len(data))
+            if start >= end:
+                continue
+            begin, stop = start - base_address, end - base_address
+            plain = data[begin:stop]
+            if isinstance(encryption, Otfad):
+                encrypted = encryption.encrypt_image(plain, start, byte_swap=encryption.byte_swap)
+            elif isinstance(encryption, Iee):
+                if start % Iee.IEE_DATA_UNIT and any(
+                    blob.attributes.aes_mode == IeeKeyBlobModeAttributes.AesXTS
+                    and blob.contains_addr(start)
+                    for blob in iter(encryption)
+                ):
+                    raise SPSDKValueError(
+                        "IEE AES-XTS application data must start at a 4 KB boundary."
+                    )
+                encrypted = encryption.encrypt_image(plain, start)
+            elif isinstance(encryption, IpedV1):
+                encrypted = encryption.encrypt_data(plain, start)
+            else:
+                encrypted = encryption.encrypt_image(plain, start)
+            if len(encrypted) != len(plain) and stop != len(data):
+                raise SPSDKValueError(
+                    "Encryption padding or authentication tags would relocate application data. "
+                    "Use a separate application segment for the expanding encryption region."
+                )
+            output[begin:stop] = encrypted
+        return bytes(output)
+
+    def encrypted_size(self, data_size: int, image_offset: int) -> int:
+        """Calculate the size of an encrypted segment without encrypting its contents.
+
+        :param data_size: Plaintext segment size.
+        :param image_offset: Segment offset in the full image, before init_offset trimming.
+        :return: Encrypted segment size.
+        """
+        encryption = self.encryption
+        if encryption is None:
+            return data_size
+
+        base_address = self.image_base_address + image_offset
+        result_size = data_size
+        for start, end in sorted(self.encryption_ranges):
+            begin = max(start, base_address)
+            stop = min(end, base_address + data_size)
+            if begin >= stop:
+                continue
+            plain_size = stop - begin
+            encrypted_size = plain_size
+            if isinstance(encryption, (Otfad, Iee, IpedV1)):
+                encrypted_size = align(plain_size, 16)
+            elif isinstance(encryption, IpedV2):
+                context = next(
+                    (
+                        item
+                        for item in encryption.contexts
+                        if item.start_address <= begin < item.end_address
+                    ),
+                    None,
+                )
+                if context and context.mode == IpedMode.GCM and encryption.interleaved_gcm_tags:
+                    chunk_size = context.GCM_CHUNK_SIZE
+                    chunks = (plain_size + chunk_size - 1) // chunk_size
+                    encrypted_size = align(plain_size, chunk_size) + chunks * 8
+                else:
+                    encrypted_size = align(plain_size, 16)
+            result_size += encrypted_size - plain_size
+        return result_size
+
+    def export_segment(self, data: bytes, image_offset: int) -> bytes:
+        """Transform one segment at its address for bootable-image export.
+
+        :param data: Plaintext segment contents.
+        :param image_offset: Segment offset in the full image, before init_offset trimming.
+        :return: Transformed segment contents.
+        """
+        return self.encrypt_image(data, image_offset)
 
     def post_export(self, output_path: str) -> list[str]:
-        """Export additional IPED artifacts when keyblob was loaded from IPED YAML config.
+        """Export additional artifacts from the referenced encryption configuration.
 
         :param output_path: Path to export artifacts.
         :return: List of generated artifact file paths.
         """
-        if self._iped:
-            return self._iped.post_export(output_path)
+        if self.encryption is not None:
+            return self.encryption.post_export(output_path)
         return []
 
 
@@ -564,10 +797,13 @@ class SegmentFcb(Segment):
 
     :cvar NAME: Segment type identifier for FCB segments.
     :cvar INIT_SEGMENT: Flag indicating this is an initialization segment.
+    :cvar UNIQUE_IDENTIFIER: FCB is recognized by its magic tag, so a successfully parsed
+        FCB segment is an unambiguous proof of the bootable image layout.
     """
 
     NAME = BootableImageSegment.FCB
     INIT_SEGMENT = True
+    UNIQUE_IDENTIFIER = True
 
     def __init__(
         self,

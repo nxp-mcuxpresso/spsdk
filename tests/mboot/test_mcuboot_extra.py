@@ -12,6 +12,8 @@ from collections.abc import Generator
 
 import pytest
 
+from spsdk.exceptions import SPSDKConnectionError
+from spsdk.mboot.commands import ResponseTag, parse_cmd_response
 from spsdk.mboot.error_codes import StatusCode
 from spsdk.mboot.exceptions import McuBootConnectionError, McuBootError
 from spsdk.mboot.mcuboot import (
@@ -23,7 +25,7 @@ from spsdk.mboot.mcuboot import (
     _tp_sentinel_frame,
 )
 from tests.mboot.device_config import DevConfig
-from tests.mboot.virtual_device import VirtualDevice, VirtualMbootInterface
+from tests.mboot.virtual_device import VirtualDevice, VirtualMbootInterface, pack_response
 
 DEVICES_DIR = os.path.join(os.path.dirname(__file__), "..", "mboot", "devices")
 
@@ -342,6 +344,50 @@ def test_mcuboot_send_data_not_opened(virtual_interface: VirtualMbootInterface) 
     mb = McuBoot(virtual_interface, cmd_exception=True)  # type: ignore[arg-type]
     with pytest.raises(McuBootConnectionError):
         mb._send_data(CommandTag.WRITE_MEMORY, [b"data"])
+
+
+def _fail_data_write_at(interface: VirtualMbootInterface, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Make the second data chunk write fail like a USB HID write returning -1 bytes."""
+    original_write_data = interface.write_data
+    calls = {"count": 0}
+
+    def write_data(data: bytes) -> None:
+        calls["count"] += 1
+        if calls["count"] == 2:
+            raise SPSDKConnectionError("Invalid size of written bytes has been detected: -1 != 60")
+        original_write_data(data)
+
+    monkeypatch.setattr(interface, "write_data", write_data)
+
+
+def test_mcuboot_send_data_write_failure_no_response(
+    mcuboot: McuBoot, virtual_interface: VirtualMbootInterface, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test interrupted data phase without a final response reports NoResponse and progress."""
+    _fail_data_write_at(virtual_interface, monkeypatch)
+
+    def read(length: int | None = None) -> None:
+        raise TimeoutError()
+
+    monkeypatch.setattr(virtual_interface, "read", read)
+    with pytest.raises(McuBootConnectionError, match="after sending 10 of 30 bytes"):
+        mcuboot._send_data(CommandTag.RECEIVE_SB_FILE, [b"0" * 10, b"1" * 10, b"2" * 10])
+    assert mcuboot.status_code == StatusCode.NO_RESPONSE.tag
+
+
+def test_mcuboot_send_data_write_failure_with_response(
+    mcuboot: McuBoot, virtual_interface: VirtualMbootInterface, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test interrupted data phase still reports the status returned by the target."""
+    _fail_data_write_at(virtual_interface, monkeypatch)
+    _, raw_response = pack_response(
+        ResponseTag.GENERIC, StatusCode.ABORT_DATA_PHASE.tag, CommandTag.WRITE_MEMORY.tag
+    )
+    monkeypatch.setattr(
+        virtual_interface, "read", lambda length=None: parse_cmd_response(raw_response)
+    )
+    assert not mcuboot._send_data(CommandTag.WRITE_MEMORY, [b"0" * 10, b"1" * 10])
+    assert mcuboot.status_code == StatusCode.ABORT_DATA_PHASE.tag
 
 
 def test_mcuboot_progress_callback_read_memory(mcuboot: McuBoot) -> None:

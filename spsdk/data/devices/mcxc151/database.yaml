@@ -80,10 +80,10 @@ features:
           reverse_subregs_order: True
           description: DBG_AUTH_PASSWORD[127:0]
           sub_regs:
-            - field000
-            - field004
-            - field008
-            - field00C
+            - field010
+            - field014
+            - field018
+            - field01C
         - uid: img_misr_seed
           name: IMG_MISR_SEED
           width: 128
@@ -123,6 +123,17 @@ features:
     program_lifecycle:
       pfr_area: cmpa_lc # PFR area class holding the lifecycle register
       register: LIFECYCLE_STATE # Register whose first bitfield enumerates the lifecycle names
+    non_standard_statuses:
+      2: # GET_CRP_LEVEL
+        0x00: NXP_BLANK
+        0x01: NXP_FAB
+        0x03: DEVELOP
+        0x07: IN_FIELD1
+        0x0F: IN_FIELD2
+        0x7F: NXP_FIELD_RETURN
+        0xCF: IN_FIELD_LOCKED
+        0xFC: NXP_DEV
+        0xFF: SHREDDED (alias BRICKED)
 
   # ======== Blhost section ========
   blhost:

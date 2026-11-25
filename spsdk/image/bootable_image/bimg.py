@@ -23,6 +23,7 @@ from spsdk.image.ahab.ahab_image import AHABImage
 from spsdk.image.bootable_image.segments import (
     BootableImageSegment,
     Segment,
+    SegmentKeyBlob,
     SPSDKSegmentNotPresent,
     get_segment_class,
 )
@@ -110,6 +111,8 @@ class BootableImage(FeatureBaseClass):
         self._init_offset: int = 0
         self.set_init_offset(init_offset)
         self.parsed_binary_size = 0
+        # Data found between the segments of the parsed binary as (offset, data) pairs
+        self._gaps: list[tuple[int, bytes]] = []
 
     @property
     def segments(self) -> list[Segment]:
@@ -122,6 +125,21 @@ class BootableImage(FeatureBaseClass):
         :return: List of segments that are present in the bootable image.
         """
         return [seg for seg in self._segments if seg.is_present]
+
+    @property
+    def _encryption_segment(self) -> SegmentKeyBlob | None:
+        """Get the configured encryption engine, even if its table is excluded.
+
+        :return: Keyblob segment with an encryption configuration, or None.
+        """
+        return next(
+            (
+                segment
+                for segment in self._segments
+                if isinstance(segment, SegmentKeyBlob) and segment.encryption is not None
+            ),
+            None,
+        )
 
     def post_export(self, output_path: str) -> list[str]:
         """Perform post export operations on all segments.
@@ -282,12 +300,21 @@ class BootableImage(FeatureBaseClass):
 
         :return: Total length of the output binary in bytes.
         """
-        try:
-            last_segment = self.segments[-1]
-        except IndexError as exc:
-            raise SPSDKError("Cannot calculate length of empty bootable image.") from exc
+        segments = self.segments
+        if not segments:
+            raise SPSDKError("Cannot calculate length of empty bootable image.")
 
-        return self.get_segment_offset(last_segment) + len(last_segment)
+        keyblob = self._encryption_segment
+        size = 0
+        for segment in segments:
+            segment_offset = self.get_segment_offset(segment)
+            segment_size = len(segment)
+            if keyblob is not None and not segment.BOOT_HEADER:
+                segment_size = keyblob.encrypted_size(
+                    segment_size, segment_offset + self.init_offset
+                )
+            size = max(size, segment_offset + segment_size)
+        return size
 
     def header_len(self, full: bool = True) -> int:
         """Get the length of the bootable image header.
@@ -385,6 +412,7 @@ class BootableImage(FeatureBaseClass):
         :raises SPSDKError: When input binary is insufficient for required boot header segments
                         or when segment parsing fails.
         """
+        segment_ranges: list[tuple[int, int]] = []
         try:
             prev_offset = prev_size = 0
             for seg_ix, segment in enumerate([seg for seg in self._segments if not seg.excluded]):
@@ -412,10 +440,67 @@ class BootableImage(FeatureBaseClass):
                     continue
                 prev_offset = offset
                 prev_size = len(segment)
+                segment_ranges.append((offset, prev_size))
         except SPSDKError as e:
             logger.debug(f"Parsing of the segment '{segment.NAME}' failed: {e}")
             raise
         self.parsed_binary_size = len(binary)
+        self._restore_gaps(binary, segment_ranges)
+
+    def _restore_gaps(self, binary: bytes, segment_ranges: list[tuple[int, int]]) -> None:
+        """Store the content of the gaps between the parsed segments.
+
+        The segments describe only their own data, so the content stored between two segments
+        would be replaced by the image pattern on the next export. That data may still be required
+        by ROM, for example the FCB area of i.MX 94 FlexSPI NOR images extends behind the FCB
+        segment and it is authenticated against a copy stored in the AHAB container. The gaps
+        that contain anything else than the image pattern are stored and placed back on export.
+        The data behind the last segment is not known, so it is left untouched.
+
+        :param binary: Binary data the bootable image has been parsed from.
+        :param segment_ranges: List of (offset, size) pairs of the parsed segments.
+        """
+        self._gaps = []
+        pattern = BinaryPattern(self.image_pattern)
+        covered_end = 0
+        for offset, size in sorted(segment_ranges):
+            if offset > covered_end:
+                gap = binary[covered_end:offset]
+                if gap != pattern.get_block(len(gap)):
+                    logger.debug(
+                        f"Keeping {len(gap)} bytes of data stored between segments at offset "
+                        f"0x{covered_end:08X}."
+                    )
+                    self._gaps.append((covered_end, gap))
+            covered_end = max(covered_end, offset + size)
+
+    def _add_gaps(self, bin_image: BinaryImage) -> None:
+        """Add the data stored between the parsed segments into the binary image.
+
+        The gap is dropped when it collides with the current layout of the segments, because
+        a segment has been changed after parsing and its data takes precedence.
+
+        :param bin_image: Binary image of the bootable image with the segments already added.
+        """
+        for offset, data in self._gaps:
+            end = offset + len(data)
+            if (bin_image.size and end > bin_image.size) or any(
+                sub.offset < end and offset < sub.offset + len(sub) for sub in bin_image.sub_images
+            ):
+                logger.warning(
+                    f"The data stored between segments at offset 0x{offset:08X} "
+                    f"({len(data)} bytes) overlaps an updated segment and it has been dropped."
+                )
+                continue
+            bin_image.add_image(
+                BinaryImage(
+                    name="Data between segments",
+                    size=len(data),
+                    offset=offset,
+                    binary=data,
+                    description="Data stored between segments of the parsed image",
+                )
+            )
 
     @classmethod
     def _try_parse_exact_match(
@@ -500,6 +585,39 @@ class BootableImage(FeatureBaseClass):
             return None
 
     @classmethod
+    def _get_identified_offsets(
+        cls, binary: bytes, family: FamilyRevision, mem_type: MemoryType
+    ) -> list[int]:
+        """Get offsets of segments that have been unambiguously identified in the binary.
+
+        Some segments (e.g. FCB) are recognized by a unique identifier like a magic tag.
+        When such a segment is successfully parsed at the position defined by the memory
+        type layout, it is a strong proof that the binary really uses that layout, because
+        the identifier cannot match by chance.
+
+        :param binary: Binary data of the bootable image to inspect.
+        :param family: Target chip family and revision for parsing.
+        :param mem_type: Memory type whose segment layout is used for the inspection.
+        :return: List of offsets where the uniquely identified segments have been found.
+        """
+        ret: list[int] = []
+        for segment in cls._get_segments(family, mem_type):
+            if not segment.UNIQUE_IDENTIFIER:
+                continue
+            offset = segment.full_image_offset
+            if offset < 0 or offset >= len(binary):
+                continue
+            try:
+                segment.parse_binary(binary[offset:])
+            except SPSDKError:
+                continue
+            logger.debug(
+                f"The segment {segment.NAME} has been identified at offset 0x{offset:08X}."
+            )
+            ret.append(offset)
+        return ret
+
+    @classmethod
     def _parse_incomplete_images(
         cls,
         binary: bytes,
@@ -525,7 +643,18 @@ class BootableImage(FeatureBaseClass):
         for memory_type in mem_types:
             segments = cls._get_segments(family, memory_type)
             init_offsets = [seg.full_image_offset for seg in segments if seg.INIT_SEGMENT]
+            identified_offsets = cls._get_identified_offsets(binary, family, memory_type)
             for init_offset in init_offsets:
+                if any(init_offset > identified for identified in identified_offsets):
+                    # Moving the initial offset behind an unambiguously identified segment would
+                    # silently hide that segment inside another one. The binary does start with
+                    # the full bootable image header, so such an interpretation is always wrong.
+                    logger.debug(
+                        f"Skipping the init offset 0x{init_offset:08X} of memory type "
+                        f"'{memory_type.description}' because it would hide an already "
+                        "identified segment."
+                    )
+                    continue
                 bimg = cls._try_parse_incomplete_image(
                     binary, family, memory_type, init_offset, no_errors, dek_map, parse_errors
                 )
@@ -604,9 +733,9 @@ class BootableImage(FeatureBaseClass):
     ) -> Self:
         """Parse binary data into a bootable image object.
 
-        The method attempts to parse the provided binary data using all possible memory types
-        and returns the first successful match. If multiple memory types are detected, a warning
-        is logged and the first one is used.
+        The method attempts to parse the provided binary data using all possible memory types.
+        If multiple memory types are detected, a warning is logged and the most relevant one is
+        used, see :meth:`_relevance`.
 
         :param binary: Binary data of the bootable image to parse.
         :param family: Target chip family revision, auto-detected if not specified.
@@ -640,11 +769,27 @@ class BootableImage(FeatureBaseClass):
             raise SPSDKError(msg)
         if len(bimg_instances) > 1:
             mem_types_str = ", ".join(f'"{img.mem_type.description}"' for img in bimg_instances)
+            # The sort is stable, so the order of the database applies to equally relevant ones
+            bimg_instances.sort(key=lambda img: img._relevance(len(binary)), reverse=True)
             logger.warning(
-                f"Multiple possible memory types detected: {mem_types_str}."
-                f'The "{bimg_instances[0].mem_type.description}" memory type will be used.'
+                f"Multiple possible memory types detected: {mem_types_str}. "
+                f'The "{bimg_instances[0].mem_type.description}" memory type will be used. '
+                "Specify the memory type explicitly if this is not intended."
             )
         return bimg_instances[0]
+
+    def _relevance(self, binary_size: int) -> tuple[int, int]:
+        """Get the relevance of the parsed bootable image to choose between memory types.
+
+        A parsed segment with a unique identifier (e.g. FCB tag) proves the memory type layout,
+        so such images are preferred. Then the image describing the larger part of the input
+        binary is preferred, as the other layouts drop or misinterpret part of the input data.
+
+        :param binary_size: Size of the parsed input binary.
+        :return: Tuple of the identified segments count and the size of covered input data.
+        """
+        identified = sum(1 for seg in self.segments if seg.UNIQUE_IDENTIFIER and not seg.not_parsed)
+        return identified, min(len(self), binary_size)
 
     def __repr__(self) -> str:
         """Get text short representation of the BootableImage.
@@ -743,8 +888,19 @@ class BootableImage(FeatureBaseClass):
         config["revision"] = self.family.revision
         config["memory_type"] = self.mem_type.label
         config["init_offset"] = self.init_offset
+        encrypted_segments: dict[str, bytes] = {}
+        if self._encryption_segment is not None:
+            encrypted_segments = {
+                image.name: image.export() for image in self.image_info().sub_images
+            }
+            config["image_pattern"] = self.image_pattern
         for segment in self._segments:
-            config[segment.cfg_key()] = segment.create_config(data_path, parse_nxp=parse_nxp)
+            if not segment.BOOT_HEADER and segment.NAME.label in encrypted_segments:
+                config[segment.cfg_key()] = segment.create_binary_config(
+                    data_path, encrypted_segments[segment.NAME.label]
+                )
+            else:
+                config[segment.cfg_key()] = segment.create_config(data_path, parse_nxp=parse_nxp)
 
         return config
 
@@ -834,24 +990,47 @@ class BootableImage(FeatureBaseClass):
         description = f"Memory type: {self.mem_type}"
         if self.bootable_header_only:
             description += ". This is bootable image header only, no application is included"
+        keyblob = self._encryption_segment
         bin_image = BinaryImage(
             name=f"Bootable Image for {self.family}",
-            size=len(self),
+            size=0 if keyblob is not None else len(self),
             pattern=BinaryPattern(self.image_pattern),
             description=description,
         )
         prev_offset = prev_size = 0
         if self.init_offset:
             logger.info(f"The image is not complete. Starting from offset {self.init_offset}")
+        if keyblob is not None:
+            for segment in self._segments:
+                if not segment.BOOT_HEADER or not segment.export():
+                    continue
+                address = keyblob.image_base_address + segment.full_image_offset
+                if any(
+                    start < address + len(segment) and address < end
+                    for start, end in keyblob.encryption_ranges
+                ):
+                    raise SPSDKValueError(
+                        f"Encryption region overlaps boot header {segment.NAME.label}."
+                    )
         for segment in self.segments:
             seg_offset = segment.full_image_offset
             if segment.full_image_offset < 0:
                 seg_offset = align(prev_offset + prev_size, segment.OFFSET_ALIGNMENT)
             img_info = segment.image_info()
             img_info.offset = self.get_segment_offset(segment)
+            if keyblob is not None and not segment.BOOT_HEADER:
+                full_offset = img_info.offset + self.init_offset
+                img_info = deepcopy(img_info)
+                img_info.binary = keyblob.export_segment(img_info.export(), full_offset)
+                img_info.sub_images = []
+                img_info.size = len(img_info.binary)
             bin_image.add_image(img_info)
             prev_size = len(segment)
             prev_offset = seg_offset
+        self._add_gaps(bin_image)
+        if keyblob is not None:
+            bin_image.size = max(image.offset + len(image) for image in bin_image.sub_images)
+            bin_image.validate()
         return bin_image
 
     def export(self) -> bytes:

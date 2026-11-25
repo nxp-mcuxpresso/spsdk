@@ -355,7 +355,7 @@
                             "width": 8,
                             "id": "field004-bits24-31",
                             "name": "EXT_CMPA_32B_SIZE",
-                            "description": "Customer extended CMPA size expressed as multiple of 32 bytes. Total CMPA area = CMPA_BASE_ADDR + 32"
+                            "description": "Customer extended CMPA size expressed as multiple of 32 bytes. Total CMPA area = CMPA_BASE_ADDR + 32 * EXT_CMPA32B_SIZE. The minimum value for this field should be 0 and max value 160"
                         }
                     ]
                 },

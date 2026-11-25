@@ -1,0 +1,12 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# Hybrid (ECC P-384 + ML-DSA-87) Debug Credential configuration for mimxrtl3450 family.
+family: mimxrtl3450
+revision: latest
+cc_socu: 0
+uuid: '00000000000000000000000000000000'
+public_key_0: ../../_data/keys/ecc384/dck_ecc384.pub
+signer_0: ../../_data/keys/ecc384/srk0_ecc384.pem
+public_key_1: ../../_data/keys/mldsa87/srk1_mldsa87_native.pub
+signer_1: ../../_data/keys/mldsa87/srk0_mldsa87_native.pem

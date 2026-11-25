@@ -1,0 +1,9 @@
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/cmpa_template.yaml
+user_cfg: inputs/cmpa_mcxn9xx.yaml
+custom_command: "%! pfr get-template -f mcxn946 -t cmpa -o workspace/cmpa_template.yaml --force"
+
+comments:
+  NPX_CTX0_WD0: "Enable NPX PRINCE context 0 for flash sectors 0..15"
+  NPX_CTX0_WD1: "No sectors 32..63 selected for context 0"

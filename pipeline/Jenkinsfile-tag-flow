@@ -9,6 +9,7 @@ pipeline {
     agent { label 'linux-spsdk' }
     options {
         timeout(time: 30, unit: 'MINUTES', activity: true)
+        buildDiscarder(logRotator(daysToKeepStr: '30'))   // discard builds older than one month
     }
 
     stages {

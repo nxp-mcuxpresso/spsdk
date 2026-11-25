@@ -25,7 +25,7 @@ Devices in *SPSDK* could be identified either by *VID only* or a combination of 
 
 *VID only* could be defined as hex or dec numbers. Hex number must be preceded by ``0x`` or ``0X``. The number of characters after ``0x`` is 1 - 4. Mixed upper & lower case letters is allowed, e.g. ``0xaB12``, ``0XAB12``, ``0x1``, ``0x0001``. The decimal number is restricted only to have 1 - 5 digits, e.g. ``65535``. It's allowed to set the USB filter ID to the decimal number ``99999``, however, as the USB VID number is a four-byte hex number (max value is 65535), this will lead to zero results. Leading zeros are not allowed e.g. 0001.
 
-*VID/PID* cloud be separated by ':' or ','. The same rules apply to the number format as in the VID case, except, that the string consists of two numbers separated by ':' or ','. It's not allowed to mix hex and dec numbers, e.g. ``0xab12:12345``. Valid vid/pid strings: ``0x12aB:0xabc``, ``1,99999``.
+*VID/PID* could be separated by ':' or ','. The same rules apply to the number format as in the VID case, except, that the string consists of two numbers separated by ':' or ','. It's not allowed to mix hex and dec numbers, e.g. ``0xab12:12345``. Valid vid/pid strings: ``0x12aB:0xabc``, ``1,99999``.
 
 .. figure:: ../_static/images/nxpdevscan_usb_detect-vid-pid.png
     :scale: 50 %

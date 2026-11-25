@@ -25,6 +25,8 @@ ignorePaths:
   - "spsdk/__version__.py"
   - "docs/examples"
   - "docs/_prebuild"
+  - "docs/devices"
+  - "docs/devices_list.rst"
   - "docs/_static"
   - "docs/make.bat"
   - "docs/Makefile"
@@ -36,6 +38,7 @@ ignorePaths:
   # Binary and encoded files — scanning these is slow and produces false positives
   - "**/*.bin"
   - "**/*.bin-*"
+  - "**/*.onnx"
   - "**/*.pink"
   - "**/*.pyc"
   - "**/*.der"

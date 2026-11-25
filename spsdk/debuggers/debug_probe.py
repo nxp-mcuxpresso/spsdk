@@ -123,6 +123,20 @@ class SPSDKDebugProbeNotOpenError(SPSDKDebugProbeError):
     """
 
 
+class SPSDKDebugMailboxApNotPresentError(SPSDKDebugProbeError):
+    """Exception raised when the Debug Mailbox AP is not present on the target.
+
+    On some families (e.g. RT1180/RT1189, i.MX91, i.MX93, i.MX94/i.MX95) the
+    Debug Mailbox AP and a standard system MEM-AP are two mutually exclusive,
+    HW-multiplexed personalities of the same AP index: the Debug Mailbox is
+    only selected while debug authentication has not happened yet, while a
+    standard MEM-AP (e.g. AHB-AP) takes its place once debug access is already
+    authenticated/open (for example after booting from SD card with debug
+    already enabled). In that state there is no Debug Mailbox to start a
+    session with, but direct memory read/write via the MEM-AP still works.
+    """
+
+
 class MemorySpace(SpsdkEnum):
     """Memory space selector for debug probe memory access operations.
 
@@ -206,6 +220,9 @@ class DebugProbe(ABC):
         revision = self.options.pop("revision", "latest")
         if family:
             self.family = FamilyRevision(family, revision)
+        # Whether the core can be halted/resumed/queried (debug_halt, is_cpu_halted, ...).
+        # Architecture-specific subclasses may disable it based on the device database.
+        self.core_halt_supported = True
 
         # Diagnostic bookkeeping of the debug-access gating chain (probe connection,
         # Debug Port / chip-ID readability, and any architecture-specific gates added

@@ -132,6 +132,8 @@ exclude = [
 [tool.pytest.ini_options]
 junit_family = "xunit1"
 addopts = "-p no:nb_regression"
+# fail a hung test with its stack trace instead of killing the whole run on codecheck timeout
+timeout = 300
 
 [tool.coverage.report]
 exclude_lines = [

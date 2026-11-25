@@ -31,6 +31,7 @@ from spsdk.apps.nxpdebugmbox import (
 )
 from spsdk.apps.nxpdebugmbox import test_connection as nxpdebugmbox_test_connection
 from spsdk.apps.utils.utils import SPSDKAppError
+from spsdk.dat.debug_mailbox import REGISTERS
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.family import FamilyRevision
 from tests.cli_runner import CliRunner
@@ -87,6 +88,87 @@ def test_nxpdebugmbox_no_reset_option(
     cli_runner.invoke(main, [*root_options, "cmd", "-f", "kw47b42zb7", "famode"])
 
     assert captured["reset"] is expected_reset
+
+
+@pytest.mark.parametrize("family", ["mcxa287", "mcxa577"])
+@pytest.mark.parametrize("root_options", [[], ["-n"], ["--no-reset"]])
+@pytest.mark.parametrize(
+    ("command", "command_word", "responses", "parameters"),
+    [
+        ("erase", 0x03, [0], []),
+        ("famode", 0x06, [0], []),
+        ("ispmode", 0x10005, [0x1A5A5, 0], [1]),
+    ],
+)
+def test_mcxa287_mcxa577_authenticated_mailbox_command(
+    cli_runner: CliRunner,
+    monkeypatch: pytest.MonkeyPatch,
+    family: str,
+    root_options: list[str],
+    command: str,
+    command_word: int,
+    responses: list[int],
+    parameters: list[int],
+) -> None:
+    """Preserve MCXA287/MCXA577 authentication without mailbox re-entry."""
+    probe = MagicMock()
+    probe.dbgmlbx_ap_ix = -1
+    return_words = iter(responses)
+
+    def read_register(addr: int) -> int:
+        if addr == REGISTERS["RETURN"]["address"]:
+            return next(return_words)
+        return 0
+
+    probe.dbgmlbx_reg_read.side_effect = read_register
+
+    @contextlib.contextmanager
+    def open_probe(**_kwargs: object) -> Iterator[MagicMock]:
+        yield probe
+
+    monkeypatch.setattr(nxpdebugmbox, "open_debug_probe", open_probe)
+    monkeypatch.setattr("spsdk.dat.dm_commands.time.sleep", lambda _delay: None)
+    cli_runner.invoke(main, [*root_options, "cmd", "-f", family, command])
+
+    expected_writes = []
+    if not root_options:
+        expected_writes.append(
+            (
+                REGISTERS["CSW"]["address"],
+                REGISTERS["CSW"]["bits"]["RESYNCH_REQ"]
+                | REGISTERS["CSW"]["bits"]["CHIP_RESET_REQ"],
+            )
+        )
+    expected_writes.extend(
+        (REGISTERS["REQUEST"]["address"], word) for word in [command_word, *parameters]
+    )
+    assert [
+        (call.kwargs["addr"], call.kwargs["data"])
+        for call in probe.dbgmlbx_reg_write.call_args_list
+    ] == expected_writes
+
+
+def test_mcxa577_mass_erase_permission_error(
+    cli_runner: CliRunner, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A rejected erase must not be retried by resetting or restarting the mailbox."""
+    probe = MagicMock()
+    probe.dbgmlbx_ap_ix = -1
+    probe.dbgmlbx_reg_read.side_effect = lambda addr: (
+        0x00100002 if addr == REGISTERS["RETURN"]["address"] else 0
+    )
+
+    @contextlib.contextmanager
+    def open_probe(**_kwargs: object) -> Iterator[MagicMock]:
+        yield probe
+
+    monkeypatch.setattr(nxpdebugmbox, "open_debug_probe", open_probe)
+    monkeypatch.setattr("spsdk.dat.dm_commands.time.sleep", lambda _delay: None)
+    result = cli_runner.invoke(main, ["-n", "cmd", "-f", "mcxa577", "erase"], expected_code=1)
+
+    assert "Mass flash erase failed" in str(result.exception)
+    assert "Command is not supported" in str(result.exception)
+    probe.dbgmlbx_reg_write.assert_called_once_with(addr=REGISTERS["REQUEST"]["address"], data=0x03)
 
 
 # ---------------------------------------------------------------------------
@@ -249,6 +331,39 @@ def test_mem_tool_subcommands_help(cli_runner: CliRunner, subcommand: str) -> No
     """Test mem-tool subcommand --help."""
     result = cli_runner.invoke(main, ["mem-tool", subcommand, "--help"])
     assert "Show this message and exit." in result.output
+
+
+def test_mem_tool_test_connection_help_shows_destination_default(cli_runner: CliRunner) -> None:
+    """Test mem-tool test-connection --help shows the default value of -d/--destination."""
+    result = cli_runner.invoke(main, ["mem-tool", "test-connection", "--help"])
+    assert "[default: cpu_mem]" in result.output
+
+
+def test_mem_tool_test_connection_default_destination(
+    cli_runner: CliRunner,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test mem-tool test-connection uses 'cpu_mem' destination when -d is not specified."""
+    captured: dict = {}
+
+    def fake_test_connection(*args: object, **kwargs: object) -> bool:
+        captured.update(kwargs)
+        return True
+
+    monkeypatch.setattr("spsdk.apps.nxpdebugmbox.test_connection", fake_test_connection)
+    monkeypatch.setitem(nxpdebugmbox.PROBES, "virtual", DebugProbeVirtual)
+    cmd = [
+        "-i",
+        "virtual",
+        "-s",
+        DebugProbeVirtual.UNIQUE_SERIAL,
+        "mem-tool",
+        "test-connection",
+        "-f",
+        DAT_FAMILY,
+    ]
+    cli_runner.invoke(main, cmd)
+    assert captured["destination"] == "cpu_mem"
 
 
 def test_mem_tool_get_families(cli_runner: CliRunner) -> None:

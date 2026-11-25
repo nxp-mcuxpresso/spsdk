@@ -349,39 +349,6 @@ def test_serialize_multiple_provisionings(tmpdir: Any) -> None:
 
 
 # ---------------------------------------------------------------------------
-# response_handling
-# ---------------------------------------------------------------------------
-
-
-def test_response_handling_ok(tmpdir: Any) -> None:
-    client = _make_client(tmpdir)
-    client.headers["EL2G-Correlation-ID"] = "test-id"
-    response = EL2GOApiResponse(status_code=200, json_body={})
-    # should not raise
-    client.response_handling(response, "/some/url")
-
-
-def test_response_handling_error_raises(tmpdir: Any) -> None:
-    from spsdk.el2go.client import SPSDKHTTPClientError
-
-    client = _make_client(tmpdir)
-    client.headers["EL2G-Correlation-ID"] = "test-id"
-    response = EL2GOApiResponse(status_code=404, json_body={"error": "not found"})
-    with pytest.raises(SPSDKHTTPClientError):
-        client.response_handling(response, "/some/url")
-
-
-def test_response_handling_500_raises(tmpdir: Any) -> None:
-    from spsdk.el2go.client import SPSDKHTTPClientError
-
-    client = _make_client(tmpdir)
-    client.headers["EL2G-Correlation-ID"] = "test-id"
-    response = EL2GOApiResponse(status_code=500, json_body={"error": "server error"})
-    with pytest.raises(SPSDKHTTPClientError):
-        client.response_handling(response, "/api/test")
-
-
-# ---------------------------------------------------------------------------
 # get_generation_status
 # ---------------------------------------------------------------------------
 

@@ -13,17 +13,20 @@ capabilities within the SPSDKUUU class.
 
 import io
 import sys
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from libuuu.libuuu import UUUNotifyType
 
 import spsdk.utils.progress_bar as progress_bar_module
+from spsdk.apps.nxpuuu import main as nxpuuu_main
 from spsdk.uboot.spsdk_uuu import SPSDKUUU, SPSDKUUUState
 from spsdk.utils.family import FamilyRevision
 from spsdk.utils.progress_bar import ESC_HIDE_CURSOR, ESC_SHOW_CURSOR
+from tests.cli_runner import CliRunner
 
 
 class TtyStringIO(io.StringIO):
@@ -178,3 +181,96 @@ def test_finish_progress_without_transfer_is_noop() -> None:
     ):
         SPSDKUUUState(progress_bar_enabled=True).finish_progress()
         assert stream.getvalue() == ""
+
+
+def _invoke_write(cli_runner: CliRunner, args: list[str]) -> tuple[MagicMock, MagicMock]:
+    """Invoke nxpuuu write with mocked UUU execution.
+
+    :param cli_runner: CLI runner fixture.
+    :param args: Arguments passed after the write command.
+    :return: Mocks of the auto_detect_file and run_script methods.
+    """
+    with (
+        patch.object(SPSDKUUU, "auto_detect_file", return_value=0) as auto_detect,
+        patch.object(SPSDKUUU, "run_script", return_value=0) as run_script,
+        patch.object(SPSDKUUU, "wait_uuu_finish", return_value=0),
+    ):
+        cli_runner.invoke(nxpuuu_main, ["write", "-f", "mimx943", *args])
+    return auto_detect, run_script
+
+
+def test_write_without_boot_device_uses_spl(cli_runner: CliRunner, tmp_path: Path) -> None:
+    """Load a bootloader image using the SPL script when no boot device is specified.
+
+    :param cli_runner: CLI runner fixture.
+    :param tmp_path: Temporary directory for the bootloader image.
+    """
+    image = tmp_path / "imx-boot.bin"
+    image.write_bytes(bytes(range(256)))
+    auto_detect, run_script = _invoke_write(cli_runner, [str(image)])
+    auto_detect.assert_not_called()
+    run_script.assert_called_once_with(
+        SPSDKUUU().get_uuu_script("spl", FamilyRevision("mimx943"), [str(image)])
+    )
+
+
+@pytest.mark.parametrize("name", ["burn.uuu", "images.zip", "images.sdcard", "images"])
+def test_write_without_boot_device_auto_detects(
+    cli_runner: CliRunner, tmp_path: Path, name: str
+) -> None:
+    """Pass UUU scripts, archives and directories to the UUU auto-detection.
+
+    :param cli_runner: CLI runner fixture.
+    :param tmp_path: Temporary directory for the input.
+    :param name: Name of the input file or directory.
+    """
+    path = tmp_path / name
+    if name == "images":
+        path.mkdir()
+    else:
+        path.write_text("uuu_version 1.2.39\nSDPS: boot -f imx-boot.bin\n")
+    auto_detect, run_script = _invoke_write(cli_runner, [str(path)])
+    auto_detect.assert_called_once_with(str(path))
+    run_script.assert_not_called()
+
+
+def test_write_with_boot_device_uses_selected_script(cli_runner: CliRunner, tmp_path: Path) -> None:
+    """Use the selected boot device script when the boot device is specified.
+
+    :param cli_runner: CLI runner fixture.
+    :param tmp_path: Temporary directory for the bootloader image.
+    """
+    image = tmp_path / "imx-boot.bin"
+    image.write_bytes(b"\x00" * 16)
+    auto_detect, run_script = _invoke_write(cli_runner, ["-b", "emmc", str(image)])
+    auto_detect.assert_not_called()
+    run_script.assert_called_once_with(
+        SPSDKUUU().get_uuu_script("emmc", FamilyRevision("mimx943"), [str(image)])
+    )
+
+
+@pytest.mark.parametrize(
+    "family, rom_stage",
+    [
+        ("mimx8ulp", True),
+        ("mimx9131", True),
+        ("mimx9352", True),
+        ("mimx8qxp", False),
+        ("mimx9596", False),
+        ("mimx943", False),
+    ],
+)
+def test_spl_script_per_family(family: str, rom_stage: bool) -> None:
+    """Use the SPL script matching the way SPL loads U-Boot on the family.
+
+    SPL of i.MX 8ULP, 91 and 93 reads U-Boot through the ROM API from the SDPS stream, so the
+    script must finish after the SDPS stage instead of waiting for an SPL SDP device.
+
+    :param family: Target family.
+    :param rom_stage: True if the whole image is loaded in the ROM SDPS stage.
+    """
+    script = SPSDKUUU().get_uuu_script("spl", FamilyRevision(family), ["imx-boot.bin"])
+    commands = [line for line in script.splitlines() if line and not line.startswith("#")]
+    assert "SDPS[-t 10000]: boot -f imx-boot.bin" in commands
+    assert ("SDPS: done" in commands) == rom_stage
+    assert any(cmd.startswith("SDPV:") for cmd in commands) != rom_stage

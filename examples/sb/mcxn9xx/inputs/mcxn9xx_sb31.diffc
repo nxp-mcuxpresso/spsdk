@@ -1,0 +1,25 @@
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/sb31_template.yaml
+user_cfg: inputs/sb31_config.yaml
+custom_command: "%! nxpimage sb31 get-template -f mcxn946 -o workspace/sb31_template.yaml --force"
+
+comments:
+  signer: "Add path to your private key used to sign the SB3.1 manifest"
+  containerOutputFile: "Path to the generated SB3.1 container"
+  certBlock: "Path to the certificate block configuration holding the Root of Trust"
+  containerKeyBlobEncryptionKey: "Path to the Part Common Key (must match device SB3KDK)"
+  kdkAccessRights: "KDK access rights must match the ROM key derivation (0 for MCXN9xx)"
+  description: "Description stored in the SB3.1 manifest"
+  load: "Load the demo payload to RAM"
+  erase: "We do not use this command"
+  execute: "We do not use this command"
+  programFuses: "We do not use this command"
+  programIFR: "We do not use this command"
+  loadCMAC: "We do not use this command"
+  copy: "We do not use this command"
+  loadHashLocking: "We do not use this command"
+  loadKeyBlob: "We do not use this command"
+  configureMemory: "We do not use this command"
+  fillMemory: "We do not use this command"
+  checkFwVersion: "We do not use this command"

@@ -286,27 +286,6 @@ class EL2GOTPClient(EL2GOClient):
             self._prov_fw = load_binary(self.prov_fw_path)
         return self._prov_fw
 
-    def response_handling(self, response: EL2GOApiResponse, url: str) -> None:
-        """Handle an error response from EL2GO API.
-
-        The method checks the HTTP status code and raises an exception for client and server errors
-        (status codes >= 400) with detailed error information including correlation ID.
-
-        :param response: The API response object containing status code and response body.
-        :param url: The URL that was called when the response was received.
-        :raises SPSDKHTTPClientError: In case of an erroneous response (response code >= 400).
-        """
-        if response.status_code >= 400:
-            raise SPSDKHTTPClientError(
-                status_code=response.status_code,
-                response=response.json_body,
-                desc=(
-                    f"Operation failed with status code {response.status_code} when calling {url}\n"
-                    f"Response body: {json.dumps(response.json_body, indent=2)}\n"
-                    f"Correlation id: {self.headers['EL2G-Correlation-ID']}"
-                ),
-            )
-
     def assign_device_to_devicegroup(
         self, device_id: str, allow_reassignment: bool = False
     ) -> None:
@@ -318,38 +297,37 @@ class EL2GOTPClient(EL2GOClient):
 
         :param device_id: Unique identifier of the device to assign.
         :param allow_reassignment: Whether to allow reassignment if device is in different group.
-        :raises SPSDKError: If device is not found or assignment fails.
-        :raises SPSDKError: If device is in different group and reassignment is disabled.
+        :raises SPSDKHTTPClientError: If device is not found or assignment fails.
+        :raises SPSDKHTTPClientError: If device is in different group and reassignment is disabled.
         """
-        response, url = self._assign_device_to_group(device_id=device_id)
-        if response.status_code == 422 and response.json_body["code"] == "ERR_SEDM_422_11":
-            details: dict = json.loads(response.json_body["details"])
+        try:
+            self._assign_device_to_group(device_id=device_id)
+        except SPSDKHTTPClientError as e:
+            if e.status_code != 422 or e.response.get("code") != "ERR_SEDM_422_11":
+                raise
+
+            details: dict = json.loads(e.response["details"])
             logger.warning(json.dumps(details, indent=2))
 
             if device_id in details["notFoundDevices"]:
-                # device ID was not found, raise an exception
-                self.response_handling(response, url)
+                # device ID was not found, re-raise the original exception
+                raise
 
             diff_group: list[dict[str, str]] = details.get("devicesInDifferentGroup", [])
             diff_group_dict = {str(int(i["deviceId"], 16)): i["deviceGroupId"] for i in diff_group}
 
-            if device_id in diff_group_dict:
-                device_group = diff_group_dict[device_id]
-                logger.info(f"Device {device_id} found in group {device_group}")
+            if device_id not in diff_group_dict:
+                raise
 
-                # device ID was found in different group, but re-assignment id disabled
-                if not allow_reassignment:
-                    self.response_handling(response, url)
+            device_group = diff_group_dict[device_id]
+            logger.info(f"Device {device_id} found in group {device_group}")
 
-                response, url = self._unassign_device_from_group(
-                    device_id=device_id, group_id=device_group
-                )
-                self.response_handling(response, url)
-                response, url = self._assign_device_to_group(device_id=device_id)
+            # device ID was found in different group, but re-assignment is disabled
+            if not allow_reassignment:
+                raise
 
-            self.response_handling(response, url)
-
-        self.response_handling(response, url)
+            self._unassign_device_from_group(device_id=device_id, group_id=device_group)
+            self._assign_device_to_group(device_id=device_id)
 
     def get_generation_status(self, device_id: str) -> str:
         """Get status of Secure Objects creation for given device.
@@ -369,7 +347,6 @@ class EL2GOTPClient(EL2GOClient):
         }
 
         response = self._handle_el2go_request(method=self.Method.GET, url=url, param_data=data)
-        self.response_handling(response=response, url=url)
         if not response.json_body["content"]:
             return WAIT_STATES[0]
 
@@ -446,7 +423,6 @@ class EL2GOTPClient(EL2GOClient):
         response = self._handle_el2go_request(
             method=self.Method.POST, url=url, json_data=data, param_data=param_data
         )
-        self.response_handling(response=response, url=url)
         return response.json_body
 
     def _wait_for_provisionings(self, device_id: str) -> None:
@@ -556,7 +532,6 @@ class EL2GOTPClient(EL2GOClient):
         while True:
             url = f"/api/v1/products/{self.nc12}/device-groups/{self.device_group_id}/devices?size=100&page={page}"
             response = self._handle_el2go_request(method=self.Method.GET, url=url)
-            self.response_handling(response=response, url=url)
             devices.extend(_extract_uuids(data=response.json_body))
             if response.json_body["next"] is None:
                 break
@@ -581,43 +556,41 @@ class EL2GOTPClient(EL2GOClient):
         else:
             url = f"/api/v1/products/{self.nc12}/device-groups"
             response = self._handle_el2go_request(method=self.Method.GET, url=url)
-            self.response_handling(response=response, url=url)
             candidates = [group["id"] for group in response.json_body["content"]]
 
         for check_id in candidates:
             url = f"/api/v1/products/{self.nc12}/device-groups/{check_id}/devices/{device_id}"
-            response = self._handle_el2go_request(method=self.Method.GET, url=url)
-            if response.status_code == 200:
+            try:
+                self._handle_el2go_request(method=self.Method.GET, url=url)
                 return str(check_id)
-
-            if response.status_code == 404:
-                continue
-            else:
-                self.response_handling(response=response, url=url)
+            except SPSDKHTTPClientError as e:
+                if e.status_code == 404:
+                    continue
+                raise
 
         raise SPSDKError(
             f"Device {device_id} was not found in product {self.nc12} for group(s): {candidates}"
         )
 
-    def _assign_device_to_group(self, device_id: str | list[str]) -> tuple[EL2GOApiResponse, str]:
+    def _assign_device_to_group(self, device_id: str | list[str]) -> EL2GOApiResponse:
         """Assign a device to the configured group.
 
         This method assigns one or more devices to the device group that was configured
         during the API client initialization.
 
         :param device_id: Single device ID as string or list of device IDs to assign to the group.
-        :return: Tuple containing the API response object and the request URL used.
+        :raises SPSDKHTTPClientError: In case of an erroneous response (response code >= 400).
+        :return: API response object for the assignment request.
         """
         url = f"/api/v1/products/{self.nc12}/device-groups/{self.device_group_id}/devices"
         data = {
             "deviceIds": self._make_device_id_list(device_id),
         }
-        response = self._handle_el2go_request(method=self.Method.POST, url=url, json_data=data)
-        return response, url
+        return self._handle_el2go_request(method=self.Method.POST, url=url, json_data=data)
 
     def _unassign_device_from_group(
         self, device_id: str | list[str], group_id: str | None = None, wait_time: int = 10
-    ) -> tuple[EL2GOApiResponse, str]:
+    ) -> EL2GOApiResponse:
         """Unassign a device from the device group.
 
         This method removes one or more devices from a specified device group by making
@@ -627,7 +600,8 @@ class EL2GOTPClient(EL2GOClient):
         :param device_id: Single device ID as string or list of device IDs to unassign.
         :param group_id: Device group ID to unassign from. Uses default group if None.
         :param wait_time: Time in seconds to wait after request to avoid race conditions.
-        :return: Tuple containing API response object and the request URL.
+        :raises SPSDKHTTPClientError: In case of an erroneous response (response code >= 400).
+        :return: API response object for the unassign request.
         """
         url = f"/api/v1/products/{self.nc12}/device-groups/{group_id or self.device_group_id}/devices/unclaim"
         data = {
@@ -638,7 +612,7 @@ class EL2GOTPClient(EL2GOClient):
         if wait_time:
             logger.info(f"Waiting for {wait_time} seconds to allow EL2GO to process the request")
             time.sleep(wait_time)
-        return response, url
+        return response
 
     def get_test_connection_response(self) -> EL2GOApiResponse:
         """Test connection to EL2GO service.
@@ -659,9 +633,7 @@ class EL2GOTPClient(EL2GOClient):
 
         :raises SPSDKHTTPClientError: In case of an erroneous response (response code >= 400).
         """
-        url = f"/api/v1/products/{self.nc12}/device-groups/{self.device_group_id}"
-        response = self.get_test_connection_response()
-        self.response_handling(response, url)
+        self.get_test_connection_response()
 
     def register_devices(
         self, uuids: list[str], remove_errors: bool = False
@@ -680,9 +652,8 @@ class EL2GOTPClient(EL2GOClient):
         logger.info(f"Submitting job for {len(uuids)} devices")
         url = f"/api/v1/products/{self.nc12}/device-groups/{self.device_group_id}/register-devices"
         data = {"deviceIds": uuids}
-        response = self._handle_el2go_request(self.Method.POST, url=url, json_data=data)
         try:
-            self.response_handling(response, url)
+            response = self._handle_el2go_request(self.Method.POST, url=url, json_data=data)
         except SPSDKHTTPClientError as e:
             if not remove_errors:
                 raise
@@ -731,9 +702,12 @@ class EL2GOTPClient(EL2GOClient):
         """
         logger.info(f"Getting job details for {job_id}")
         url = f"/api/v2/rtp/jobs/{job_id}"
-        response = self._handle_el2go_request(self.Method.GET, url=url)
-        if response.status_code == self.Status.NOT_FOUND:
-            return None
+        try:
+            response = self._handle_el2go_request(self.Method.GET, url=url)
+        except SPSDKHTTPClientError as e:
+            if e.status_code == self.Status.NOT_FOUND:
+                return None
+            raise
         return response.json_body
 
     def create_secure_objects_batch(self, devices: int) -> str | None:
@@ -748,13 +722,15 @@ class EL2GOTPClient(EL2GOClient):
         logger.info(f"Creating secure objects batch for {devices} devices")
         url = "/api/v2/rtp/product-based-provisionings/request-batch-job"
         data = {"nc12": self.nc12, "deviceGroupId": self.device_group_id, "batchSize": devices}
-        response = self._handle_el2go_request(method=self.Method.POST, url=url, json_data=data)
-        if response.status_code == 400 and response.json_body["code"] == "ERR_RTP_400_20":
-            # no dynamic data are defined in this group
-            # fallback to static-only data
-            logger.info("No dynamic data available, falling back to static provisioning")
-            return None
-        self.response_handling(response, url)
+        try:
+            response = self._handle_el2go_request(method=self.Method.POST, url=url, json_data=data)
+        except SPSDKHTTPClientError as e:
+            if e.status_code == 400 and e.response.get("code") == "ERR_RTP_400_20":
+                # no dynamic data are defined in this group
+                # fallback to static-only data
+                logger.info("No dynamic data available, falling back to static provisioning")
+                return None
+            raise
         return response.json_body["jobId"]
 
     def download_secure_objects_batch(self, job_id: str | None = None) -> dict:
@@ -779,7 +755,6 @@ class EL2GOTPClient(EL2GOClient):
             self._wait_for_job(job_id=job_id)
             url = f"/api/v2/rtp/jobs/{job_id}/download-batch-file"
             response = self._handle_el2go_request(method=self.Method.GET, url=url)
-        self.response_handling(response, url)
         return response.json_body
 
     def _wait_for_job(self, job_id: str) -> None:

@@ -106,6 +106,34 @@ from spsdk import get_logger
 logger = get_logger("spsdk.mymodule")
 logger.trace("This will be logged to console and file!")
 ```
+### Strict Mode Environment Variables (Testing)
+
+For automated testing (e.g. CI or SEC tool test suites) SPSDK can promote soft failures,
+which are normally only logged as warnings, to hard errors. All variables accept `True`, `true`, `T` or `1`
+as an enabling value and are evaluated when `spsdk` is imported.
+
+| Variable | Effect when enabled |
+|----------|---------------------|
+| `SPSDK_SCHEMA_STRICT` | Unknown properties in a YAML configuration raise `SPSDKError` instead of a warning. |
+| `SPSDK_DEPRECATED_STRICT` | Usage of a deprecated CLI option or configuration property raises `SPSDKError` instead of a warning. |
+| `SPSDK_WARNING_STRICT` | **Every** warning logged by any `spsdk.*` logger raises `SPSDKWarningError` (subclass of `SPSDKError`), similar to `pytest -W error`. |
+
+With `SPSDK_WARNING_STRICT` the warning is still written to all configured log handlers (console, debug log)
+before the exception is raised, so it remains visible in CI logs. Messages of other levels (TRACE, DEBUG,
+INFO, ERROR, CRITICAL) and warnings from loggers outside the `spsdk` namespace are not affected.
+The variables can be combined; when `SPSDK_SCHEMA_STRICT` or `SPSDK_DEPRECATED_STRICT` raises its own
+error, no additional warning is produced.
+
+Strict warning mode can also be controlled at runtime:
+
+```python
+from spsdk import is_warning_strict, set_warning_strict
+
+set_warning_strict(True)   # every SPSDK warning now raises SPSDKWarningError
+assert is_warning_strict()
+set_warning_strict(False)  # back to logging only
+```
+
 ### Recommended Log Levels
 
 - **Development**: `TRACE` (5) – See all protocol communication

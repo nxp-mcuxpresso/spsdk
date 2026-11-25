@@ -1,0 +1,9 @@
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/cmpa_template.yaml
+user_cfg: inputs/cmpa_mcxn9xx.yaml
+custom_command: "%! pfr get-template -f mcxn946 -t cmpa -o workspace/cmpa_template.yaml --force"
+
+comments:
+  IPED0_START: "Enable IPED region 0 start (external flash) and its mode"
+  IPED0_END: "IPED region 0 end address and lock setting"

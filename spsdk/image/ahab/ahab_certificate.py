@@ -589,16 +589,17 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
                     )
                 public_key_types_ver.add_child(pub_key_ver)
 
+            # Certificate key must match the type of the SRK used to sign the certificate
             public_key_types_ver = Verifier("Public key checks")
             check_key_type(
                 0,
-                srk_key=cast(SRKRecordV2, srk._srk_tables[0].srk_records[0]),
+                srk_key=cast(SRKRecordV2, srk._srk_tables[0].srk_records[used_srk_id]),
                 key=self.public_key_0,
             )
             if srk_table_cnt > 1:
                 check_key_type(
                     1,
-                    srk_key=cast(SRKRecordV2, srk._srk_tables[1].srk_records[0]),
+                    srk_key=cast(SRKRecordV2, srk._srk_tables[1].srk_records[used_srk_id]),
                     key=self.public_key_1,
                 )
             ret.add_child(public_key_types_ver)

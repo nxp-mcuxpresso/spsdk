@@ -340,7 +340,10 @@ features:
     size: 0x2000_0000
 
   # ======== nxpuuu ==========
-  nxpuuu: {}
+  nxpuuu:
+    boot_devices:
+      spl:
+        script: ../../common/uuu/spl_boot_rom.lst
 
   # ======== EL2GO TP section ========
   el2go_tp:

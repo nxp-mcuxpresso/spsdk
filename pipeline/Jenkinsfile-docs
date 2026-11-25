@@ -10,6 +10,7 @@ pipeline {
 
     options {
         timeout(time: 5, unit: 'HOURS')   // timeout on whole pipeline job
+        buildDiscarder(logRotator(daysToKeepStr: '30'))   // discard builds older than one month
     }
 
     stages {
