@@ -1,10 +1,10 @@
 {
-    "cpu": "MCXC353",
+    "cpu": "mcxc353",
     "groups": [
         {
             "group": {
-                "name": "Auth Password",
-                "description": "Debug authentication password"
+                "name": "Password Header",
+                "description": "Password header"
             },
             "registers": [
                 {
@@ -67,6 +67,7 @@
                             "id": "field000-bits16-31",
                             "name": "Header",
                             "deprecated_names": [
+                                "PASSWORD_Region_Header_marker",
                                 "PASSWORD_Region_Header_marker_should_be_set_to_0x5057"
                             ],
                             "description": "PASSWORD Region Header marker should be set to 0x5057"
@@ -101,8 +102,8 @@
         },
         {
             "group": {
-                "name": "Reserved 00010-0001C",
-                "description": "Reserved 00010-0001C"
+                "name": "Auth Password",
+                "description": "Debug authentication password"
             },
             "registers": [
                 {

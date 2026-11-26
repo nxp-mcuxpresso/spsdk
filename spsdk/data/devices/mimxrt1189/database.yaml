@@ -167,6 +167,7 @@ features:
     based_on_ele: True # Flag if the implementation of DAT is based on EdgeLock Enclave
     dat_is_using_sha256_always: True
     dmbox_ap_ix: 0
+    dmbox_ap_shared_with_mem_ap: True # RM: SWJ-DP(AUTH) ISP-AP (mailbox) vs SWJ-DP AHB-AP share AP0
 
   # ======== AHAB section ========
   ahab:

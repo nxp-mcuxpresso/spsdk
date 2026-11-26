@@ -31,6 +31,7 @@ from tests.nxpimage.test_nxpimage_cert_block import process_config_file
         # ("mimx8ulp", "latest", "ahab_classic.yaml", "nxpele", "cortex-a55"),
         ("mimx9131", "latest", "ahab_classic.yaml", "nxpele", "cortex-a55"),
         ("mimx9352", "latest", "ahab_classic.yaml", "nxpele", "cortex-a55"),
+        ("mimx93w52", "latest", "ahab_classic.yaml", "nxpele", "cortex-a55"),
         ("mimxrt2662", "a0", "ahab_classic.yaml", "blhost", "cortex-m85"),
         pytest.param(
             "mimxrt2662",

@@ -156,7 +156,7 @@
                             "deprecated_names": [
                                 "FLASH_REMAP_SIZE"
                             ],
-                            "description": "Flash remap size. FLASH_REMAP_SIZE defines the size of the secondary boot image (the range of flash addresses that will be remapped)in internal flash, where remapped address end = (FLASH_REMAP_SIZE + 1)"
+                            "description": "Flash remap size. FLASH_REMAP_SIZE defines the size of the secondary boot image (the range of flash addresses that will be remapped)in internal flash, where remapped address end = (FLASH_REMAP_SIZE + 1) * 8 KB. For example, if FLASH_REMAP_SIZE = 2, then the first 24KB of addresses will be remapped to flash bank1 instead of flash bank0 when remap is active. Set this field to 0 if you do not want to use the flash remap feature"
                         },
                         {
                             "width": 1
@@ -854,8 +854,8 @@
         },
         {
             "group": {
-                "name": "Reserved 00030-0003C",
-                "description": "Reserved 00030-0003C"
+                "name": "Reserved 00030-00038",
+                "description": "Reserved 00030-00038"
             },
             "registers": [
                 {
@@ -881,7 +881,15 @@
                     "offset_int": "0x0038",
                     "is_reserved": true,
                     "default_value_int": "0"
-                },
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Misc Control",
+                "description": "Miscellaneous control"
+            },
+            "registers": [
                 {
                     "id": "field03C",
                     "name": "Misc_Control",

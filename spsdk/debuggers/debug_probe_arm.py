@@ -87,6 +87,7 @@ from spsdk.debuggers.debug_probe import (
     DebugProbe,
     DebugProbeProtocol,
     MemorySpace,
+    SPSDKDebugMailboxApNotPresentError,
     SPSDKDebugProbeError,
     SPSDKDebugProbeTransferError,
 )
@@ -306,6 +307,10 @@ class DebugProbeCoreSightOnly(DebugProbe):
         self.mem_ap_ix = -1
         self.dbgmlbx_ap_ix = -1
         self.dbgmlbx_ap_validated = False
+        # True when the Debug Mailbox AP and a standard system MEM-AP are known to be two
+        # mutually exclusive, HW-multiplexed personalities of the same AP index on this
+        # family (see SPSDKDebugMailboxApNotPresentError). Set from the device database.
+        self.dbgmlbx_ap_shared_with_mem_ap = False
         self.adi_version = 5  # Default to ADIv5 (will be detected after connect)
         # ADIv6 AP address size in bits (detected from DPIDR1.ASIZE after connect).
         # When > 32 the SELECT1 register is used to carry the upper AP address bits.
@@ -358,6 +363,9 @@ class DebugProbeCoreSightOnly(DebugProbe):
             self.mem_ap_scan_write_before_read = db.get_bool(
                 DatabaseManager.DEBUG_PROBE, "mem_ap_scan_write_before_read", False
             )
+            self.core_halt_supported = db.get_bool(
+                DatabaseManager.DEBUG_PROBE, "cortex_m_core_debug", True
+            )
             self.mem_ap_ix = db.get_int(DatabaseManager.DEBUG_PROBE, "mem_ap_index", -1)
             self.mem_ap_fixed_from_db = self.mem_ap_ix >= 0
             if self.mem_ap_fixed_from_db:
@@ -368,6 +376,9 @@ class DebugProbeCoreSightOnly(DebugProbe):
 
             if DatabaseManager.DAT in db.features:
                 self.dbgmlbx_ap_ix = db.get_int(DatabaseManager.DAT, "dmbox_ap_ix", -1)
+                self.dbgmlbx_ap_shared_with_mem_ap = db.get_bool(
+                    DatabaseManager.DAT, "dmbox_ap_shared_with_mem_ap", False
+                )
 
     def get_debug_probe_protocol(self) -> DebugProbeProtocol:
         """Get effective ARM debug probe protocol.
@@ -720,7 +731,12 @@ class DebugProbeCoreSightOnly(DebugProbe):
                                     dbgswenable = bool(ap_csw & 0x80000000)
                                     self.debug_access_status["ap_dbgswenable"] = dbgswenable
                                 try:
-                                    if dbgswenable:
+                                    if not self.core_halt_supported:
+                                        logger.debug(
+                                            f"AP{i}: Cortex-M core debug (DHCSR) not supported "
+                                            "for this family, skipping CPU halt"
+                                        )
+                                    elif dbgswenable:
                                         # Enter debug state and halt (requires DHCSR on APB/PPB)
                                         dhcsr_reg = self._mem_reg_read(
                                             mem_ap_ix=i, addr=self.DHCSR_REG
@@ -1198,6 +1214,24 @@ class DebugProbeCoreSightOnly(DebugProbe):
                 )
                 if idr != IDR_VALUE:
                     self.debug_access_status["dbgmlbx_ap_idr_ok"] = False
+                    if self.dbgmlbx_ap_shared_with_mem_ap:
+                        # ADIv5 IDR fields: class=8 is MEM-AP (same decode as get_mem_ap()).
+                        ap_class = (idr & 0x1E000) >> 13
+                        if ap_class == 8:
+                            raise SPSDKDebugMailboxApNotPresentError(
+                                f"The Debug Mailbox AP{self.dbgmlbx_ap_ix} is not present: a "
+                                f"standard MEM-AP (IDR {hex(idr)}) was found at this AP index "
+                                f"instead of the Debug Mailbox (expected IDR {hex(IDR_VALUE)}). "
+                                "On this family, the Debug Mailbox AP and a system MEM-AP are "
+                                "two mutually exclusive, HW-multiplexed personalities of the "
+                                "same AP index selected by the debug-authentication state: the "
+                                "Debug Mailbox is only present before debug authentication, "
+                                "while a standard MEM-AP takes its place once debug access is "
+                                "already open (for example after booting with debug already "
+                                "authenticated, such as booting from SD card). No Debug "
+                                "Mailbox session is needed or possible in this state - use "
+                                "direct memory read/write commands instead."
+                            )
                     raise SPSDKError(
                         f"The debug mailbox AP{self.dbgmlbx_ap_ix} IDR value({hex(idr)}) "
                         f"doesn't match the expected value: {hex(IDR_VALUE)}"
@@ -1475,6 +1509,8 @@ class DebugProbeCoreSightOnly(DebugProbe):
             not_applicable.add("sda_dbgenctrl_written")
         if self.dbgmlbx_ap_ix < 0:
             not_applicable.add("dbgmlbx_ap_idr_ok")
+        if not self.core_halt_supported:
+            not_applicable.add("core_dhcsr_ok")
         return not_applicable
 
     def get_never_tested_debug_access_gates(self) -> set[str]:
@@ -2009,6 +2045,18 @@ class DebugProbeCoreSightOnly(DebugProbe):
             logger.debug(f"Level 4 hard reset recovery failed: {exc}")
             return False
 
+    def _check_core_halt_supported(self) -> None:
+        """Ensure the selected MEM-AP provides Cortex-M core debug registers (DHCSR).
+
+        :raises SPSDKDebugProbeError: If the device database disables Cortex-M core debug.
+        """
+        if not self.core_halt_supported:
+            raise SPSDKDebugProbeError(
+                f"Cortex-M core halt/debug via DHCSR (0x{self.DHCSR_REG:08X}) is not supported "
+                f"for family {self.family}: the MEM-AP does not provide Cortex-M core debug "
+                "registers."
+            )
+
     @get_mem_ap
     def debug_halt(self) -> None:
         """Halt the CPU execution.
@@ -2017,7 +2065,9 @@ class DebugProbeCoreSightOnly(DebugProbe):
         (DHCSR) with the appropriate debug key, halt, and debug enable flags.
 
         :raises SPSDKError: If the memory register write operation fails.
+        :raises SPSDKDebugProbeError: If Cortex-M core halt is not supported.
         """
+        self._check_core_halt_supported()
         self._mem_reg_write(
             mem_ap_ix=self.mem_ap_ix,
             addr=self.DHCSR_REG,
@@ -2032,7 +2082,9 @@ class DebugProbeCoreSightOnly(DebugProbe):
         (DHCSR) to allow the CPU to continue execution from its current state.
 
         :raises SPSDKError: If the memory register write operation fails.
+        :raises SPSDKDebugProbeError: If Cortex-M core halt is not supported.
         """
+        self._check_core_halt_supported()
         self._mem_reg_write(
             mem_ap_ix=self.mem_ap_ix,
             addr=self.DHCSR_REG,
@@ -2048,7 +2100,9 @@ class DebugProbeCoreSightOnly(DebugProbe):
         control bits to enable debug mode and execute one instruction.
 
         :raises SPSDKError: If the memory register write operation fails.
+        :raises SPSDKDebugProbeError: If Cortex-M core halt is not supported.
         """
+        self._check_core_halt_supported()
         self._mem_reg_write(
             mem_ap_ix=self.mem_ap_ix,
             addr=self.DHCSR_REG,
@@ -2057,7 +2111,13 @@ class DebugProbeCoreSightOnly(DebugProbe):
 
     @get_mem_ap
     def is_cpu_halted(self) -> bool:
-        """Check if ARM Cortex CPU is halted by reading DHCSR."""
+        """Check if ARM Cortex CPU is halted by reading DHCSR.
+
+        :return: True if the CPU is halted, False otherwise.
+        :raises SPSDKDebugProbeError: If Cortex-M core halt is not supported.
+        :raises SPSDKError: If the DHCSR read operation fails.
+        """
+        self._check_core_halt_supported()
         try:
             dhcsr = self._mem_reg_read(mem_ap_ix=self.mem_ap_ix, addr=self.DHCSR_REG)
         except SPSDKError:
@@ -2081,7 +2141,9 @@ class DebugProbeCoreSightOnly(DebugProbe):
         :param value: 32-bit value to write into the register.
         :raises SPSDKError: If the memory register write operation fails.
         :raises SPSDKTimeoutError: If the transfer does not complete (S_REGRDY) in time.
+        :raises SPSDKDebugProbeError: If Cortex-M core debug is not supported.
         """
+        self._check_core_halt_supported()
         self._mem_reg_write(mem_ap_ix=self.mem_ap_ix, addr=self.DCRDR_REG, data=value)
         self._mem_reg_write(
             mem_ap_ix=self.mem_ap_ix,
@@ -2100,7 +2162,9 @@ class DebugProbeCoreSightOnly(DebugProbe):
         :return: 32-bit value of the register.
         :raises SPSDKError: If the memory register access fails.
         :raises SPSDKTimeoutError: If the transfer does not complete (S_REGRDY) in time.
+        :raises SPSDKDebugProbeError: If Cortex-M core debug is not supported.
         """
+        self._check_core_halt_supported()
         self._mem_reg_write(mem_ap_ix=self.mem_ap_ix, addr=self.DCRSR_REG, data=reg_num & 0x1F)
         self._wait_for_reg_transfer_done()
         return self._mem_reg_read(mem_ap_ix=self.mem_ap_ix, addr=self.DCRDR_REG)

@@ -396,8 +396,28 @@ After the reset the device boots from flash and user image is programmed success
 
 .. note::
     Write the formatted image in <file> to the memory specified by memoryID. Supported file types are S-Record (.srec and .s19),
-    and Hex (.hex). Flash is erased before writing if [erase] is ‘erase’ or 1. This blhost command does not directly correspond to a
+    and Hex (.hex). Flash is erased before writing if [erase] is 'erase' or 1. This blhost command does not directly correspond to a
     bootloader command, but may send multiple bootloader commands to perform the operation.
+
+    All segments of the image are erased first and only then written, so an erase operation can never
+    destroy already written data of a neighboring segment located in the same erase block. The erase
+    address and length are aligned to the erase block size reported by the target
+    (``FlashSectorSize`` property for internal flash, the sector size from
+    ``ExternalMemoryAttributes`` for external memories). Use ``--erase-alignment`` to override the
+    value when the target does not report it correctly.
+
+    Use ``--erase-only`` to only erase the flash blocks covered by the image without writing any
+    data. This is useful when the flash has to be erased by one tool and programmed by another one,
+    which can then write the image without erasing.
+
+    For large images, the communication timeout is automatically increased based on the amount of
+    data to be erased or written, so that a long lasting flash operation is not reported as a
+    missing response. An explicitly given ``--timeout`` value is never lowered.
+
+    Both the erase and the write phase report their progress. As the bootloader does not report
+    any progress during a single erase command, a large region is erased by several
+    ``flash-erase-region`` commands operating on whole erase blocks. Short regions are still erased
+    by a single command.
 
 .. click:: spsdk.apps.blhost:generate_key_blob
     :prog: blhost generate-key-blob

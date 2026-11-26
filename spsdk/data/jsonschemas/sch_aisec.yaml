@@ -1,0 +1,311 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+aisec_output:
+  type: object
+  title: Basic Settings
+  required: [output]
+  properties:
+    output:
+      type: string
+      title: Output container file
+      description: Path of the generated AISEC dir-v5 protected-directory container binary.
+      format: file_name
+      template_value: aisec_container.bin
+
+aisec_container:
+  type: object
+  title: Container Settings
+  required: [container]
+  properties:
+    container:
+      type: object
+      title: AISEC dir-v5 container
+      description: >-
+        Global container settings. Only the host-buildable provisioning forms are
+        supported - flag 0x12 (discrete) and flag 0x11 (integrated). The installed
+        flag 0x91 form is produced on-device only.
+      required: [flow, mode]
+      properties:
+        flow:
+          type: string
+          title: Provisioning flow
+          description: >-
+            Selects the custody flag. 'discrete' (flag 0x12) - the MMK is a POST_MMK that
+            is imported out of band into the keystore slot named by keys/mmk_id; no
+            mmk_block is present. 'integrated' (flag 0x11) - the MMK is delivered by an
+            opaque ELE/EL2GO provisioning blob carried in the mmk_block.
+          enum: [discrete, integrated]
+          template_value: discrete
+        mode:
+          type: string
+          title: Execution backend
+          description: >-
+            Primitive backend that executes the container crypto on the device. The mode
+            byte is hashed into the KDF base context, so containers built for one backend
+            cannot be opened under another. 'sw_primitive_backend' is for testing and
+            development only and is refused by production loaders.
+          enum: [sw_primitive_backend, optee_primitive_backend, ele_primitive_backend]
+          template_value: ele_primitive_backend
+        container_id:
+          type: [number, string]
+          title: Container ID
+          description: OEM-assigned 32-bit identifier of the protected directory/model.
+          format: number
+          template_value: "0x00000001"
+          default: 1
+        container_version:
+          type: [number, string]
+          title: Container version
+          description: OEM-assigned 16-bit version of the protected directory/model.
+          format: number
+          template_value: 1
+          default: 1
+
+aisec_crypto:
+  type: object
+  title: Cryptography Settings
+  properties:
+    crypto:
+      type: object
+      title: Cryptographic domain
+      description: >-
+        Container-wide cryptographic settings. Encryption is always AES-CTR and
+        authentication is always AES-CMAC; only the key sizes and the KDF are selectable.
+      properties:
+        enc_key_size:
+          type: integer
+          title: Encryption key size
+          description: Size in bytes of the per-member AES-CTR encryption key (ENC_DKEY).
+          enum: [16, 24, 32]
+          template_value: 32
+          default: 32
+        auth_key_size:
+          type: integer
+          title: Authentication key size
+          description: Size in bytes of the AES-CMAC authentication key (AUTH_DKEY).
+          enum: [16, 24, 32]
+          template_value: 32
+          default: 32
+        kdf:
+          type: string
+          title: Key derivation function
+          description: >-
+            KDF used to derive AUTH_DKEY and ENC_DKEY from the MMK. 'sp800_108_cmac' is the
+            NIST SP 800-108 counter-mode KDF with AES-CMAC as PRF (used by the ELE backend),
+            'hkdf_sha256' is RFC 5869 HKDF with SHA-256 (used by the OP-TEE backend).
+          enum: [sp800_108_cmac, hkdf_sha256]
+          template_value: sp800_108_cmac
+          default: hkdf_sha256
+        binding:
+          type: boolean
+          title: Device binding
+          description: >-
+            Enables device binding: the SHA-256 of the backend reported SRKH is mixed into
+            the KDF base context. When enabled, keys/srkh must be provided.
+          template_value: true
+          default: true
+        container_salt:
+          type: string
+          title: Fixed container salt
+          description: >-
+            FOR TESTING ONLY. Fixed 16-byte container salt. The salt is the primary
+            key-freshness source and MUST be freshly generated for every build, so in
+            normal use leave this unset and a random salt is used.
+          format: file-or-hex-value
+          template_value: 00112233445566778899aabbccddeeff
+          skip_in_template: true
+
+aisec_keys:
+  type: object
+  title: Key Settings
+  required: [keys]
+  properties:
+    keys:
+      type: object
+      title: Key material
+      description: >-
+        Master model key (MMK) identity and key material used to encapsulate the members.
+        No key material is ever stored in the container.
+      required: [mmk]
+      properties:
+        mmk_id:
+          type: [number, string]
+          title: MMK identifier
+          description: >-
+            Keystore reference of the MMK. For the discrete flow it is the persistent
+            keystore slot the POST_MMK was imported into (for the ELE backend it must be in
+            range 0x00000001..0x3FFFFFFF). For the integrated flow it is informational only.
+          format: number
+          template_value: "0x00000001"
+          default: 1
+        mmk_size:
+          type: integer
+          title: MMK size
+          description: >-
+            MMK size in bytes. It must not be smaller than either derived key size,
+            because a derived key cannot carry more entropy than the key it descends from.
+          enum: [16, 24, 32]
+          template_value: 32
+          default: 32
+        mmk:
+          type: string
+          title: MMK value
+          description: >-
+            MMK used on the host to derive the container keys - the POST_MMK for the
+            discrete flow, or the MMK delivered by the provisioning blob for the integrated
+            flow. Path to a binary or hex-text file, or a hex value.
+          format: file-or-hex-value
+          template_value: post_mmk.bin
+        srkh:
+          type: string
+          title: SRKH binding root
+          description: >-
+            32-byte secure-boot root key hash reported by the device backend. Required when
+            crypto/binding is enabled. Path to a binary or hex-text file, or a hex value.
+            It must match the device value exactly; a wrong value is not detected on the host,
+            the container just fails to open on the device. For i.MX93 (mimx9352 and aliases),
+            use the complete 32-byte AHAB v1 SRK table hash. For i.MX95 B0 (mimx9596 and
+            aliases), the ELE backend reports the first 32 bytes of the 64-byte AHAB v2
+            OEM SRK hash; i.MX95 A0/A1 uses AHAB v1. Calculate the hash with 'nxpcrypto rot
+            calculate-hash -f <family> -r <revision> -k srk0.pem -k srk1.pem -k srk2.pem
+            -k srk3.pem', using the target family/revision and the same SRK order as secure
+            boot. Use the first 64 hex characters of the printed RoT hash, or of OEM SRKH
+            read by 'nxpele get-info'. Do not use an i.MX95 B0 hash for i.MX93, even with
+            the same keys. The software backend legitimately reports 32 zero bytes.
+          format: file-or-hex-value
+          template_value: srkh.bin
+        provisioning_blob:
+          type: string
+          title: Provisioning blob
+          description: >-
+            Integrated flow only. Path to the opaque ELE/EL2GO provisioning blob, carried
+            verbatim in the mmk_block (max 65531 bytes).
+          format: file
+          template_value: provisioning_blob.bin
+          skip_in_template: true
+
+aisec_members:
+  type: object
+  title: Member Settings
+  required: [members]
+  properties:
+    members:
+      type: object
+      title: Container members
+      description: >-
+        Files packed into the container. Members can be collected from a source directory
+        (src_dir), listed explicitly (files), or both. When both are used, the container holds
+        all src_dir files followed by all explicit files; explicit files are additional members,
+        they do not override src_dir members. Member names must be unique, forward-slash
+        separated relative paths.
+      properties:
+        src_dir:
+          type: string
+          title: Source directory
+          description: >-
+            Directory whose files (recursively) all become container members; no file is
+            skipped, including hidden files such as .DS_Store or .git content (a warning is
+            printed for them), so point it to a clean directory. Symbolic links to files are
+            packed with the content of the link target, symbolic links to directories are not
+            followed. The relative path becomes the member name. Members are ordered by path
+            components. Use 'default' and 'rules' to choose the settings of these members.
+          format: dir
+          template_value: model_dir
+        default:
+          type: object
+          title: Default member settings
+          description: Settings applied to src_dir members that do not match any rule.
+          properties:
+            protection:
+              type: string
+              title: Default protection
+              description: >-
+                'enc_auth' - AES-CTR encrypted and AES-CMAC authenticated, 'auth_only' -
+                plaintext authenticated by AES-CMAC, 'none' - plaintext without any
+                integrity protection (must be selected explicitly per member and must not
+                be used for load-influencing files).
+              enum: [enc_auth, auth_only]
+              template_value: enc_auth
+              default: enc_auth
+            block_size:
+              type: string
+              title: Default block size
+              description: Plaintext block size of the member payload.
+              enum: [b64k, b256k, b512k, b1m, b4m]
+              template_value: b1m
+              default: b1m
+        rules:
+          type: array
+          title: Member rules
+          description: >-
+            Ordered list of rules for src_dir members. The first rule whose glob pattern
+            matches the member name selects its settings; members not matching any rule use
+            'default'. Rules only change the settings, they do not add or remove members.
+          items:
+            type: object
+            required: [match]
+            properties:
+              match:
+                type: string
+                title: Name pattern
+                description: Glob (fnmatch) pattern matched against the member name.
+                template_value: "*.json"
+              protection:
+                type: string
+                title: Protection
+                description: Member protection level.
+                enum: [enc_auth, auth_only, none]
+                template_value: auth_only
+              block_size:
+                type: string
+                title: Block size
+                description: Plaintext block size of the member payload.
+                enum: [b64k, b256k, b512k, b1m, b4m]
+                template_value: b64k
+        files:
+          type: array
+          title: Explicit members
+          description: >-
+            Additional members, in container order, placed after the src_dir members. Use it
+            for files outside src_dir; a name already provided by src_dir is rejected as a
+            duplicate. To change the settings of a src_dir member, use 'rules' instead.
+          items:
+            type: object
+            required: [name, file]
+            properties:
+              name:
+                type: string
+                title: Member name
+                description: Relative, forward-slash separated path of the member.
+                template_value: LICENSE
+              file:
+                type: string
+                title: Member data file
+                description: Path to the file with the member plaintext.
+                format: file
+                template_value: ../LICENSE
+              protection:
+                type: string
+                title: Protection
+                description: Member protection level.
+                enum: [enc_auth, auth_only, none]
+                template_value: none
+                default: enc_auth
+              block_size:
+                type: string
+                title: Block size
+                description: Plaintext block size of the member payload.
+                enum: [b64k, b256k, b512k, b1m, b4m]
+                template_value: b64k
+                default: b1m
+              member_type:
+                type: string
+                title: Member type
+                description: >-
+                  Informational artifact type hint. If not set, it is derived from the
+                  file extension.
+                enum: [raw, dvm, onnx, tflite, executorch_pte, gguf, safetensors, other]
+                template_value: raw
+                skip_in_template: true

@@ -199,9 +199,12 @@ def test_ahb_access(
         # If MEM-AP is not yet accessible (e.g. right after POR, before debug unlock),
         # SPSDKDebugProbeError is raised here and caught below so the caller
         # (fuses.py::enable_debug) can proceed to the debug-mailbox unlock sequence.
-        was_halted = probe.is_cpu_halted()
-        # Enter debug state and halt
-        probe.debug_halt()
+        # Families without Cortex-M core debug on the MEM-AP (e.g. i.MX91) test the system
+        # memory only; mem_reg_read() then triggers MEM-AP discovery.
+        if probe.core_halt_supported:
+            was_halted = probe.is_cpu_halted()
+            # Enter debug state and halt
+            probe.debug_halt()
         test_value = probe.mem_reg_read(test_mem_address)
         logger.debug(f"Test Connection: Read value at {hex(test_mem_address)} is {test_value:08X}")
         if invasive:
@@ -212,7 +215,7 @@ def test_ahb_access(
                 raise SPSDKError("Test connection verification failed")
         ahb_enabled = True
         # Exit debug state
-        if not was_halted:
+        if probe.core_halt_supported and not was_halted:
             probe.debug_resume()
 
     except SPSDKError as exc:

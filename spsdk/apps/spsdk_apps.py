@@ -403,14 +403,15 @@ def families(feature: str) -> None:
             + colorama.Fore.RESET
         )
         return
-    families_with_rev = [
-        f"{name}[{','.join(revisions)}]" for name, revisions in families_dict.items()
-    ]
     click.echo(
         colorama.Fore.GREEN + f"The supported families for {feature}::" + colorama.Fore.RESET
     )
-    for line in make_table_from_items(families_with_rev):
-        click.echo(line)
+    groups = DatabaseManager().quick_info.split_devices_to_groups(list(families_dict))
+    for group, names in groups.items():
+        click.echo(f"{colorama.Fore.MAGENTA} - {group}:{colorama.Fore.RESET}")
+        families_with_rev = [f"{name}[{','.join(families_dict[name])}]" for name in names]
+        for line in make_table_from_items(families_with_rev):
+            click.echo(line)
 
 
 @catch_spsdk_error

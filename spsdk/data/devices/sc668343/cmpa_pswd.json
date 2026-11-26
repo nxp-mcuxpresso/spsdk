@@ -19,6 +19,7 @@
                         },
                         {
                             "width": 16,
+                            "access": "WRITE_CONST",
                             "id": "field000-bits16-31",
                             "name": "PASSWORD_Region_Header_marker",
                             "description": "Password Region Header marker should be set to 0x5057"

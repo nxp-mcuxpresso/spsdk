@@ -22,6 +22,9 @@ from spsdk.apps.blhost_helper import (
     OemGenMasterShareHelp,
     OemSetMasterShareHelp,
     display_output,
+    flash_erase_region_with_progress,
+    flash_operation_timeout,
+    get_erase_alignment,
     parse_key_prov_key_type,
     parse_property_tag,
     parse_trust_prov_key_type,
@@ -313,11 +316,33 @@ def flash_erase_all_unsecure(ctx: click.Context) -> None:
     default="0",
     help="Base offset for writing image. This offset will be added to all addresses in the image file.",
 )
+@click.option(
+    "--erase-only",
+    is_flag=True,
+    help="Only erase the flash blocks covered by the image, do not write any data. "
+    "The erased area is aligned to the erase block size reported by the target.",
+)
+@click.option(
+    "--erase-alignment",
+    type=INT(),
+    required=False,
+    help="Force the erase block alignment in bytes instead of reading it from the target.",
+)
 @click.pass_context
 def flash_image(
-    ctx: click.Context, image_file_path: str, erase: str, memory_id: int, base_offset: int
+    ctx: click.Context,
+    image_file_path: str,
+    erase: str,
+    memory_id: int,
+    base_offset: int,
+    erase_only: bool,
+    erase_alignment: int | None,
 ) -> None:
     """Write the formatted image in <FILE> to the memory specified by memoryID.
+
+    All segments of the image are erased first and written afterwards, so that an erase
+    operation can never destroy already written data of a neighboring segment sharing
+    the same erase block. Both the erase and the write phase report their progress.
 
     \b
     FILE       - path to image file
@@ -325,8 +350,6 @@ def flash_image(
     MEMORY_ID  - id of memory to erase (default: 0)
     """
     from spsdk.utils.binary_image import BinaryImage
-
-    ALIGNMENT = 1024
 
     if not os.path.isfile(image_file_path):
         raise SPSDKError("The image file does not exist")
@@ -340,28 +363,42 @@ def flash_image(
             ) from e
     if memory_id:
         mem_id = memory_id
+    do_erase = erase == "erase" or erase_only
     bin_image = BinaryImage.load_binary_image(image_file_path, offset=base_offset)
     with McuBoot(ctx.obj["interface"]) as mboot:
-        if erase == "erase":
-            for segment in bin_image.sub_images:
-                mboot.flash_erase_region(
-                    address=segment.aligned_start(ALIGNMENT),
-                    length=segment.aligned_length(ALIGNMENT),
-                    mem_id=mem_id,
-                )
+        if do_erase:
+            alignment = erase_alignment or get_erase_alignment(mboot, mem_id)
+            for i, segment in enumerate(bin_image.sub_images, start=1):
+                length = segment.aligned_length(alignment)
+                with progress_bar(
+                    suppress=ctx.obj["suppress_progress_bar"], label=f"Erasing segment #{i}"
+                ) as progress_callback:
+                    flash_erase_region_with_progress(
+                        mboot,
+                        address=segment.aligned_start(alignment),
+                        length=length,
+                        alignment=alignment,
+                        mem_id=mem_id,
+                        progress_callback=progress_callback,
+                    )
                 if mboot.status_code != StatusCode.SUCCESS:
                     display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
                     raise SPSDKAppError()
+        if erase_only:
+            display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
+            return
         for i, segment in enumerate(bin_image.sub_images, start=1):
+            data = segment.export()
             with progress_bar(
                 suppress=ctx.obj["suppress_progress_bar"], label=f"Writing segment #{i}"
             ) as progress_callback:
-                mboot.write_memory(
-                    address=segment.absolute_address,
-                    data=segment.export(),
-                    mem_id=mem_id,
-                    progress_callback=progress_callback,
-                )
+                with flash_operation_timeout(mboot, len(data)):
+                    mboot.write_memory(
+                        address=segment.absolute_address,
+                        data=data,
+                        mem_id=mem_id,
+                        progress_callback=progress_callback,
+                    )
             display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 

@@ -89,6 +89,10 @@ features:
     auth_beacon_length: 2 # The length in bytes of authentication beacon
 
     dmbox_ap_ix: -1 # Typical Index of debug mailbox access port is 2
+    dmbox_ap_shared_with_mem_ap: False # Debug Mailbox AP and a standard MEM-AP are two mutually
+    # exclusive, HW-multiplexed personalities of the same AP index (ADIv5 AP class 8), selected
+    # by debug-authentication state; set True only for families where this is confirmed by the
+    # reference manual
     # non_standard_statuses: # dictionary of non standard return statuses from various commands
     #   2:  # Command get_crp_level
     #     0xFFFF_FFFF: ROP_LEVEL0
@@ -97,11 +101,22 @@ features:
     #     0xB0AB_B703: ROP_LEVEL3
     dac_rot_type: default # Default type is full RKTH/SRK value
 
+    # Bit offset of the 4-bit OEM_SRK_RVK (SRK revoke) field within the raw 32-bit
+    # 'rotid_rkh_revocation' word reported by the DAC for ELE-v2 (AHAB) based DAT.
+    # The AHAB signed message's srk_revoke_mask is always normalized to bits 0-3
+    # (one bit per SRK0-3); the DAC fuse word may carry that same 4-bit field at a
+    # different bit position depending on the fuse map of a given silicon (e.g. 12
+    # for i.MX95/i.MX94, 0 when no shift is needed). Override per-family/revision
+    # based on the actual OEM_SRK_RVK fuse bitfield position.
+    dac_srk_revoke_mask_bit_offset: 0
+
     # List of non-standard/optional debug mailbox commands supported by the device ROM.
     # Standard DM commands are always available; list only extras, e.g. 'read-from-flash'.
     non_standard_commands: []
 
     more_delay: 0.0 # Default extra delay in seconds after DM reset sequence, used when '--timing' is not given
+
+    isp_mode_default: 1 # Default parameter of ENTER_ISP_MODE command used when 'ispmode --mode' is not given
 
     command_delays: # Additional standard command delays per individual DM commands
       ERASE_FLASH: 0.5
@@ -117,6 +132,8 @@ features:
   mbi:
     mbi_classes: {}
     images: {}
+    # HSE IVT contains also XRDC MDAC configuration and recovery application fields
+    hse_ivt_extended: false
 
   # ======== HABv4 section ========
   hab: {}
@@ -176,7 +193,8 @@ features:
       OEM: [0x02, "oem", "Signed by OEM keys"]
       DEVHSM: [0x05, "devhsm", "Device HSM key set"]
 
-    double_authentication_load_address: 0
+    double_authentication_ele_load_address: 0
+    double_authentication_v2x_load_address: 0
     double_authentication_core_id: 0
     double_authentication_image_type: 0
 
@@ -204,6 +222,9 @@ features:
     enable_sda_debug_paths_after_connect: False # Enable debug paths through SDA AP after connect
     mem_ap_preserve_csw_ro_bits: False # Preserve MEM-AP CSW read-only bits during memory transfers
     mem_ap_scan_write_before_read: False # Use write-before-read while detecting MEM-AP
+    # Selected MEM-AP reaches Cortex-M PPB, so core halt/resume/status use DHCSR (0xE000EDF0).
+    # Set False when the MEM-AP targets a system bus without Cortex-M core debug registers.
+    cortex_m_core_debug: True
 
   # ======== PFR section ========
   pfr:
@@ -223,6 +244,10 @@ features:
 
   # ======== FCB section ========
   fcb:
+    # Per memory type keys:
+    #   reg_spec: Register specification of FCB
+    #   tag_register: Name of register holding the FCB tag (default: tag)
+    #   crc_register: Optional name of register holding CRC32-MPEG2 checksum of the rest of FCB
     mem_types: {}
 
   # ======== XMCD section ========
@@ -550,6 +575,9 @@ features:
 
   # ===== TLV =====
   tlv_blob: {}
+
+  # ======== AISEC protected-directory container section ========
+  aisec: {}
 
   # ======== Hardware Security Engine section ========
   hse:

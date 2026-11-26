@@ -330,3 +330,33 @@ def get_usb_device_name(
     nxp_device_names.update(find_device_names(MbootUSBInterface.get_devices()))
     nxp_device_names.update(find_device_names(SdpUSBInterface.get_devices()))
     return list(nxp_device_names)
+
+
+class PluginDeviceDescription(DeviceDescription):
+    """Device description container for devices found by device interface plugins.
+
+    This container holds information about devices discovered through interface
+    classes registered via the ``spsdk.device.interface`` plugin entry point.
+    """
+
+    def __init__(self, protocol: str, identifier: str, device: str) -> None:
+        """Initialize plugin device description.
+
+        :param protocol: Protocol name used by the plugin interface (e.g. "mboot", "sdp").
+        :param identifier: Plugin interface identifier (used as interface name in SPSDK apps).
+        :param device: Human-readable description of the found device.
+        """
+        self.protocol = protocol
+        self.identifier = identifier
+        self.device = device
+
+    def __str__(self) -> str:
+        """Return formatted plugin device description string.
+
+        :return: Text information about the device found by plugin.
+        """
+        return (
+            f"Protocol: {self.protocol}\n"
+            f"Interface: {self.identifier}\n"
+            f"Device: {self.device}"
+        )

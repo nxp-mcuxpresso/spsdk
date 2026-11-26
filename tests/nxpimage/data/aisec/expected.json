@@ -1,0 +1,146 @@
+{
+  "discrete_ele_cmac_bind": {
+    "size": 66547,
+    "sha256": "b45ae286755d142acf36eb930e9854a79328ab6afeeb59d04563d8bb14c76f79",
+    "members": {
+      "LICENSE": "8d49b8320362e2f30b5c58116d2f365a94605d7cae2433a46c5dea7779a1ab44",
+      "config.json": "3ce66da6e2264f5b7ae3b8c7a578362bf78ec9b6029461bd24bb3915ed4d6074",
+      "empty.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "model.onnx": "4d67517cabdbf29580becda10467749199099d3796f7699c2209a5f2caca1e66",
+      "tokenizer/tokenizer.json": "44fd9fe1df7ebba90ad5f15bca3733868eda1a589ea8fb7d017fa96d81f15523",
+      "tokenizer/vocab.txt": "880553fca8fcea94e325ee2cfb48e5a985cc797f39a14cc6d3cedecfeb2ae4d2"
+    }
+  },
+  "discrete_ele_hkdf_bind_mixed": {
+    "size": 66523,
+    "sha256": "bed89a9cb2dd6e6742e02afb4ca3b7a3fb4ee452b5b763ce5d24027b9c0ad4ee",
+    "members": {
+      "LICENSE": "8d49b8320362e2f30b5c58116d2f365a94605d7cae2433a46c5dea7779a1ab44",
+      "config.json": "3ce66da6e2264f5b7ae3b8c7a578362bf78ec9b6029461bd24bb3915ed4d6074",
+      "empty.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "model.onnx": "4d67517cabdbf29580becda10467749199099d3796f7699c2209a5f2caca1e66",
+      "tokenizer/tokenizer.json": "44fd9fe1df7ebba90ad5f15bca3733868eda1a589ea8fb7d017fa96d81f15523",
+      "tokenizer/vocab.txt": "880553fca8fcea94e325ee2cfb48e5a985cc797f39a14cc6d3cedecfeb2ae4d2"
+    }
+  },
+  "discrete_ele_cmac_unbound_aes128": {
+    "size": 66547,
+    "sha256": "3affd8bcd048fa4a3234e061df0842eb2b6728c7e496f03c619414083625f47a",
+    "members": {
+      "LICENSE": "8d49b8320362e2f30b5c58116d2f365a94605d7cae2433a46c5dea7779a1ab44",
+      "config.json": "3ce66da6e2264f5b7ae3b8c7a578362bf78ec9b6029461bd24bb3915ed4d6074",
+      "empty.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "model.onnx": "4d67517cabdbf29580becda10467749199099d3796f7699c2209a5f2caca1e66",
+      "tokenizer/tokenizer.json": "44fd9fe1df7ebba90ad5f15bca3733868eda1a589ea8fb7d017fa96d81f15523",
+      "tokenizer/vocab.txt": "880553fca8fcea94e325ee2cfb48e5a985cc797f39a14cc6d3cedecfeb2ae4d2"
+    }
+  },
+  "discrete_optee_hkdf_unbound": {
+    "size": 66523,
+    "sha256": "2ea013ee27bd64e060ca0b701491a589967a3be9289f05cdad59f31ecc4e5a1e",
+    "members": {
+      "LICENSE": "8d49b8320362e2f30b5c58116d2f365a94605d7cae2433a46c5dea7779a1ab44",
+      "config.json": "3ce66da6e2264f5b7ae3b8c7a578362bf78ec9b6029461bd24bb3915ed4d6074",
+      "empty.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "model.onnx": "4d67517cabdbf29580becda10467749199099d3796f7699c2209a5f2caca1e66",
+      "tokenizer/tokenizer.json": "44fd9fe1df7ebba90ad5f15bca3733868eda1a589ea8fb7d017fa96d81f15523",
+      "tokenizer/vocab.txt": "880553fca8fcea94e325ee2cfb48e5a985cc797f39a14cc6d3cedecfeb2ae4d2"
+    }
+  },
+  "discrete_optee_cmac_bind_auth_only": {
+    "size": 66523,
+    "sha256": "83fc1829da294aaa5db40bafd2038a452fd205722be500616486fdb603c39f4a",
+    "members": {
+      "LICENSE": "8d49b8320362e2f30b5c58116d2f365a94605d7cae2433a46c5dea7779a1ab44",
+      "config.json": "3ce66da6e2264f5b7ae3b8c7a578362bf78ec9b6029461bd24bb3915ed4d6074",
+      "empty.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "model.onnx": "4d67517cabdbf29580becda10467749199099d3796f7699c2209a5f2caca1e66",
+      "tokenizer/tokenizer.json": "44fd9fe1df7ebba90ad5f15bca3733868eda1a589ea8fb7d017fa96d81f15523",
+      "tokenizer/vocab.txt": "880553fca8fcea94e325ee2cfb48e5a985cc797f39a14cc6d3cedecfeb2ae4d2"
+    }
+  },
+  "discrete_sw_hkdf_bind_zero_srkh": {
+    "size": 66523,
+    "sha256": "422ad424e5e517f1550d1e01c8cea2efcae21d5730e2617a6dd11ec75a95b19d",
+    "members": {
+      "LICENSE": "8d49b8320362e2f30b5c58116d2f365a94605d7cae2433a46c5dea7779a1ab44",
+      "config.json": "3ce66da6e2264f5b7ae3b8c7a578362bf78ec9b6029461bd24bb3915ed4d6074",
+      "empty.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "model.onnx": "4d67517cabdbf29580becda10467749199099d3796f7699c2209a5f2caca1e66",
+      "tokenizer/tokenizer.json": "44fd9fe1df7ebba90ad5f15bca3733868eda1a589ea8fb7d017fa96d81f15523",
+      "tokenizer/vocab.txt": "880553fca8fcea94e325ee2cfb48e5a985cc797f39a14cc6d3cedecfeb2ae4d2"
+    }
+  },
+  "discrete_ele_hkdf_aes192": {
+    "size": 66547,
+    "sha256": "54d7d25d94aca4647a833f2574e5b74a0f9cc5555ef1542525628d0410b184d5",
+    "members": {
+      "LICENSE": "8d49b8320362e2f30b5c58116d2f365a94605d7cae2433a46c5dea7779a1ab44",
+      "config.json": "3ce66da6e2264f5b7ae3b8c7a578362bf78ec9b6029461bd24bb3915ed4d6074",
+      "empty.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "model.onnx": "4d67517cabdbf29580becda10467749199099d3796f7699c2209a5f2caca1e66",
+      "tokenizer/tokenizer.json": "44fd9fe1df7ebba90ad5f15bca3733868eda1a589ea8fb7d017fa96d81f15523",
+      "tokenizer/vocab.txt": "880553fca8fcea94e325ee2cfb48e5a985cc797f39a14cc6d3cedecfeb2ae4d2"
+    }
+  },
+  "integrated_ele_cmac_bind": {
+    "size": 66615,
+    "sha256": "bc488b4c115c5926d830ae3b764f281457fb5771f8e81a0a21410b8fe4506873",
+    "members": {
+      "LICENSE": "8d49b8320362e2f30b5c58116d2f365a94605d7cae2433a46c5dea7779a1ab44",
+      "config.json": "3ce66da6e2264f5b7ae3b8c7a578362bf78ec9b6029461bd24bb3915ed4d6074",
+      "empty.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "model.onnx": "4d67517cabdbf29580becda10467749199099d3796f7699c2209a5f2caca1e66",
+      "tokenizer/tokenizer.json": "44fd9fe1df7ebba90ad5f15bca3733868eda1a589ea8fb7d017fa96d81f15523",
+      "tokenizer/vocab.txt": "880553fca8fcea94e325ee2cfb48e5a985cc797f39a14cc6d3cedecfeb2ae4d2"
+    }
+  },
+  "integrated_ele_hkdf_unbound_mixed": {
+    "size": 66615,
+    "sha256": "922ba89e2c4a054ab7423829695b3f801dae4f9ef09defbca223fdd08148e43e",
+    "members": {
+      "LICENSE": "8d49b8320362e2f30b5c58116d2f365a94605d7cae2433a46c5dea7779a1ab44",
+      "config.json": "3ce66da6e2264f5b7ae3b8c7a578362bf78ec9b6029461bd24bb3915ed4d6074",
+      "empty.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "model.onnx": "4d67517cabdbf29580becda10467749199099d3796f7699c2209a5f2caca1e66",
+      "tokenizer/tokenizer.json": "44fd9fe1df7ebba90ad5f15bca3733868eda1a589ea8fb7d017fa96d81f15523",
+      "tokenizer/vocab.txt": "880553fca8fcea94e325ee2cfb48e5a985cc797f39a14cc6d3cedecfeb2ae4d2"
+    }
+  },
+  "integrated_optee_hkdf_bind": {
+    "size": 66591,
+    "sha256": "543ec077d6ab6af993a8c7bc8e1de3273d27305b4900b50ab30886bb1cfec261",
+    "members": {
+      "LICENSE": "8d49b8320362e2f30b5c58116d2f365a94605d7cae2433a46c5dea7779a1ab44",
+      "config.json": "3ce66da6e2264f5b7ae3b8c7a578362bf78ec9b6029461bd24bb3915ed4d6074",
+      "empty.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "model.onnx": "4d67517cabdbf29580becda10467749199099d3796f7699c2209a5f2caca1e66",
+      "tokenizer/tokenizer.json": "44fd9fe1df7ebba90ad5f15bca3733868eda1a589ea8fb7d017fa96d81f15523",
+      "tokenizer/vocab.txt": "880553fca8fcea94e325ee2cfb48e5a985cc797f39a14cc6d3cedecfeb2ae4d2"
+    }
+  },
+  "integrated_sw_cmac_unbound_aes128": {
+    "size": 66615,
+    "sha256": "9c7765905548975a17cf5a53320d7cb3cf1ea01998aafba4cb31b5af9ce9771a",
+    "members": {
+      "LICENSE": "8d49b8320362e2f30b5c58116d2f365a94605d7cae2433a46c5dea7779a1ab44",
+      "config.json": "3ce66da6e2264f5b7ae3b8c7a578362bf78ec9b6029461bd24bb3915ed4d6074",
+      "empty.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "model.onnx": "4d67517cabdbf29580becda10467749199099d3796f7699c2209a5f2caca1e66",
+      "tokenizer/tokenizer.json": "44fd9fe1df7ebba90ad5f15bca3733868eda1a589ea8fb7d017fa96d81f15523",
+      "tokenizer/vocab.txt": "880553fca8fcea94e325ee2cfb48e5a985cc797f39a14cc6d3cedecfeb2ae4d2"
+    }
+  },
+  "integrated_ele_cmac_bind_mmk16": {
+    "size": 66615,
+    "sha256": "92755ebfbceda26d4f8eef968d1425d3ca52f1c20c730479f65e4ef871e14eb2",
+    "members": {
+      "LICENSE": "8d49b8320362e2f30b5c58116d2f365a94605d7cae2433a46c5dea7779a1ab44",
+      "config.json": "3ce66da6e2264f5b7ae3b8c7a578362bf78ec9b6029461bd24bb3915ed4d6074",
+      "empty.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "model.onnx": "4d67517cabdbf29580becda10467749199099d3796f7699c2209a5f2caca1e66",
+      "tokenizer/tokenizer.json": "44fd9fe1df7ebba90ad5f15bca3733868eda1a589ea8fb7d017fa96d81f15523",
+      "tokenizer/vocab.txt": "880553fca8fcea94e325ee2cfb48e5a985cc797f39a14cc6d3cedecfeb2ae4d2"
+    }
+  }
+}

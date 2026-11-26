@@ -1,0 +1,16 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/cmpa_mcxn236_template.yaml
+user_cfg: inputs/cmpa_mcxn236.yaml
+custom_command: "%! pfr get-template -t cmpa -f mcxn236 -o workspace/cmpa_mcxn236_template.yaml --force"
+
+comments:
+  settings: Only settings that differ from the defaults are kept, all other registers stay on their default values.
+  SEC_BOOT_EN: "SIGNED_IMAGES (2) - after the next reset the boot ROM accepts only signed images. Unsigned images (e.g. loaded by an IDE debugger) are rejected."
+  RoTK0_Usage: Root key 0 is used for image signing.
+  RoTK1_Usage: Key slot not used - only one root key is part of the certificate block.
+  RoTK2_Usage: Key slot not used - only one root key is part of the certificate block.
+  RoTK3_Usage: Key slot not used - only one root key is part of the certificate block.

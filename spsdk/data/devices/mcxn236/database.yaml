@@ -319,6 +319,18 @@ features:
   tz:
     reg_spec: tz.json
 
+  # ======== DICE configuration ========
+  dice:
+    reg_spec: dice_had.json
+    buffer_address: 0x2002_0050
+    buffer_size: 0x1000
+    csr_address: 0x0100_0100
+    csr_length: 208
+    response_length: 324
+    rkth_length: 32
+    rkth_truncated_length: 32
+    need_reset: true
+
   # ======== Memory configuration ========
   memcfg:
     peripherals:

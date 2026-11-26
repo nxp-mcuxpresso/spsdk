@@ -144,7 +144,9 @@ whole_ahab_image:
                       - disabled: Fast boot disabled.\n
                       - hash_and_copy: ELE will do the hash and copy (when disabled, BootROM will do the copy).\n
                       - external_accelerator: Use external accelerator for authentication (e.g. V2X on i.MX95B0, i.MX943 and i.MX952).\n
-                      - hash_and_copy_with_external_accelerator:ELE will do hash and copy, and use external accelerator for authentication."
+                      - hash_and_copy_with_external_accelerator: ELE will do hash and copy, and use external accelerator for authentication.\n
+                      When the external accelerator (V2X) is used, the container must contain the 'v2x_dummy' image entry and
+                      the NXP container set must contain the V2X container."
                     enum:
                       [
                         disabled,
@@ -366,6 +368,25 @@ whole_ahab_image:
                               description: NXP ELE firmware, that should be also signed by OEM keys binary file.
                               template_value: nxp_ele.bin
                               format: file
+                            ele_load_address:
+                              type: [number, string]
+                              title: ELE container load address
+                              description:
+                                Address where the ELE container is loaded before it is passed to ELE.
+                                It must be a valid address, the default value is taken from the device database.
+                              format: number
+                              template_value: "0x1FFC_0000"
+                              skip_in_template: True
+                            v2x_load_address:
+                              type: [number, string]
+                              title: V2X container load address
+                              description:
+                                Address where the V2X container is loaded before it is passed to ELE.
+                                The V2X container is loaded into DDR, so it is placed after the OEI DDR image.
+                                It must be a valid address, the default value is taken from the device database.
+                              format: number
+                              template_value: "0x8B00_0000"
+                              skip_in_template: True
 
                         - type: object
                           template_title: Boot system manager
@@ -721,7 +742,7 @@ whole_ahab_image:
                       hash_algorithm:
                         type: string
                         title: Hash Algorithm
-                        description: "Hash algorithm used for SRK records. If not specified, default algorithm based on key type will be used."
+                        description: "Hash algorithm used for all SRK records. If not specified (default), the algorithm is selected for each SRK record separately based on its key type and size (e.g. ECC P-256 uses SHA256, ECC P-384 uses SHA384). On devices that allow mixed SRK key types this results in different hash algorithms within one SRK table."
                         enum:
                           &ahab_hash_algorithms [
                             default,
@@ -751,7 +772,7 @@ whole_ahab_image:
                         title: Super Root Key (SRK) table
                         description:
                           "Table containing the used SRK records. All SRKs must be of the same
-                          type. Supported signing algorithms are: RSA-PSS, ECDSA, ML-DSA, Dilithium or SM2. Supported hash algorithms:
+                          type, unless the device allows mixed SRK key types (e.g. RT266x). Supported signing algorithms are: RSA-PSS, ECDSA, ML-DSA, Dilithium or SM2. Supported hash algorithms:
                           sha256, sha384, sha512, sha3_256, sha3_384, sha3_512, shake_128_256, shake_256_512, sm3. Supported key sizes/curves: prime256v1, sec384r1, sec512r1,
                           rsa2048, rsa3072, rsa4096, dil3, dil5, mldsa65, mldsa87, sm2. Certificate may be of Certificate Authority. PQC algorithms are supported just
                           in a new type of AHAB container"
@@ -785,7 +806,7 @@ whole_ahab_image:
                           hash_algorithm:
                             type: string
                             title: Hash Algorithm
-                            description: "Hash algorithm used for SRK records. If not specified, default algorithm based on key type will be used."
+                            description: "Hash algorithm used for all SRK records. If not specified (default), the algorithm is selected for each SRK record separately based on its key type and size (e.g. ECC P-256 uses SHA256, ECC P-384 uses SHA384). On devices that allow mixed SRK key types this results in different hash algorithms within one SRK table."
                             enum: *ahab_hash_algorithms
                             template_value: default
                           srk_array:

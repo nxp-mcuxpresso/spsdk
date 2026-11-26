@@ -3,3 +3,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 alias: mimx95294
+
+# General MCU information
+info:
+  spsdk_predecessor_name: mx937
+  # Web page of MCU representative
+  web: https://www.nxp.com/products/i.MX-937

@@ -435,28 +435,46 @@ def get_signature_provider(config: Config, key: str = "signer", **kwargs: Any) -
     :param key: Config key under which the signature provider configuration is stored,
                 defaults to "signer".
     :param kwargs: Additional parameters that will be passed to the signature provider.
-    :raises SPSDKValueError: If signature provider configuration is missing.
+    :raises SPSDKValueError: If signature provider configuration is missing or malformed.
     :raises SPSDKError: If signature provider could not be created from the configuration.
     :return: Instantiated signature provider.
     """
     if key not in config:
         raise SPSDKValueError(f"Signature provider configuration '{key}' is missing")
+    config_str = config.get_str(key)
     try:
-        params: dict[str, str | list[str]] = {"search_paths": config.search_paths}
-        params.update(SignatureProvider.convert_params(config.get_str(key)))
+        sp_params = SignatureProvider.convert_params(config_str)
+        parse_problem = "" if "type" in sp_params else "Missing 'type' parameter"
+    except SPSDKValueError as exc:
+        sp_params = {}
+        parse_problem = str(exc.description)
 
-        for k, v in kwargs.items():
-            if k not in params:
-                params[k] = v
-        signature_provider = SignatureProvider.create(params=params)
-        if not signature_provider:
-            raise SPSDKError(
-                f"Signature provider could not be created from config {config.get_str(key)}."
-            )
-    except SPSDKValueError:
-        signature_provider = InteractivePlainFileSP(
-            file_path=config.get_input_file_name(key),
-            **kwargs,
+    if parse_problem:
+        # The value is not a signature provider configuration, it might be a path to a key file
+        try:
+            file_path = config.get_input_file_name(key)
+        except SPSDKError as exc:
+            if "=" not in config_str:
+                raise
+            raise SPSDKValueError(
+                f"Invalid signature provider configuration in '{key}': '{config_str}'. "
+                "It is neither an existing private key file nor a valid signature provider "
+                "configuration 'type=<provider_type>;<param>=<value>;...'. "
+                f"Configuration problem: {parse_problem}"
+            ) from exc
+        return InteractivePlainFileSP(file_path=file_path, **kwargs)
+
+    params: dict[str, str | list[str]] = {"search_paths": config.search_paths}
+    params.update(sp_params)
+    for k, v in kwargs.items():
+        if k not in params:
+            params[k] = v
+    signature_provider = SignatureProvider.create(params=params)
+    if not signature_provider:
+        raise SPSDKValueError(
+            f"Unknown signature provider type '{sp_params['type']}' in '{key}': '{config_str}'. "
+            f"Available types: {', '.join(SignatureProvider.get_types())}. "
+            "Signature providers from plugins must be installed to be available."
         )
     return signature_provider
 

@@ -51,6 +51,7 @@ AHGCMWR
 ahoj
 aips
 AIRCR
+aisec
 ALGORI
 ALIGNMENTERROR
 aliqua
@@ -110,10 +111,12 @@ BACKUPAPPLICATIONINVALID
 BACKUPBOOTLOADERNOTREADY
 badc
 BASEPRI
+baseptr
 Baudrate
 BBBBAAAA
 BBBBIIII
 BBBBL
+BBBBLLLL
 BBHH
 BBII
 BBIO
@@ -124,6 +127,7 @@ bdcompiler
 behaviour
 BFFF
 BHBI
+BHII
 BIIIBB
 bimg
 binaryornot
@@ -150,6 +154,7 @@ blhost
 blhost's
 blinky
 blksz
+BLLHHBBBB
 BLOCKSIZE
 blockv
 BLTC
@@ -176,6 +181,7 @@ brainpool
 BRAINPOOLP
 BSTATE
 BUFFERSMALL
+buildable
 bumpversion
 buspal
 bysource
@@ -264,6 +270,7 @@ compadd
 compdef
 compgen
 compinit
+compopt
 COMPREPLY
 condimentum
 configurememory
@@ -382,6 +389,7 @@ DISAB
 DISBL
 DISP
 divcore
+DKEY
 DLASH
 DLBDLY
 DLIM
@@ -487,6 +495,7 @@ EWMOUT
 excinfo
 executemany
 executescript
+executorch
 extfile
 EXTVPASS
 EZHV
@@ -537,6 +546,7 @@ FLEXSPINAND
 flexspinor
 FLEXSPINORDTR
 flshldr
+fnmatch
 FOPT
 fornon
 fpath
@@ -586,6 +596,7 @@ getlogin
 getpid
 getreg
 getsize
+gguf
 ghash
 Giga
 gitcov
@@ -607,6 +618,8 @@ Halfword
 hashlocking
 hashtable
 HAWKV
+HBBBBQQQL
+HBBBI
 hdcp
 HDDVIAROM
 hexbin
@@ -760,6 +773,7 @@ labore
 Lacinia
 lacus
 lauterbach
+LBBB
 LCKD
 LEDS
 levelname
@@ -846,6 +860,7 @@ mcxe
 mcxl
 mcxn
 mcxw
+MDAC
 mdurl
 MECC
 MEEN
@@ -864,6 +879,8 @@ MICADC
 Micali
 MICR
 microcontroller
+modelauthdkey
+modelencdkey
 Multilink
 Microcontrollers
 MICRONOCTAL
@@ -1028,6 +1045,7 @@ onchip
 onclick
 oneof
 Onfi
+onnx
 ontat
 OPDBR
 openpyxl
@@ -1080,6 +1098,7 @@ phdr
 phentsize
 phnum
 phoff
+physicaloffset
 picoprobe
 pidx
 PINGR
@@ -1108,6 +1127,7 @@ PORTC
 PORTD
 powerdown
 pprint
+pprot
 pqctool
 prdb
 prebuild
@@ -1159,6 +1179,7 @@ pyftdi
 pygments
 pyhsslms
 pyinstaller
+pyjson
 pylibftdi
 pylink
 pylint
@@ -1284,6 +1305,7 @@ rustup
 RWDS
 RWXL
 rxid
+safetensors
 sahsm
 sasp
 Sast
@@ -1500,6 +1522,7 @@ testpaths
 testreg
 textlength
 textwrap
+tflite
 tianma
 tibs
 TIOCGSERIAL
@@ -1579,6 +1602,7 @@ unconfigured
 Underdrive
 undoc
 undriven
+ungated
 unhexlify
 unidecode
 unknownblock
@@ -1607,6 +1631,7 @@ usbsio
 usbt
 USBX
 USDHC
+usefixtures
 userkek
 userkey
 usermod
@@ -1654,6 +1679,7 @@ wasmtime
 wcwidth
 WDATAERR
 WDOG
+WDOGS
 Weblink
 Werkzeug
 Winbond
@@ -1698,6 +1724,7 @@ XOUT
 xpassed
 Xpresso
 XPSR
+XRDC
 xspi
 XSPINOR
 Xtal

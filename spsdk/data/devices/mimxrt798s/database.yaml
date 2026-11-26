@@ -458,6 +458,12 @@ features:
       emmc:
         segments:
           mbi: 0x1000
+      recovery_spi_mbi:
+        segments:
+          mbi: 0x1000
+      recovery_spi_sb31:
+        segments:
+          sb31: 0x1000
 
   # ======== Shadow registers section ========
   shadow_regs: {}
@@ -495,5 +501,7 @@ features:
         instances: [0, 1]
         interfaces: [instance_0, instance_1]
       spi_nor:
-        reg_spec: ../../common/memcfg/opt_word_spi_nor_legacy.json
+        reg_spec: opt_word_spi_nor.json
+        # RT700 ROM always reads both option words for LPSPI NOR; [27:24] is reserved
+        ow_counts_rule: All
         instances: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]

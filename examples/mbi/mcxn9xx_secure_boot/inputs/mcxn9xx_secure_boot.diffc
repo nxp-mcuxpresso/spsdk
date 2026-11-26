@@ -1,0 +1,14 @@
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/mcxn946_xip_signed.yaml
+user_cfg: inputs/mbi_config.yaml
+custom_command: "%! nxpimage mbi get-templates -f mcxn946 -o workspace --force"
+
+comments:
+  outputImageExecutionTarget: "Execute-in-place image from internal flash"
+  outputImageAuthenticationType: "Signed image authenticated against the Root of Trust"
+  masterBootOutputFile: "Path to the generated signed master boot image"
+  inputImageFile: "Plain application image to be signed"
+  outputImageExecutionAddress: "XIP execution address (start of internal flash)"
+  certBlock: "Path to the certificate block configuration holding the Root of Trust"
+  signer: "Private key used to sign the image"

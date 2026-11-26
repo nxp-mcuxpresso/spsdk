@@ -5,7 +5,7 @@ Master Boot Image (MBI)
 Master Boot Image can be used directly (e.g. by using *blhost write-memory* command) or it can be used for further processing  (e.g. used as input to Secure Binary image container).
 Image is created based on a supplied configuration file, either JSON or YAML is supported.
 
-We can divide divide into two categories based on layout.
+We can divide into two categories based on layout.
 
 * eXecute-In-Place (XIP) images
     * Plain

@@ -1,0 +1,17 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/mcxn236_xip_signed.yaml
+user_cfg: inputs/mbi_signed.yaml
+custom_command: "%! nxpimage mbi get-templates -f mcxn236 -o workspace --force"
+
+comments:
+  outputImageExecutionTarget: "Execute-in-place image from internal flash"
+  outputImageAuthenticationType: "Signed image authenticated against the RKTH in CMPA"
+  masterBootOutputFile: "Path to the generated signed master boot image"
+  inputImageFile: "Plain application image to be signed (hello world, green LED)"
+  outputImageExecutionAddress: "XIP execution address (start of internal flash)"
+  certBlock: "Path to the certificate block configuration holding the Root of Trust"
+  signer: "Private key generated in this notebook, used to sign the image"

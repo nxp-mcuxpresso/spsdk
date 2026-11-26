@@ -17,9 +17,11 @@ import pytest
 
 from spsdk.ele.ele_constants import (
     EleInfo2Commit,
+    HsmResponseIndication,
     KeyBlobEncryptionAlgorithm,
     KeyBlobEncryptionIeeCtrModes,
     LifeCycleToSwitch,
+    ResponseIndication,
     ResponseStatus,
     SecureBootCryptoMode,
 )
@@ -245,6 +247,102 @@ class TestEleMessageBase:
         msg = EleMessagePing()
         msg.status = 0x00
         assert "Invalid" in msg.status_string
+
+    @pytest.mark.parametrize(
+        "indication, label",
+        [
+            (0x56, "ELE_BAD_COMMAND_FAILURE_IND"),
+            (0x90, "ELE_FASTBOOT_DISABLE_FAILURE_IND"),
+            (0x91, "ELE_FASTBOOT_ILLEGAL_STATE_FAILURE_IND"),
+            (0x92, "ELE_FW_AUTH_FAILURE_IND"),
+            (0x93, "ELE_OEM_AUTH_FAILURE_IND"),
+            (0x94, "ELE_FAST_VERIFY_FAILURE_IND"),
+            (0xBA, "ELE_SENSOR_FAILURE_IND"),
+            (0xC7, "ELE_RDC_FAILURE_IND"),
+            (0xCA, "ELE_FW_MISSING_FAILURE_IND"),
+            (0xD2, "ELE_UNSUPPORTED_TIMER_FAILURE_IND"),
+            (0xE1, "ELE_BAD_ALGORITHM_FAILURE_IND"),
+            (0xF0, "ELE_BAD_SIGNATURE_FAILURE_IND"),
+        ],
+    )
+    def test_status_string_failure_decoded(self, indication: int, label: str) -> None:
+        """status_string contains label, code and description of the failure indication."""
+        msg = EleMessagePing()
+        msg.status = ResponseStatus.ELE_FAILURE_IND.tag
+        msg.indication = indication
+        description = ResponseIndication.get_description(indication)
+        assert msg.status_string == f"Failed: {label} (0x{indication:02X}): {description}"
+
+    def test_status_string_general_error(self) -> None:
+        """Indication 0 on failure is reported as general error."""
+        msg = EleMessagePing()
+        msg.status = ResponseStatus.ELE_FAILURE_IND.tag
+        assert msg.status_string == "Failed: General error (0x00)"
+
+    def test_status_string_unknown_indication(self) -> None:
+        """Unknown indication is reported with its hexadecimal value."""
+        msg = EleMessagePing()
+        msg.status = ResponseStatus.ELE_FAILURE_IND.tag
+        msg.indication = 0x42
+        assert msg.status_string == "Failed: Unknown indication (0x42)"
+
+    def test_status_string_command_root_cause(self) -> None:
+        """Command specific root cause replaces the generic indication description."""
+        msg = EleMessageEnableApc()
+        msg.status = ResponseStatus.ELE_FAILURE_IND.tag
+        msg.indication = ResponseIndication.ELE_APC_ALREADY_ENABLED_FAILURE_IND.tag
+        assert msg.status_string == (
+            "Failed: ELE_APC_ALREADY_ENABLED_FAILURE_IND (0xCB): "
+            "The APC is already released from reset"
+        )
+
+    @pytest.mark.parametrize(
+        "msg_class",
+        [
+            EleMessageSabInit,
+            EleMessageSessionOpen,
+            EleMessageSessionClose,
+            EleMessageKeyStoreOpen,
+            EleMessageKeyStoreClose,
+            EleMessagePublicKeyExport,
+        ],
+    )
+    def test_hsm_messages_use_sab_indications(self, msg_class: type[EleMessage]) -> None:
+        """HSM API messages decode the indication as SAB rating code."""
+        assert msg_class.RESPONSE_INDICATIONS is HsmResponseIndication
+
+    def test_status_string_hsm_indication(self) -> None:
+        """HSM API message failure is decoded with the SAB rating description."""
+        msg = EleMessageKeyStoreClose(key_store_handle=1)
+        msg.status = ResponseStatus.ELE_FAILURE_IND.tag
+        msg.indication = HsmResponseIndication.SAB_UNKNOWN_HANDLE.tag
+        assert msg.status_string == (
+            "Failed: SAB_UNKNOWN_HANDLE (0x07): Unknown session or service handle"
+        )
+
+    def test_session_open_not_ready_root_cause(self) -> None:
+        """Session open failure on not initialized services points to SAB Init."""
+        msg = EleMessageSessionOpen()
+        msg.status = ResponseStatus.ELE_FAILURE_IND.tag
+        msg.indication = HsmResponseIndication.SAB_NOT_READY.tag
+        assert "SAB Init (0x17)" in msg.status_string
+
+    def test_response_status_failure(self) -> None:
+        """response_status() contains decoded indication and abort code."""
+        msg = EleMessagePing()
+        msg.status = ResponseStatus.ELE_FAILURE_IND.tag
+        msg.indication = ResponseIndication.ELE_RDC_FAILURE_IND.tag
+        msg.abort_code = 0x1234
+        ret = msg.response_status()
+        assert "Response status: Failure" in ret
+        assert "ELE_RDC_FAILURE_IND (0xC7): RDC failure" in ret
+        assert "Response abort code: 0x1234" in ret
+
+    def test_response_status_unknown_status(self) -> None:
+        """response_status() does not fail on unknown status code."""
+        msg = EleMessagePing()
+        msg.status = 0x11
+        assert "Response status: Unknown (0x11)" in msg.response_status()
 
     def test_info_returns_string(self) -> None:
         """info() returns a non-empty string."""
@@ -521,23 +619,67 @@ class TestEleMessageGetEvents:
         info = msg.response_info()
         assert "Event count" in info
 
+    def test_response_info_rt2660_not_authenticated_container(self) -> None:
+        """Real RT2660 event: unauthenticated OEM container accepted in OEM_OPEN is a warning."""
+        msg = EleMessageGetEvents()
+        msg.event_cnt = 1
+        msg.events[0] = 0x0087EED6
+        info = msg.response_info()
+        assert "Event[0]:      0x0087EED6" in info
+        assert "Type:          Warning" in info
+        assert "IPC ID:        0x00 - Unknown/not specified message unit" in info
+        assert "Command:       0x87 - OEM Container authenticate" in info
+        assert "Indication:    0xEE - No authentication - container not authenticated" in info
+        assert "Status:        0xD6 - The request was successful" in info
+        assert "non-existing tag" not in info
+        assert "No authentication failure" not in info
+
+    def test_response_info_unknown_values(self) -> None:
+        """Unknown sub-field values are shown with correct hex and clean text."""
+        msg = EleMessageGetEvents()
+        msg.event_cnt = 1
+        msg.events[0] = 0x05EE7729
+        info = msg.response_info()
+        assert "Type:          Failure" in info
+        assert "IPC ID:        0x05 - Unknown message unit" in info
+        assert "Command:       0xEE - Unknown command" in info
+        assert "Indication:    0x77 - Unknown indication" in info
+        assert "Status:        0x29 - The request failed" in info
+        assert "non-existing tag" not in info
+        assert "0x238" not in info
+
+    @pytest.mark.parametrize(
+        "event,expected",
+        [
+            (0x0187F029, "Failure (request failed)"),
+            (0x0087EED6, "Warning (request succeeded with indication)"),
+            (0x000100D6, "Success"),
+            (0x00010012, "Unknown (unrecognized status)"),
+        ],
+    )
+    def test_get_event_type(self, event: int, expected: str) -> None:
+        """get_event_type classifies events as failure, warning or success."""
+        assert EleMessageGetEvents.get_event_type(event) == expected
+
     def test_get_ipc_id(self) -> None:
         """get_ipc_id extracts MU id from event."""
-        event = 0x01000000  # ipc_id=0x01 (RTD_MU)
-        result = EleMessageGetEvents.get_ipc_id(event)
-        assert isinstance(result, str)
+        assert EleMessageGetEvents.get_ipc_id(0x01000000) == "0x01 - Real Time Device message unit"
+        assert EleMessageGetEvents.get_ipc_id(0x02000000) == (
+            "0x02 - Application Processor message unit"
+        )
+        assert EleMessageGetEvents.get_ipc_id(0xAB000000) == "0xAB - Unknown message unit"
 
     def test_get_cmd(self) -> None:
         """get_cmd extracts command from event."""
-        event = 0x00010000  # cmd=0x01 (PING_REQ)
-        result = EleMessageGetEvents.get_cmd(event)
-        assert isinstance(result, str)
+        assert EleMessageGetEvents.get_cmd(0x00010000) == "0x01 - Ping request."
+        assert EleMessageGetEvents.get_cmd(0x00DC0000) == "0xDC - Release patch request."
+        assert EleMessageGetEvents.get_cmd(0x00EE0000) == "0xEE - Unknown command"
 
     def test_get_ind(self) -> None:
         """get_ind extracts indication from event."""
-        event = 0x00000A00  # ind=0x0A
-        result = EleMessageGetEvents.get_ind(event)
-        assert isinstance(result, str)
+        assert EleMessageGetEvents.get_ind(0x00000A00) == "0x0A - ROM ping failure"
+        assert EleMessageGetEvents.get_ind(0x00000000) == "0x00 - No indication"
+        assert EleMessageGetEvents.get_ind(0x00007700) == "0x77 - Unknown indication"
 
     def test_get_sts(self) -> None:
         """get_sts extracts status from event."""

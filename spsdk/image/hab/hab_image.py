@@ -16,21 +16,22 @@ from typing import Any
 
 from typing_extensions import Self
 
-from spsdk.exceptions import SPSDKError
+from spsdk.exceptions import SPSDKError, SPSDKParsingError
 from spsdk.image.exceptions import SPSDKSegmentNotPresent
 from spsdk.image.hab.commands.commands import ImageBlock
+from spsdk.image.hab.hab_header import SegmentTag
 from spsdk.image.hab.segments.seg_app import HabSegmentApp
-from spsdk.image.hab.segments.seg_bdt import HabSegmentBDT
+from spsdk.image.hab.segments.seg_bdt import HabSegmentBDT, SegBDT
 from spsdk.image.hab.segments.seg_csf import HabSegmentCSF
 from spsdk.image.hab.segments.seg_dcd import HabSegmentDcd
-from spsdk.image.hab.segments.seg_ivt import HabSegmentIvt
+from spsdk.image.hab.segments.seg_ivt import HabSegmentIvt, SegIVT
 from spsdk.image.hab.segments.seg_xmcd import HabSegmentXMCD
 from spsdk.image.hab.segments.segment import HabSegmentBase, HabSegmentEnum
 from spsdk.image.hab.utils import get_ivt_offset_from_cfg
 from spsdk.utils.abstract_features import FeatureBaseClass
 from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.config import Config
-from spsdk.utils.database import DatabaseManager, get_schema_file
+from spsdk.utils.database import DatabaseManager, Features, get_schema_file
 from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_family
 from spsdk.utils.misc import BinaryPattern
 from spsdk.utils.schema_validator import CommentedConfig
@@ -92,7 +93,7 @@ class HabImage(FeatureBaseClass):
         :param ivt_offset: Optional IVT offset value which is actually the HAB image offset.
         :param image_pattern: Image pattern used to fill empty spaces, defaults to "zeros".
         """
-        self.db = get_db(family)
+        self._db: Features | None = None
         self._ivt_offset = ivt_offset
         self.boot_device = boot_device
         self.family = family
@@ -100,6 +101,19 @@ class HabImage(FeatureBaseClass):
         self.start_address = start_address
         self.segments = segments
         self.image_pattern = image_pattern
+
+    @property
+    def db(self) -> Features:
+        """Get the database features of the image family.
+
+        The database is loaded lazily, so HAB images of families that are not described in
+        the database (e.g. parsed legacy images) can still be handled.
+
+        :return: Database features of the image family.
+        """
+        if self._db is None:
+            self._db = get_db(self.family)
+        return self._db
 
     def __str__(self) -> str:
         """Get string representation of HAB image.
@@ -560,6 +574,32 @@ class HabImage(FeatureBaseClass):
             start_address=start_address,
             segments=segments,
         )
+
+    @staticmethod
+    def find_offset_of_hab(binary: bytes, step: int = 0x100) -> int:
+        """Find the start of the HAB container (IVT) in binary data.
+
+        Useful for binaries with leading data in front of the HAB container, for example
+        full boot device images with initial padding. The search checks every `step` bytes
+        for a valid IVT followed by a Boot Data Table consistent with the IVT addresses.
+
+        :param binary: Binary data to search for HAB container.
+        :param step: Searching step in bytes, defaults to 0x100.
+        :raises SPSDKParsingError: HAB container not found in the provided binary data.
+        :return: Offset in binary data where the HAB container (IVT) starts.
+        """
+        for offset in range(0, max(len(binary) - SegIVT.SIZE, 0) + 1, step):
+            if binary[offset] != SegmentTag.IVT.tag:
+                continue
+            try:
+                ivt = SegIVT.parse(binary[offset:])
+                bdt = SegBDT.parse(binary[offset + ivt.bdt_address - ivt.ivt_address :])
+            except SPSDKError:
+                continue
+            if bdt.app_start <= ivt.ivt_address < bdt.app_start + bdt.app_length:
+                logger.debug(f"HAB container has been found at offset {offset:#x}")
+                return offset
+        raise SPSDKParsingError("HAB container (IVT) not found in the provided binary data")
 
     @staticmethod
     def _get_flags(segments: list[HabSegmentBase]) -> int:

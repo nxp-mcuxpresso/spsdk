@@ -22,7 +22,13 @@ import yaml
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.misc import use_working_directory
-from spsdk.utils.schema_validator import CommentedConfig, PropertyRequired, check_config
+from spsdk.utils.schema_validator import (
+    CommentedConfig,
+    PropertyRequired,
+    check_config,
+    convert_value_to_schema_type,
+    get_schema_types,
+)
 
 # schema for testing commented YAML configuration
 _TEST_CONFIG_SCHEMA = {
@@ -809,9 +815,34 @@ def test_check_matching_oneof_option_type_list() -> None:
     assert CommentedConfig._check_matching_oneof_option(one_of, "x") is True
 
 
-def test_check_matching_oneof_option_falsy_value() -> None:
-    """Test a falsy custom value never matches and returns False."""
-    assert CommentedConfig._check_matching_oneof_option({"type": "string"}, "") is False
+@pytest.mark.parametrize(
+    "option,value",
+    [
+        ({"type": "string"}, ""),
+        ({"type": "number"}, 0),
+        ({"type": "object", "properties": {"a": {}}}, {}),
+    ],
+)
+def test_check_matching_oneof_option_falsy_value(option: dict, value: Any) -> None:
+    """Test a falsy custom value matches an option of the same type."""
+    assert CommentedConfig._check_matching_oneof_option(option, value) is True
+
+
+def test_commented_config_oneof_empty_optional_value() -> None:
+    """Test an empty value of an optional oneOf property is kept in generated configuration."""
+    schema = {
+        "type": "object",
+        "properties": {
+            "item": {
+                "oneOf": [
+                    {"type": "string", "format": "optional_file", "template_value": "file.bin"},
+                    {"type": "object", "properties": {"path": {"type": "string"}}},
+                ]
+            }
+        },
+    }
+    cfg = CommentedConfig("title", [schema]).get_config({"item": ""})
+    assert yaml.safe_load(cfg)["item"] == ""
 
 
 def test_check_matching_oneof_option_type_mismatch() -> None:
@@ -849,3 +880,78 @@ def test_create_array_block_missing_items() -> None:
     block: dict = {"type": "array"}
     with pytest.raises(SPSDKError, match="Block doesn't contain items"):
         cfg._create_array_block(block, None)
+
+
+_TYPES_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "flag": {"type": "boolean"},
+        "count": {"type": "integer"},
+        "address": {"type": ["string", "number"], "format": "number"},
+        "path": {"type": "string"},
+        "items": {
+            "type": "array",
+            "items": {
+                "oneOf": [
+                    {"type": "object", "properties": {"a": {"type": "boolean"}}},
+                    {"type": "object", "properties": {"b": {"type": "number"}}},
+                ]
+            },
+        },
+        "cond": {
+            "type": "object",
+            "if": {"properties": {"x": {"const": 1}}},
+            "then": {"properties": {"y": {"type": "boolean"}}},
+        },
+        "numbers": {"type": "array", "items": {"type": "number"}},
+    },
+}
+
+
+@pytest.mark.parametrize(
+    "key_path,expected",
+    [
+        (["flag"], {"boolean"}),
+        (["count"], {"integer"}),
+        (["address"], {"string", "number"}),
+        (["path"], {"string"}),
+        (["items", 0, "a"], {"boolean"}),
+        (["items", 3, "b"], {"number"}),
+        (["cond", "y"], {"boolean"}),
+        (["numbers"], {"array"}),
+        (["unknown"], None),
+        (["items", 0, "unknown"], None),
+    ],
+)
+def test_get_schema_types(key_path: list, expected: set[str] | None) -> None:
+    """Test resolving allowed schema types for a configuration key path."""
+    assert get_schema_types(_TYPES_SCHEMA, key_path) == expected
+
+
+@pytest.mark.parametrize(
+    "value,types,expected",
+    [
+        ("true", {"boolean"}, True),
+        ("True", {"boolean"}, True),
+        ("false", {"boolean"}, False),
+        ("0", {"boolean"}, False),
+        ("maybe", {"boolean"}, "maybe"),
+        ("0x10", {"integer"}, 16),
+        ("1_000", {"number"}, 1000),
+        ("1.5", {"number"}, 1.5),
+        ("1.5", {"integer"}, "1.5"),
+        ("0x10", {"string", "number"}, "0x10"),
+        ("true", {"string", "boolean"}, "true"),
+        ("0012", {"string"}, "0012"),
+        ("true", None, "true"),
+        ("[1, 0x2]", {"array"}, [1, 2]),
+        ("{a: 1}", {"object"}, {"a": 1}),
+        ("abc", {"array"}, "abc"),
+        ("null", {"null", "integer"}, None),
+    ],
+)
+def test_convert_value_to_schema_type(value: str, types: set[str] | None, expected: Any) -> None:
+    """Test conversion of command line string values to the schema defined types."""
+    result = convert_value_to_schema_type(value, types)
+    assert result == expected
+    assert type(result) is type(expected)

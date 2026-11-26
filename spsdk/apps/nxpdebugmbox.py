@@ -462,11 +462,15 @@ def famode(
     "--mode",
     type=INT(),
     required=False,
-    default="1",
-    help="ISP download mode based on the ISP mode value in boot configuration register in CMPA/fuses.",
+    default=None,
+    help=(
+        "ISP download mode based on the ISP mode value in boot configuration register in CMPA/fuses."
+        " If not specified, the family default from the database is used"
+        " (0xF - auto-detection of the ISP interface on KW43/MCXW70, 1 otherwise)."
+    ),
 )
 @click.pass_obj
-def ispmode_command(pass_obj: dict, mode: int) -> None:
+def ispmode_command(pass_obj: dict, mode: int | None) -> None:
     """Enter ISP Mode."""
     ispmode(
         pass_obj["family"], pass_obj["debug_probe_params"], pass_obj["debug_mailbox_params"], mode
@@ -478,16 +482,18 @@ def ispmode(
     family: FamilyRevision,
     debug_probe_params: DebugProbeParams,
     debug_mailbox_params: DebugMailboxParams,
-    mode: int,
+    mode: int | None = None,
 ) -> None:
     """Enter ISP Mode.
 
     :param family: Device family
     :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
     :param debug_mailbox_params: DebugMailboxParams object holding information about parameters for debugmailbox.
-    :param mode: ISP mode
+    :param mode: ISP mode, the family default from database is used if not specified.
     :raises SPSDKAppError: Raised if any error occurred.
     """
+    if mode is None:
+        mode = get_db(family).get_int(DatabaseManager.DAT, "isp_mode_default", 1)
     try:
         with _open_debugmbox(family, debug_probe_params, debug_mailbox_params) as mail_box:
             dm_commands.EnterISPMode(dm=mail_box).run([mode])
@@ -2006,6 +2012,7 @@ def write_memory(
     "--destination",
     type=click.Choice(["cpu_mem", "debug_port"], case_sensitive=False),
     default="cpu_mem",
+    show_default=True,
     help="""
         Test connection destination:
 

@@ -34,6 +34,7 @@ from spsdk.utils.misc import (
     Endianness,
     align_block,
     file_extension,
+    output_format_from_path,
     reverse_bytes_in_longs,
     split_data,
     value_to_bytes,
@@ -599,7 +600,7 @@ class Iee(FeatureBaseClass):
         addr = base_addr
         for block in split_data(image, self.IEE_DATA_UNIT):
             for key_blob in self._key_blobs:
-                if key_blob.matches_range(addr, addr + len(block)):
+                if key_blob.matches_range(addr, addr + len(block) - 1):
                     logger.debug(
                         f"Encrypting {hex(addr)}:{hex(len(block) + addr)}"
                         f" with keyblob: \n {key_blob!s}"
@@ -698,7 +699,10 @@ class Iee(FeatureBaseClass):
         if self.iee_all == "":
             logger.info("Skipping export of IEE whole image")
         else:
-            binary_image.save_binary_image(path=self.iee_all, file_format=self.output_format)
+            binary_image.save_binary_image(
+                path=self.iee_all,
+                file_format=output_format_from_path(self.iee_all, self.output_format),
+            )
             generated_files.append(self.iee_all)
 
         memory_map = (
@@ -711,7 +715,10 @@ class Iee(FeatureBaseClass):
         for image in binary_image.sub_images:
             if image.name != "":
                 image.offset = 0
-                image.save_binary_image(path=image.name, file_format=self.output_format)
+                image.save_binary_image(
+                    path=image.name,
+                    file_format=output_format_from_path(image.name, self.output_format),
+                )
                 generated_files.append(image.name)
                 logger.info(f"Created Encrypted IEE data blob {image.description}:\n{image.name}")
                 memory_map += f"\n{image.name}:\n{image!s}"
@@ -917,6 +924,7 @@ class Iee(FeatureBaseClass):
                     "encrypted_blobs",
                     config["output_folder"],
                     file_extension=file_extension(config.get_str("output_format", "bin")),
+                    keep_image_extension=True,
                 ),
                 offset=start_address - keyblob_address,
                 alignment=IeeKeyBlob._ENCRYPTION_BLOCK_SIZE,
@@ -952,6 +960,7 @@ class Iee(FeatureBaseClass):
             "iee_full_image",
             output_folder,
             file_extension=file_extension(config.get_str("output_format", "bin")),
+            keep_image_extension=True,
         )
         keyblob_export_filename = filepath_from_config(
             config,
@@ -959,6 +968,7 @@ class Iee(FeatureBaseClass):
             "iee_keyblob",
             output_folder,
             file_extension=file_extension(config.get_str("output_format", "bin")),
+            keep_image_extension=True,
         )
         generate_readme = config.get("generate_readme", True)
         generate_fuse_script = config.get("generate_fuses_script", True)

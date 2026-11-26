@@ -22,8 +22,9 @@ from spsdk.exceptions import SPSDKError
 from spsdk.image.fcb.fcb import FCB
 from spsdk.image.mem_type import MemoryType
 from spsdk.image.xmcd.xmcd import XMCD, ConfigurationBlockType
-from spsdk.utils.family import FamilyRevision
-from spsdk.utils.misc import use_working_directory
+from spsdk.utils.config import Config
+from spsdk.utils.family import FamilyRevision, get_db
+from spsdk.utils.misc import load_configuration, use_working_directory
 from tests.cli_runner import CliRunner
 
 
@@ -140,7 +141,7 @@ def test_nxpimage_fcb_parse_cli(
         ("rw612", ["flexspi_nor"]),
         ("mcxn947", ["flexspi_nor"]),
         ("lpc5536", ["flexspi_nor"]),
-        ("mimxrt2662", ["xspi_nor"]),
+        ("mimxrt2662", ["xspi_nor", "xspi_nand"]),
         ("mimxrt798s", ["xspi_nor"]),
     ],
 )
@@ -278,3 +279,235 @@ def test_mimxrt266x_xmcd_supported(family: str) -> None:
     data = xmcd.export()
     assert data
     assert XMCD.parse(data, family=FamilyRevision(family)).export() == data
+
+
+MIMX9596_FCB_PRESETS = [
+    "mt35x_octal_ddr_200mhz",
+    "mt35x_octal_ddr_133mhz",
+    "w25q512nw_single_sdr_133mhz",
+]
+
+
+def test_fcb_presets_list() -> None:
+    """Test that FCB presets are defined only for families having them in the database."""
+    assert list(FCB.get_presets(FamilyRevision("mimx9596"))) == MIMX9596_FCB_PRESETS
+    assert FCB.get_presets(FamilyRevision("mimxrt1189")) == {}
+
+
+def test_fcb_presets_stored_in_separate_file() -> None:
+    """Test that FCB presets are loaded from a separate data file, not stored inline in database."""
+    family = FamilyRevision("mimx9596")
+    mem_type_cfg = FCB.get_memory_types_config(family)[MemoryType.FLEXSPI_NOR.label]
+    assert "presets" not in mem_type_cfg
+    presets_file = get_db(family).get_file_path(
+        FCB.FEATURE, ["mem_types", MemoryType.FLEXSPI_NOR.label, "presets_file"]
+    )
+    assert os.path.isfile(presets_file)
+    assert FCB.get_presets(family) == load_configuration(presets_file)
+
+
+@pytest.mark.parametrize("preset", MIMX9596_FCB_PRESETS)
+def test_fcb_preset_export(cli_runner: CliRunner, tmpdir: Any, data_dir: str, preset: str) -> None:
+    """Test FCB export from a configuration using only the preset of a standard memory.
+
+    The reference binaries contain the FCB of the standard memory in the first 0x1FC bytes;
+    the last word is kept at its reset value.
+
+    :param cli_runner: CLI runner instance for executing commands.
+    :param tmpdir: Temporary directory for output files.
+    :param data_dir: Path to test data directory containing reference files.
+    :param preset: Name of the FCB preset.
+    """
+    config_file = os.path.join(tmpdir, "fcb_preset.yaml")
+    with open(config_file, "w", encoding="utf-8") as f:
+        f.write(f"family: mimx9596\ntype: flexspi_nor\npreset: {preset}\n")
+    out_file = os.path.join(tmpdir, "fcb.bin")
+    cmd = ["bootable-image", "fcb", "export", "-c", config_file, "-o", out_file]
+    cli_runner.invoke(nxpimage.main, cmd)
+    assert filecmp.cmp(
+        os.path.join(data_dir, "fcb", "mimx9596", f"fcb_{preset}.bin"), out_file, shallow=False
+    )
+
+
+def test_fcb_preset_with_settings_override() -> None:
+    """Test that FCB settings are applied on top of the preset values."""
+    config = Config(
+        {
+            "family": "mimx9596",
+            "type": "flexspi_nor",
+            "preset": "mt35x_octal_ddr_200mhz",
+            "fcb_settings": {"serialClkFreq": "0x06"},
+        }
+    )
+    config.check(FCB.get_validation_schemas_from_cfg(config), check_unknown_props=True)
+    fcb = FCB.load_from_config(config)
+    expected = FCB(FamilyRevision("mimx9596"), MemoryType.FLEXSPI_NOR)
+    expected.apply_preset("mt35x_octal_ddr_133mhz")
+    assert fcb.export() == expected.export()
+
+
+@pytest.mark.parametrize(
+    "config",
+    [
+        {"family": "mimx9596", "type": "flexspi_nor"},
+        {"family": "mimx9596", "type": "flexspi_nor", "preset": "unknown_memory"},
+        {"family": "mimxrt1189", "type": "flexspi_nor", "preset": "mt35x_octal_ddr_200mhz"},
+    ],
+)
+def test_fcb_preset_invalid_config(config: dict[str, Any]) -> None:
+    """Test that a configuration without settings or with an unknown preset is rejected.
+
+    :param config: Invalid FCB configuration.
+    """
+    cfg = Config(config)
+    with pytest.raises(SPSDKError):
+        cfg.check(FCB.get_validation_schemas_from_cfg(cfg), check_unknown_props=True)
+    with pytest.raises(SPSDKError):
+        FCB.load_from_config(cfg)
+
+
+def test_fcb_apply_unknown_preset() -> None:
+    """Test that applying an unknown preset raises an error listing available presets."""
+    fcb = FCB(FamilyRevision("mimx9596"), MemoryType.FLEXSPI_NOR)
+    with pytest.raises(SPSDKError, match="mt35x_octal_ddr_200mhz"):
+        fcb.apply_preset("unknown_memory")
+
+
+def test_nxpimage_fcb_template_presets_cli(cli_runner: CliRunner, tmpdir: Any) -> None:
+    """Test that get-templates with presets creates loadable configurations of all presets.
+
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory for output files.
+    """
+    cmd = f"bootable-image fcb get-templates -f mimx9596 --presets --output {tmpdir}"
+    cli_runner.invoke(nxpimage.main, cmd.split())
+    assert os.path.isfile(os.path.join(tmpdir, "fcb_mimx9596_flexspi_nor.yaml"))
+    for preset in MIMX9596_FCB_PRESETS:
+        cfg_file = os.path.join(tmpdir, f"fcb_mimx9596_flexspi_nor_{preset}.yaml")
+        config = Config.create_from_file(cfg_file)
+        config.check(FCB.get_validation_schemas_from_cfg(config), check_unknown_props=True)
+        expected = FCB(FamilyRevision("mimx9596"), MemoryType.FLEXSPI_NOR)
+        expected.apply_preset(preset)
+        assert FCB.load_from_config(config).export() == expected.export()
+
+
+def test_nxpimage_fcb_template_presets_cli_no_presets(cli_runner: CliRunner, tmpdir: Any) -> None:
+    """Test that get-templates with presets creates only the template for families without presets.
+
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory for output files.
+    """
+    cmd = f"bootable-image fcb get-templates -f mimxrt1189 --presets --output {tmpdir}"
+    cli_runner.invoke(nxpimage.main, cmd.split())
+    assert os.listdir(tmpdir) == ["fcb_mimxrt1189_flexspi_nor.yaml"]
+
+
+def _crc32_mpeg2(data: bytes) -> int:
+    """Reference CRC32 MPEG2 implementation used by ROM to check XSPI NAND FCB.
+
+    :param data: Input data.
+    :return: Calculated checksum.
+    """
+    crc = 0xFFFFFFFF
+    for byte in data:
+        crc ^= byte << 24
+        for _ in range(8):
+            crc = ((crc << 1) ^ 0x04C11DB7) if crc & 0x80000000 else crc << 1
+            crc &= 0xFFFFFFFF
+    return crc
+
+
+@pytest.mark.parametrize("family", ["mimxrt2660", "mimxrt2661", "mimxrt2662", "mimxrt2663"])
+def test_mimxrt266x_xspi_nand_fcb_layout(family: str) -> None:
+    """Test RT266x XSPI NAND FCB layout, tag, embedded XSPI config block and checksum.
+
+    :param family: Target MCU family name from the RT266x group.
+    """
+    family_rev = FamilyRevision(family)
+    assert MemoryType.XSPI_NAND in FCB.get_supported_memory_types(family_rev)
+    fcb = FCB(family=family_rev, mem_type=MemoryType.XSPI_NAND)
+    assert fcb.size == 0x400
+    data = fcb.export()
+    assert len(data) == 0x400
+    assert int.from_bytes(data[0x04:0x08], "little") == 0x4E464342  # fingerprint 'NFCB'
+    assert int.from_bytes(data[0x08:0x0C], "little") == 1
+    assert int.from_bytes(data[0x14:0x18], "little") == 1
+    # Serial NAND configuration block (common XSPI memory configuration block) at 0x100
+    assert data[0x100:0x104] == FCB.TAG
+    assert int.from_bytes(data[0x104:0x108], "little") == 0x56010000
+    assert data[0x144] == 2  # deviceType: Serial NAND
+    assert int.from_bytes(data[:4], "little") == _crc32_mpeg2(data[4:])
+
+
+def test_mimxrt266x_xspi_nand_fcb_export_parse() -> None:
+    """Test RT266x XSPI NAND FCB round-trip and checksum update on configuration change."""
+    family = FamilyRevision("mimxrt2662")
+    fcb = FCB(family=family, mem_type=MemoryType.XSPI_NAND)
+    config = fcb.get_config()
+    config["fcb_settings"]["firmwareCopies"] = 2
+    config["fcb_settings"]["firmwareInfoTable_0_startPage"] = 0x100
+    config["fcb_settings"]["firmwareInfoTable_1_startPage"] = 0x200
+    config["fcb_settings"]["pageDataSize"] = 2048
+    config["fcb_settings"]["pagesPerBlock"] = 64
+    fcb = FCB.load_from_config(config)
+    data = fcb.export()
+    assert int.from_bytes(data[0x40:0x44], "little") == 0x100
+    assert int.from_bytes(data[0x48:0x4C], "little") == 0x200
+    assert int.from_bytes(data[0x328:0x32C], "little") == 2048
+    assert int.from_bytes(data[:4], "little") == _crc32_mpeg2(data[4:])
+
+    parsed = FCB.parse(data, family=family, mem_type=MemoryType.XSPI_NAND)
+    assert parsed.export() == data
+    assert FCB.load_from_config(parsed.get_config()).export() == data
+    assert FCB.parse(
+        b"\xff" * 0x10 + data, offset=0x10, family=family, mem_type=MemoryType.XSPI_NAND
+    )
+
+
+@pytest.mark.parametrize(
+    "offset,value",
+    [
+        (0x00, 0x01),  # corrupted checksum
+        (0x05, 0x00),  # corrupted fingerprint
+        (0x200, 0x01),  # corrupted data
+    ],
+)
+def test_mimxrt266x_xspi_nand_fcb_parse_invalid(offset: int, value: int) -> None:
+    """Test RT266x XSPI NAND FCB parse fails on corrupted fingerprint or checksum.
+
+    :param offset: Offset of the modified byte.
+    :param value: Value XORed into the modified byte.
+    """
+    family = FamilyRevision("mimxrt2662")
+    data = bytearray(FCB(family=family, mem_type=MemoryType.XSPI_NAND).export())
+    data[offset] ^= value if value else 0xFF
+    with pytest.raises(SPSDKError):
+        FCB.parse(bytes(data), family=family, mem_type=MemoryType.XSPI_NAND)
+    with pytest.raises(SPSDKError):
+        FCB.parse(bytes(data[:0x3FF]), family=family, mem_type=MemoryType.XSPI_NAND)
+
+
+def test_mimxrt266x_xspi_nand_fcb_cli(cli_runner: CliRunner, tmpdir: Any) -> None:
+    """Test RT266x XSPI NAND FCB get-templates, export and parse via nxpimage CLI.
+
+    :param cli_runner: CLI runner instance for executing commands.
+    :param tmpdir: Temporary directory for output files.
+    """
+    cmd = f"bootable-image fcb get-templates -f mimxrt2662 --output {tmpdir}"
+    cli_runner.invoke(nxpimage.main, cmd.split())
+    template = os.path.join(tmpdir, "fcb_mimxrt2662_xspi_nand.yaml")
+    assert os.path.isfile(template)
+
+    out_bin = os.path.join(tmpdir, "fcb_nand.bin")
+    cli_runner.invoke(
+        nxpimage.main, ["bootable-image", "fcb", "export", "-c", template, "-o", out_bin]
+    )
+    with open(out_bin, "rb") as f:
+        data = f.read()
+    assert len(data) == 0x400
+    assert int.from_bytes(data[:4], "little") == _crc32_mpeg2(data[4:])
+
+    out_cfg = os.path.join(tmpdir, "fcb_nand.yaml")
+    cmd = f"bootable-image fcb parse -f mimxrt2662 -m xspi_nand -b {out_bin} -o {out_cfg}"
+    cli_runner.invoke(nxpimage.main, cmd.split())
+    assert os.path.isfile(out_cfg)

@@ -132,7 +132,7 @@
                             "width": 8,
                             "id": "field004-bits0-7",
                             "name": "FLASH_REMAP_SIZE",
-                            "description": "Flash remap size. This field should be written to remap field in flash. FLASH_REMAP_SIZE defines the size of the secondary boot image (the range of flash addresses that will be remapped)in internal flash, where remapped address end = FLASH_REMAP_SIZE"
+                            "description": "Flash remap size. This field should be written to remap field in flash. FLASH_REMAP_SIZE defines the size of the secondary boot image (the range of flash addresses that will be remapped)in internal flash, where remapped address end = FLASH_REMAP_SIZE * 8 KB. For example, if FLASH_REMAP_SIZE = 2, and flash total size is 128KB, then the first 16KB of addresses will be remapped to flash upper half to flash upper half + 16KB region, instead of flash lower half, when remap is active. Set this field to 0 or 0x1F if you do not want to use the flash remap feature. Please reference FMC chapter in reference manual to get the detail of flash remapping function"
                         },
                         {
                             "width": 2

@@ -1,0 +1,31 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ==============================  Secure Binary v3.1 configuration for mcxn946  ===============================
+# NXP chip family identifier.
+family: mcxn946
+# Revision of silicon.
+revision: latest
+# Value compared with Secure_FW_Version monotonic counter (rollback protection).
+firmwareVersion: 0
+# Generated SB3.1 container filename.
+containerOutputFile: ../workspace/mcxn9xx_sb31.sb3
+# Main Certificate private key used to sign the SB3.1 manifest.
+signer: ../../_data/keys/ecc256/srk0_ecc256.pem
+# Path to the certificate block configuration (or binary) holding the Root of Trust information.
+certBlock: cert_block_mcxn9xx.yaml
+# Part Common Key (PCK) - 256-bit key used to derive the SB3.1 block encryption keys.
+# It must match the SB3KDK provisioned into the device. The same file is used by the DEVHSM
+# provisioning step of this example (devhsm_config.yaml), so the keys always match.
+containerKeyBlobEncryptionKey: pck.txt
+# Accepted values are 0, 1, 2 and 3. Value used as key properties for key derivation process.
+# It must match the access rights used by the ROM for the provisioned CUST_MK_SK; MCXN9xx uses 0.
+kdkAccessRights: 0
+# Description up to 16 characters, stored in the SB3.1 manifest.
+description: mcxn9xx sb31
+# Secure Binary v3.1 commands. In this example we load a small demo payload into RAM.
+commands:
+  - load:
+      address: 0x20000000
+      file: demo_ram_app.bin

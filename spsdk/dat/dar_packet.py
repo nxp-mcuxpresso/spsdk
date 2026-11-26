@@ -357,13 +357,16 @@ class DebugAuthenticateResponse(FeatureBaseClass):
         )
         # Verify protocol version
         if DebugCredentialCertificate.dat_based_on_ele(self.family):
+            # EdgeLock Enclave does not compare the DAC and DC protocol versions, the DC version
+            # is given by the DC format (key type), so different versions are expected
             ret.add_record(
                 "Protocol version",
-                result=VerifierResult.WARNING,
+                result=VerifierResult.SUCCEEDED,
                 value=(
-                    f"Not supported on {self.family.name}.\n"
+                    f"Not compared on {self.family.name} (EdgeLock Enclave based DAT).\n"
                     f"DAC: {self.dac.version}\nDC:  {self.debug_credential.version}"
                 ),
+                important=False,
             )
         elif self.dac.version != self.debug_credential.version:
             ret.add_record(
@@ -647,7 +650,6 @@ class DebugAuthenticateResponseEdgelockEnclaveV2(DebugAuthenticateResponse):
         schemas_smsg["properties"].pop("output")
         schemas_smsg["properties"].pop("fuse_version")
         schemas_smsg["properties"].pop("sw_version")
-        schemas_smsg["properties"].pop("check_all_signatures")
         schemas_smsg["properties"].pop("iv_path")
         schemas_smsg["properties"].pop("message")
         schemas_smsg["properties"].pop("certificate")
@@ -710,6 +712,12 @@ class DebugAuthenticateResponseEdgelockEnclaveV2(DebugAuthenticateResponse):
         message that drops an already-revoked key, so this check catches a misconfigured Debug
         Credential before sending the DAR to the device.
 
+        The DAC carries the raw fuse word (rotid_rkh_revocation), where the 4-bit OEM_SRK_RVK
+        field (one bit per SRK0-3) may sit at a non-zero bit offset depending on the device's
+        fuse map (see the "dac_srk_revoke_mask_bit_offset" database item). The signed message's
+        flag_srk_revoke_keys is always normalized to bits 0-3, so the DAC value must be shifted
+        down to the same bit range before the two masks can be compared.
+
         :return: VerifierRecord containing the SRK revoke mask verification result with
                  success or error status and corresponding values.
         """
@@ -720,7 +728,9 @@ class DebugAuthenticateResponseEdgelockEnclaveV2(DebugAuthenticateResponse):
                 value="Signed message container is missing",
             )
 
-        dac_revoke_mask = self.dac.rotid_rkh_revocation
+        db = get_db(self.family)
+        bit_offset = db.get_int(DatabaseManager.DAT, "dac_srk_revoke_mask_bit_offset", 0)
+        dac_revoke_mask = (self.dac.rotid_rkh_revocation >> bit_offset) & 0xF
         dc_revoke_mask = self.sign_message.signed_msg_container.flag_srk_revoke_keys
 
         # The signed message must have all bits that are already revoked in fuses set.

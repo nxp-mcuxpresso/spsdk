@@ -17,12 +17,14 @@ import logging
 import os
 import sys
 from collections.abc import Callable, Sequence
+from copy import deepcopy
 from gettext import gettext, ngettext
 from typing import Any, TypeVar, cast, overload
 
 import click
 import colorama
 from click_command_tree import _build_command_tree, _CommandWrapper
+from deepmerge import always_merger
 
 from spsdk import SPSDK_DEPRECATED_STRICT, SPSDK_LOG_LEVEL_TRACE
 from spsdk import __version__ as spsdk_version
@@ -41,6 +43,7 @@ from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
 from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import load_hex_string
+from spsdk.utils.schema_validator import convert_value_to_schema_type, get_schema_types
 
 FC = TypeVar("FC", bound=Callable[..., Any] | click.Command)
 logger = logging.getLogger(__name__)
@@ -609,6 +612,28 @@ def spsdk_family_option(
     return decorator
 
 
+def _convert_overrides_to_schema_types(
+    cfg: Config, overrides: dict[str, str], schemas: list[dict[str, Any]]
+) -> None:
+    """Convert overridden configuration values to the types defined by validation schemas.
+
+    Only values whose schema doesn't accept a string are converted (e.g. boolean or integer),
+    the values accepted as strings (paths, keys, hexadecimal values) are kept untouched.
+
+    :param cfg: Configuration with applied overrides.
+    :param overrides: Overridden key paths and their string values.
+    :param schemas: Validation schemas of the configuration.
+    """
+    if not overrides:
+        return
+    schema: dict[str, Any] = {}
+    for sch in schemas:
+        always_merger.merge(schema, deepcopy(sch))
+    for key, value in overrides.items():
+        types = get_schema_types(schema, Config.get_path(key))
+        cfg[key] = convert_value_to_schema_type(value, types)
+
+
 def spsdk_config_option(
     required: bool = True,
     klass: type[ConfigBaseClass] | None = None,
@@ -645,12 +670,16 @@ def spsdk_config_option(
             else:
                 cfg = Config()
 
+            overrides: dict[str, str] = {}
             for oc in override_config:
                 pair = oc.split("=", 1)
                 cfg[pair[0]] = pair[1]
+                overrides[pair[0]] = pair[1]
 
             if klass:
                 schemas = klass.get_validation_schemas_from_cfg(cfg)
+                # Values from command line are strings, convert them to the schema type
+                _convert_overrides_to_schema_types(cfg, overrides, schemas)
                 # Pre-validation hook allows transforming config before validation
                 # (e.g., converting register names to uppercase to match schema)
                 if hasattr(klass, "PRE_VALIDATION_CFG_HOOK"):

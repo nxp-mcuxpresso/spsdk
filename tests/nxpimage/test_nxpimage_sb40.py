@@ -438,3 +438,24 @@ def test_nxpimage_sb40_verify_command(
         result = cli_runner.invoke(nxpimage.main, cmd.split())
         assert result.exit_code == 0, f"Verify command failed: {result.output}"
         assert "SB4.0" in result.output or "AHAB" in result.output
+
+
+@pytest.mark.parametrize("srk_count", [3, 4])
+def test_sb40_api_srk_array_count(nxpimage_data_dir: str, srk_count: int) -> None:
+    """Test that SB4.0 API rejects SRK array with other than four keys, same as CLI does."""
+    with use_working_directory(nxpimage_data_dir):
+        config = Config.create_from_file(
+            f"{nxpimage_data_dir}/workspace/cfgs/mcxn556s/sb4_ecc256_basic.yaml"
+        )
+        config["srk_table"]["srk_array"] = config["srk_table"]["srk_array"][:srk_count]
+
+        if srk_count == 4:
+            sb4 = SecureBinary4.load_from_config(config)
+            assert len(sb4.export()) > 0
+            assert sb4.container.signature_block is not None
+            srk_assets = sb4.container.signature_block.srk_assets
+            assert srk_assets is not None
+            assert not srk_assets.verify().has_errors
+        else:
+            with pytest.raises(SPSDKValueError, match="srk_array"):
+                SecureBinary4.load_from_config(config)

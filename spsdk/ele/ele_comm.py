@@ -351,7 +351,7 @@ class EleMessageHandlerMBoot(EleMessageHandler):
         # 4.1 Check the response status
         if msg.status != ResponseStatus.ELE_SUCCESS_IND:
             raise SPSDKEleMessageError(
-                f"ELE Message failed. \n{msg.info()}",
+                f"ELE Message failed: {msg.failure_reason}\n{msg.info()}",
                 status=msg.status,
                 indication=msg.indication,
                 abort_code=msg.abort_code,
@@ -496,8 +496,15 @@ class EleMessageHandlerUBoot(EleMessageHandler):
         if not response_lines:
             raise SPSDKError("No valid response line found in output")
         stripped_line = re.sub(r"(u-boot)?=> ", "", response_lines[0])
-        hex_str = stripped_line[: msg.response_words_count * 8]
-        hex_str = re.sub(r"Detect.*", "", hex_str)
+        # U-Boot may append unrelated console messages (e.g. USB gadget or boot
+        # detection logs) directly after the response, so keep only the leading hex digits
+        hex_match = re.match(r"[0-9a-fA-F]+", stripped_line)
+        if not hex_match or len(hex_match.group()) < 8:
+            raise SPSDKError(f"No valid response found in output: {stripped_line}")
+        hex_str = hex_match.group()
+        # The size field of the response header (second byte) holds the response length in words
+        words_count = min(int(hex_str[2:4], 16), msg.response_words_count)
+        hex_str = hex_str[: words_count * 8]
         logger.debug(f"Stripped output: {hex_str}")
         return value_to_bytes("0x" + hex_str)
 
@@ -550,7 +557,7 @@ class EleMessageHandlerUBoot(EleMessageHandler):
 
         if ele_error:
             raise SPSDKEleMessageError(
-                f"ELE Message failed. \n{msg.info()}",
+                f"ELE Message failed: {msg.failure_reason}\n{msg.info()}",
                 status=msg.status,
                 indication=msg.indication,
                 abort_code=msg.abort_code,
@@ -567,7 +574,7 @@ class EleMessageHandlerUBoot(EleMessageHandler):
 
         if msg.status != ResponseStatus.ELE_SUCCESS_IND:
             raise SPSDKEleMessageError(
-                f"ELE Message failed. \n{msg.info()}",
+                f"ELE Message failed: {msg.failure_reason}\n{msg.info()}",
                 status=msg.status,
                 indication=msg.indication,
                 abort_code=msg.abort_code,

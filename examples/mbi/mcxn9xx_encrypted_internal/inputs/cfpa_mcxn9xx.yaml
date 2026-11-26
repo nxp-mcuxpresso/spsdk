@@ -1,0 +1,9 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ==================================  PFR CFPA configuration for mcxn946  =====================================
+family: mcxn946
+revision: latest
+type: CFPA
+settings: {}

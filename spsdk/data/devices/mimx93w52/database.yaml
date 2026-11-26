@@ -1,0 +1,72 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# i.MX 93W52 (with NPU); mimx93w32 (without NPU) aliases this family
+alias: mimx9352
+
+# General MCU information
+info:
+  # Web page of MCU representative
+  web: https://www.nxp.com/products/IMX93W
+
+features:
+  # ======== Bootable image section ========
+  bootable_image:
+    # No FlexSPI boot (BOOT_MODE 0100/0101 reserved on i.MX 93W)
+    mem_types:
+      __replace__: true
+      serial_downloader:
+        segments:
+          primary_image_container_set: 0x0
+          secondary_image_container_set: -1 # Just behind previous segment
+      emmc:
+        segments:
+          primary_image_container_set: 0x8_000
+          secondary_image_container_set: -1 # Just behind previous segment
+      emmc_boot:
+        segments:
+          primary_image_container_set: 0x0
+          secondary_image_container_set: -1 # Just behind previous segment
+      sd:
+        segments:
+          primary_image_container_set: 0x8_000
+          secondary_image_container_set: -1 # Just behind previous segment
+      recovery_spi:
+        note: Connected to LPSPI1/2/3/4. SPI NOR recovery image
+        segments:
+          primary_image_container_set: 0x00
+          secondary_image_container_set: -1 # Just behind previous segment
+    # Drop the inherited i.MX 93 boards; file names from Linux Factory Release lf-6.18.37-2.1.0
+    boards:
+      __replace__: true
+      imx93w-14x12-lpddr4x-evk:
+        lpddr_imem_1d: lpddr4_imem_1d_v202201.bin
+        lpddr_dmem_1d: lpddr4_dmem_1d_v202201.bin
+        lpddr_imem_2d: lpddr4_imem_2d_v202201.bin
+        lpddr_dmem_2d: lpddr4_dmem_2d_v202201.bin
+        spl_ddr: u-boot-spl.bin
+        spl_ddr_alt:
+          - u-boot-spl.bin-imx93w-14x12-lpddr4x-evk-sd
+          - u-boot-spl.bin-imx93w-14x12-lpddr4x-evk-ecc
+        atf: bl31-imx93.bin
+        uboot: u-boot.bin
+        uboot_alt:
+          - u-boot-imx93w-14x12-lpddr4x-evk.bin-sd
+          - u-boot-imx93w-14x12-lpddr4x-evk.bin-ecc
+        tee: tee.bin
+      imx93w-14x12-lpddr4x-frdm:
+        lpddr_imem_1d: lpddr4_imem_1d_v202201.bin
+        lpddr_dmem_1d: lpddr4_dmem_1d_v202201.bin
+        lpddr_imem_2d: lpddr4_imem_2d_v202201.bin
+        lpddr_dmem_2d: lpddr4_dmem_2d_v202201.bin
+        spl_ddr: u-boot-spl.bin
+        spl_ddr_alt:
+          - u-boot-spl.bin-imx93w-14x12-lpddr4x-frdm-sd
+          - u-boot-spl.bin-imx93w-14x12-lpddr4x-frdm-ecc
+        atf: bl31-imx93.bin
+        uboot: u-boot.bin
+        uboot_alt:
+          - u-boot-imx93w-14x12-lpddr4x-frdm.bin-sd
+          - u-boot-imx93w-14x12-lpddr4x-frdm.bin-ecc
+        tee: tee.bin

@@ -18,6 +18,8 @@ import hashlib
 import logging
 import os
 import sys
+from collections.abc import Callable
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from typing import Any
 
@@ -41,6 +43,7 @@ from spsdk.crypto.keys import (
     IS_LMS_SUPPORTED,
     PrivateKey,
     PrivateKeyEcc,
+    PrivateKeyRsa,
     PublicKey,
     PublicKeyEcc,
     PublicKeyMLDSA,
@@ -998,6 +1001,32 @@ def pki_group() -> None:
     """Group of commands for generation of PKI tree."""
 
 
+def existing_ca_options(func: Callable) -> Callable:
+    """Click decorator adding options for using an existing CA in the PKI tree.
+
+    :param func: Click command function to decorate.
+    :return: Decorated function.
+    """
+    func = click.option(
+        "--ca-password",
+        metavar="PASSWORD",
+        help="Password of the existing CA private key given by --ca-key. "
+        "If not provided and the key is encrypted, the --password value is used.",
+    )(func)
+    func = click.option(
+        "--ca-cert",
+        type=click.Path(exists=True, dir_okay=False),
+        help="Path to the existing CA certificate. Must be used together with --ca-key.",
+    )(func)
+    func = click.option(
+        "--ca-key",
+        type=click.Path(exists=True, dir_okay=False),
+        help="Path to the existing CA private key. If specified (together with --ca-cert), "
+        "the SRK certificates are signed by this CA instead of a newly generated one.",
+    )(func)
+    return func
+
+
 @pki_group.command(name="ahab", no_args_is_help=True)
 @click.option(
     "-k",
@@ -1055,6 +1084,7 @@ def pki_group() -> None:
     default=False,
     help="True if SRK is certificate authority. In this case SGK keys will be generated",
 )
+@existing_ca_options
 def ahab_tree_generate(
     key_type: str,
     output: str,
@@ -1064,6 +1094,9 @@ def ahab_tree_generate(
     duration: int,
     serial: list[int] | None,
     srk_is_ca: bool,
+    ca_key: str | None,
+    ca_cert: str | None,
+    ca_password: str | None,
 ) -> None:
     """Generates a basic AHAB PKI tree.
 
@@ -1096,7 +1129,17 @@ def ahab_tree_generate(
     """
     click.echo("Generating PKI Tree for AHAB")
     ahab_tree_generate_command(
-        key_type, output, password, encoding, keys_number, duration, serial, srk_is_ca
+        key_type,
+        output,
+        password,
+        encoding,
+        keys_number,
+        duration,
+        serial,
+        srk_is_ca,
+        ca_key=ca_key,
+        ca_cert_path=ca_cert,
+        ca_password=ca_password,
     )
 
 
@@ -1353,6 +1396,7 @@ def ahab_pqc_tree_generate_command(
     default=False,
     help="True if SRK is certificate authority. In this case IMG and CSF keys will be generated",
 )
+@existing_ca_options
 def hab_tree_generate(
     key_type: str,
     output: str,
@@ -1362,6 +1406,9 @@ def hab_tree_generate(
     duration: int,
     serial: list[int] | None,
     srk_is_ca: bool,
+    ca_key: str | None,
+    ca_cert: str | None,
+    ca_password: str | None,
 ) -> None:
     """Generates a basic HABv4 PKI tree.
 
@@ -1392,7 +1439,17 @@ def hab_tree_generate(
     """
     click.echo("Generating PKI Tree for HABv4")
     hab_tree_generate_command(
-        key_type, output, password, encoding, keys_number, duration, serial, srk_is_ca
+        key_type,
+        output,
+        password,
+        encoding,
+        keys_number,
+        duration,
+        serial,
+        srk_is_ca,
+        ca_key=ca_key,
+        ca_cert_path=ca_cert,
+        ca_password=ca_password,
     )
 
 
@@ -1487,6 +1544,223 @@ def hab_tree_extend(
     hab_extend_tree_command(tree_path, password, encoding, keys_number, duration, serial)
 
 
+def get_pki_key_type(private_key: PrivateKey) -> str | None:
+    """Get PKI tree key type name of the private key.
+
+    :param private_key: Private key to examine.
+    :return: Key type name as used by the PKI tree commands, None if not supported.
+    """
+    key_type: str | None = None
+    if isinstance(private_key, PrivateKeyRsa):
+        key_type = f"rsa{private_key.key_size}"
+    elif isinstance(private_key, PrivateKeyEcc):
+        key_type = private_key.curve.value.lower()
+    if key_type in get_supported_keys_generators(basic=True):
+        return key_type
+    return None
+
+
+def load_existing_ca(
+    ca_key_path: str, ca_cert_path: str, password: str | None, ca_password: str | None
+) -> tuple[PrivateKey, Certificate, bool]:
+    """Load and validate an existing CA private key and certificate.
+
+    :param ca_key_path: Path to the existing CA private key.
+    :param ca_cert_path: Path to the existing CA certificate.
+    :param password: Password of the PKI tree keys, used as a fallback CA key password.
+    :param ca_password: Password of the existing CA private key.
+    :raises SPSDKAppError: The CA key or certificate cannot be loaded or they do not match.
+    :return: Tuple of the CA private key, the CA certificate and flag whether the key is encrypted.
+    """
+    try:
+        ca_cert = Certificate.load(ca_cert_path)
+    except SPSDKError as exc:
+        raise SPSDKAppError(f"Cannot load the CA certificate {ca_cert_path}: {exc}") from exc
+
+    key_encrypted = False
+    try:
+        try:
+            ca_private_key = PrivateKey.load(ca_key_path)
+        except SPSDKKeyPassphraseMissing:
+            key_encrypted = True
+            ca_private_key = PrivateKey.load(
+                ca_key_path, password=ca_password or password or prompt_for_passphrase()
+            )
+    except SPSDKError as exc:
+        raise SPSDKAppError(f"Cannot load the CA private key {ca_key_path}: {exc}") from exc
+
+    if ca_private_key.get_public_key() != ca_cert.get_public_key():
+        raise SPSDKAppError(
+            f"The CA private key {ca_key_path} does not match the CA certificate {ca_cert_path}"
+        )
+    if not ca_cert.ca:
+        raise SPSDKAppError(
+            f"The certificate {ca_cert_path} is not a CA certificate (missing CA basic constraint)"
+        )
+    if get_pki_key_type(ca_private_key) is None:
+        raise SPSDKAppError(
+            "Unsupported type of the existing CA key. Supported types: "
+            f"{', '.join(get_supported_keys_generators(basic=True))}"
+        )
+    return ca_private_key, ca_cert, key_encrypted
+
+
+def store_existing_ca(
+    ca_private_key: PrivateKey,
+    ca_cert: Certificate,
+    keys_path: str,
+    crts_path: str,
+    encoding: str,
+    password: str | None,
+) -> None:
+    """Store a copy of the existing CA key and certificate into the PKI tree.
+
+    The files are stored using the PKI tree naming convention, so the tree can be
+    extended later by the extend commands. The original files are not modified.
+
+    :param ca_private_key: Existing CA private key.
+    :param ca_cert: Existing CA certificate.
+    :param keys_path: Path to the keys directory of the PKI tree.
+    :param crts_path: Path to the certificates directory of the PKI tree.
+    :param encoding: Encoding DER or PEM.
+    :param password: Password protecting the keys in the PKI tree.
+    """
+    encoding_param = encoding.upper().strip()
+    encoding_enum = SPSDKEncoding.all()[encoding_param]
+    name = f"CA0_{get_pki_key_type(ca_private_key)}_ca"
+    key_path = os.path.join(keys_path, f"{name}_key.{encoding_param.lower()}")
+    pub_key_path = os.path.join(keys_path, f"{name}_key.pub")
+    cert_path = os.path.join(crts_path, f"{name}_cert.{encoding_param.lower()}")
+
+    ca_private_key.save(key_path, password if password else None, encoding=encoding_enum)
+    ca_private_key.get_public_key().save(pub_key_path, encoding=encoding_enum)
+    ca_cert.save(cert_path, encoding_enum)
+    click.echo(
+        f"The existing CA0 key pair has been stored: {get_printable_path(pub_key_path)}, "
+        f"{get_printable_path(key_path)}"
+    )
+    click.echo(f"The existing CA0 certificate has been stored: {get_printable_path(cert_path)}")
+
+
+def use_existing_ca(
+    key_type: str,
+    keys_path: str,
+    crts_path: str,
+    encoding: str,
+    password: str,
+    duration: int,
+    ca_key: str,
+    ca_cert: str,
+    ca_password: str | None = None,
+) -> tuple[PrivateKey, Certificate]:
+    """Load an existing CA and store its copy into a new PKI tree.
+
+    :param key_type: Key type of the PKI tree.
+    :param keys_path: Path to the keys directory of the PKI tree.
+    :param crts_path: Path to the certificates directory of the PKI tree.
+    :param encoding: Encoding DER or PEM.
+    :param password: Password for key protection.
+    :param duration: Duration of certificates in years.
+    :param ca_key: Path to the existing CA private key.
+    :param ca_cert: Path to the existing CA certificate.
+    :param ca_password: Password of the existing CA private key.
+    :raises SPSDKAppError: The existing CA cannot be used.
+    :return: Tuple of the CA private key and the CA certificate.
+    """
+    ca_private_key, ca_certificate, key_encrypted = load_existing_ca(
+        ca_key, ca_cert, password, ca_password
+    )
+    if key_encrypted and not password:
+        raise SPSDKAppError(
+            "The existing CA private key is encrypted. Specify --password to protect its copy "
+            "in the PKI tree."
+        )
+    ca_key_type = get_pki_key_type(ca_private_key)
+    if ca_key_type != key_type.lower():
+        logger.warning(
+            f"The existing CA key type ({ca_key_type}) differs from the requested key type "
+            f"({key_type}). Note that the extend commands use the CA key type for new keys."
+        )
+    if ca_certificate.not_valid_after < datetime.now(timezone.utc) + timedelta(days=duration * 365):
+        logger.warning(
+            "The existing CA certificate expires sooner than the generated certificates: "
+            f"{ca_certificate.not_valid_after}"
+        )
+    store_existing_ca(ca_private_key, ca_certificate, keys_path, crts_path, encoding, password)
+    return ca_private_key, ca_certificate
+
+
+def get_pki_tree_ca(
+    key_type: str,
+    keys_path: str,
+    crts_path: str,
+    encoding: str,
+    password: str,
+    duration: int,
+    ca_key: str | None = None,
+    ca_cert: str | None = None,
+    ca_password: str | None = None,
+) -> tuple[PrivateKey, Certificate]:
+    """Get the CA of a new PKI tree; use an existing CA or generate a new one.
+
+    :param key_type: Key type of the PKI tree.
+    :param keys_path: Path to the keys directory of the PKI tree.
+    :param crts_path: Path to the certificates directory of the PKI tree.
+    :param encoding: Encoding DER or PEM.
+    :param password: Password for key protection.
+    :param duration: Duration of certificates in years.
+    :param ca_key: Path to the existing CA private key.
+    :param ca_cert: Path to the existing CA certificate.
+    :param ca_password: Password of the existing CA private key.
+    :raises SPSDKAppError: Only one of the CA key and CA certificate is specified.
+    :return: Tuple of the CA private key and the CA certificate.
+    """
+    if bool(ca_key) != bool(ca_cert):
+        raise SPSDKAppError("Both --ca-key and --ca-cert must be specified to use an existing CA")
+    if ca_key and ca_cert:
+        return use_existing_ca(
+            key_type=key_type,
+            keys_path=keys_path,
+            crts_path=crts_path,
+            encoding=encoding,
+            password=password,
+            duration=duration,
+            ca_key=ca_key,
+            ca_cert=ca_cert,
+            ca_password=ca_password,
+        )
+
+    # Generate key pair for CA keys
+    ca_private_key, ca_public_key, ca_key_name, ca_cert_name = generate_key_pair(
+        key_type=key_type,
+        encoding=encoding,
+        keys_path=keys_path,
+        key_prefix="CA",
+        idx=0,
+        is_ca=True,
+        password=password,
+    )
+    ca_cert_path = os.path.join(crts_path, ca_cert_name)
+
+    subject = generate_name([{"COMMON_NAME": ca_key_name}])
+    # generate CA certificate (self-signed certificate)
+    ca_certificate = Certificate.generate_certificate(
+        subject=subject,
+        issuer=subject,
+        subject_public_key=ca_public_key,
+        issuer_private_key=ca_private_key,
+        serial_number=None,
+        duration=duration * 365,
+        extensions=generate_extensions(
+            {"BASIC_CONSTRAINTS": {"ca": True}},
+        ),
+    )
+    ca_certificate.save(ca_cert_path, SPSDKEncoding.all()[encoding.upper().strip()])
+    click.echo(f"The CA0 certificate has been created: {get_printable_path(ca_cert_path)}")
+    logger.info(ca_certificate)
+    return ca_private_key, ca_certificate
+
+
 def ahab_tree_generate_command(
     key_type: str,
     output: str,
@@ -1496,6 +1770,9 @@ def ahab_tree_generate_command(
     duration: int,
     serial: list[int] | None,
     srk_is_ca: bool,
+    ca_key: str | None = None,
+    ca_cert_path: str | None = None,
+    ca_password: str | None = None,
 ) -> None:
     """Generate AHAB tree.
 
@@ -1507,6 +1784,9 @@ def ahab_tree_generate_command(
     :param duration: duration of certificates in years
     :param serial: list of serial number of SRK certificates
     :param srk_is_ca: True if SRK is CA
+    :param ca_key: path to the existing CA private key, a new CA is generated if not specified
+    :param ca_cert_path: path to the existing CA certificate
+    :param ca_password: password of the existing CA private key
     :raises SPSDKAppError: Serial number provided is lower than count of keys
     """
     if not serial:
@@ -1516,43 +1796,22 @@ def ahab_tree_generate_command(
     if len(serial) != keys_number:
         raise SPSDKAppError("Count of serial numbers does not match the count of certificates")
 
-    encoding_param = encoding.upper().strip()
-    encoding_enum = SPSDKEncoding.all()[encoding_param]
-
     keys_path = os.path.join(output, "keys")
     crts_path = os.path.join(output, "crts")
     os.makedirs(keys_path, exist_ok=True)
     os.makedirs(crts_path, exist_ok=True)
 
-    # Generate key pair for CA keys
-    key_prefix = "CA"
-    ca_private_key, ca_public_key, ca_key_name, ca_cert_name = generate_key_pair(
+    ca_private_key, ca_cert = get_pki_tree_ca(
         key_type=key_type,
-        encoding=encoding,
         keys_path=keys_path,
-        key_prefix=key_prefix,
-        idx=0,
-        is_ca=True,
+        crts_path=crts_path,
+        encoding=encoding,
         password=password,
+        duration=duration,
+        ca_key=ca_key,
+        ca_cert=ca_cert_path,
+        ca_password=ca_password,
     )
-    ca_cert_path = os.path.join(crts_path, ca_cert_name)
-
-    subject = ca_issuer = generate_name([{"COMMON_NAME": ca_key_name}])
-    # generate CA certificate (self-signed certificate)
-    ca_cert = Certificate.generate_certificate(
-        subject=subject,
-        issuer=ca_issuer,
-        subject_public_key=ca_public_key,
-        issuer_private_key=ca_private_key,
-        serial_number=None,
-        duration=duration * 365,
-        extensions=generate_extensions(
-            {"BASIC_CONSTRAINTS": {"ca": True}},
-        ),
-    )
-    ca_cert.save(ca_cert_path, encoding_enum)
-    click.echo(f"The CA0 certificate has been created: {get_printable_path(ca_cert_path)}")
-    logger.info(ca_cert)
 
     generate_srk_keys(
         key_type=key_type,
@@ -1563,7 +1822,7 @@ def ahab_tree_generate_command(
         duration=duration,
         serial=serial,
         ca_private_key=ca_private_key,
-        ca_issuer=ca_issuer,
+        ca_issuer=ca_cert.subject,
         srk_is_ca=srk_is_ca,
         password=password,
         print_func=click.echo,
@@ -1680,7 +1939,7 @@ def ahab_extend_tree_command(
         keys_number=keys_number,
         duration=duration,
         serial=serial,
-        ca_issuer=ca_cert.issuer,
+        ca_issuer=ca_cert.subject,
         ca_private_key=ca_private_key,
         srk_is_ca=srk_is_ca,
         start_idx=start_idx,
@@ -1697,6 +1956,9 @@ def hab_tree_generate_command(
     duration: int,
     serial: list[int] | None,
     srk_is_ca: bool,
+    ca_key: str | None = None,
+    ca_cert_path: str | None = None,
+    ca_password: str | None = None,
 ) -> None:
     """Generate HAB tree.
 
@@ -1708,6 +1970,9 @@ def hab_tree_generate_command(
     :param duration: duration of certificates in years
     :param serial: list of serial number of SRK certificates
     :param srk_is_ca: True if SRK is CA
+    :param ca_key: path to the existing CA private key, a new CA is generated if not specified
+    :param ca_cert_path: path to the existing CA certificate
+    :param ca_password: password of the existing CA private key
     :raises SPSDKAppError: Serial number provided is lower than count of keys
     """
     if not serial:
@@ -1719,43 +1984,22 @@ def hab_tree_generate_command(
             f"Count of serial numbers does not match the count of certificates {len(serial)} != {keys_number}"
         )
 
-    encoding_param = encoding.upper().strip()
-    encoding_enum = SPSDKEncoding.all()[encoding_param]
-
     keys_path = os.path.join(output, "keys")
     crts_path = os.path.join(output, "crts")
     os.makedirs(keys_path, exist_ok=True)
     os.makedirs(crts_path, exist_ok=True)
 
-    # Generate key pair for CA keys
-    key_prefix = "CA"
-    ca_private_key, ca_public_key, ca_key_name, ca_cert_name = generate_key_pair(
+    ca_private_key, ca_cert = get_pki_tree_ca(
         key_type=key_type,
-        encoding=encoding,
         keys_path=keys_path,
-        key_prefix=key_prefix,
-        idx=0,
-        is_ca=True,
+        crts_path=crts_path,
+        encoding=encoding,
         password=password,
+        duration=duration,
+        ca_key=ca_key,
+        ca_cert=ca_cert_path,
+        ca_password=ca_password,
     )
-    ca_cert_path = os.path.join(crts_path, ca_cert_name)
-
-    subject = ca_issuer = generate_name([{"COMMON_NAME": ca_key_name}])
-    # generate CA certificate (self-signed certificate)
-    ca_cert = Certificate.generate_certificate(
-        subject=subject,
-        issuer=ca_issuer,
-        subject_public_key=ca_public_key,
-        issuer_private_key=ca_private_key,
-        serial_number=None,
-        duration=duration * 365,
-        extensions=generate_extensions(
-            {"BASIC_CONSTRAINTS": {"ca": True}},
-        ),
-    )
-    ca_cert.save(ca_cert_path, encoding_enum)
-    click.echo(f"The CA0 certificate has been created: {get_printable_path(ca_cert_path)}")
-    logger.info(ca_cert)
 
     generate_srk_keys(
         key_type=key_type,
@@ -1766,7 +2010,7 @@ def hab_tree_generate_command(
         keys_number=keys_number,
         duration=duration,
         serial=serial,
-        ca_issuer=ca_cert.issuer,
+        ca_issuer=ca_cert.subject,
         ca_private_key=ca_private_key,
         srk_is_ca=srk_is_ca,
         print_func=click.echo,
@@ -1885,7 +2129,7 @@ def hab_extend_tree_command(
             keys_number=keys_number,
             duration=duration,
             serial=serial,
-            ca_issuer=ca_cert.issuer,
+            ca_issuer=ca_cert.subject,
             ca_private_key=ca_private_key,
             srk_is_ca=srk_is_ca,
             start_idx=start_idx,

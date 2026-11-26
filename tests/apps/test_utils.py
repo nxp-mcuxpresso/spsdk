@@ -11,12 +11,16 @@ functionality, including string processing, data formatting, file operations,
 hexadecimal data parsing, error handling, and configuration management.
 """
 
+import os
+from typing import Any
+
 import pytest
 
 from spsdk.apps.utils import utils
-from spsdk.apps.utils.utils import catch_spsdk_error, make_table_from_items
+from spsdk.apps.utils.utils import catch_spsdk_error, filepath_from_config, make_table_from_items
 from spsdk.exceptions import SPSDKError
 from spsdk.mboot.exceptions import McuBootConnectionError
+from spsdk.utils.config import Config
 from spsdk.utils.misc import load_configuration, use_working_directory
 
 
@@ -196,3 +200,43 @@ def test_make_table_from_items() -> None:
     assert rows[0] == "A    B  "
     assert rows[1] == "C    D  "
     assert rows[2] == "E  "
+
+
+@pytest.mark.parametrize(
+    "name,keep_image_extension,expected",
+    [
+        ("keyblob", False, "keyblob.srec"),
+        ("keyblob", True, "keyblob.srec"),
+        ("keyblob.srec", True, "keyblob.srec"),
+        ("keyblob.bin", False, "keyblob.bin.srec"),
+        ("keyblob.bin", True, "keyblob.bin"),
+        ("keyblob.s19", True, "keyblob.s19"),
+        ("keyblob.v1", True, "keyblob.v1.srec"),
+    ],
+)
+def test_filepath_from_config_extension(
+    tmpdir: Any, name: str, keep_image_extension: bool, expected: str
+) -> None:
+    """Test that filepath_from_config keeps a known image file extension on request.
+
+    :param tmpdir: Temporary directory fixture.
+    :param name: File name stored in the configuration.
+    :param keep_image_extension: Whether a known image file extension is kept.
+    :param expected: Expected file name.
+    """
+    config = Config({"name": name})
+    config.config_dir = str(tmpdir)
+    path = filepath_from_config(
+        config,
+        "name",
+        "default",
+        output_folder=str(tmpdir),
+        file_extension=".srec",
+        keep_image_extension=keep_image_extension,
+    )
+    assert os.path.basename(path) == expected
+
+
+def test_filepath_from_config_blank() -> None:
+    """Test that filepath_from_config returns blank name for blank value."""
+    assert filepath_from_config(Config({"name": ""}), "name", "x", keep_image_extension=True) == ""

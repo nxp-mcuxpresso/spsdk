@@ -74,6 +74,9 @@ features:
   debug_probe:
     protocols: [swd, jtag]
     test_address: 0x2048_0000
+    # i.MX91 has no Cortex-M core; AP0 AHB-AP targets the system bus where 0xE000EDF0 is DRAM
+    # (RM rev. 1.13: 17.2.3 AP select decoding, 2.2 system memory map).
+    cortex_m_core_debug: False
 
   # ======== Fuses description section ========
   fuses:
@@ -197,6 +200,7 @@ features:
     based_on_ele: True # Flag if the implementation of DAT is based on EdgeLock Enclave
     dat_is_using_sha256_always: True
     dmbox_ap_ix: 0
+    dmbox_ap_shared_with_mem_ap: True # RM: SWJ-DP(AUTH) ISP-AP (mailbox) vs SWJ-DP AHB-AP share AP0
 
   # ======== FCB section ========
   fcb:
@@ -247,7 +251,10 @@ features:
           secondary_image_container_set: -1 # Just behind previous segment
 
   # ======== nxpuuu ==========
-  nxpuuu: {}
+  nxpuuu:
+    boot_devices:
+      spl:
+        script: ../../common/uuu/spl_boot_rom.lst
 
   # ======== Misc signing section ========
   signing:

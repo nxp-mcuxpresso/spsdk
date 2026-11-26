@@ -31,7 +31,9 @@ iped_output:
       description: >-
         Filename, without extension, of the standalone IPED configuration table.
         This binary is the keyblob payload used by bootable-image when the
-        keyblob segment points to an IPED YAML configuration.
+        keyblob segment points to an IPED YAML configuration. A plain file name
+        is placed into output_folder; a name containing a path is relative to
+        this configuration file, for example ../bootable_images/iped_table.
       template_value: iped_table
       default: iped_table
 
@@ -40,7 +42,9 @@ iped_output:
       title: Encrypted data filename
       description: >-
         Filename of the encrypted data blobs without file extension. This file
-        is generated only when data_blobs are configured.
+        is generated only when data_blobs are configured. A plain file name is
+        placed into output_folder; a name containing a path is relative to this
+        configuration file.
       template_value: encrypted_blob
       default: encrypted_blob
 
@@ -49,7 +53,9 @@ iped_output:
       title: Combined image filename
       description: >-
         Filename of the optional combined table and encrypted-data image without
-        file extension. It must differ from output_name and encrypted_name.
+        file extension. It must differ from output_name and encrypted_name. A
+        plain file name is placed into output_folder; a name containing a path
+        is relative to this configuration file.
       template_value: iped_image
       default: iped_image
 
@@ -379,7 +385,9 @@ iped:
       title: Data blobs
       description: >-
         Optional list of plain binary blobs to encrypt with the matching IPED
-        context. Each blob must fit completely into one configured context.
+        contexts. A blob may span several contexts or be covered only partly;
+        each part is encrypted with the context that contains it and data
+        outside all contexts is stored as plaintext.
         Encryption is available through SPSDK's built-in Python backend; an
         optional native backend can accelerate supported legacy models.
       items:
@@ -475,9 +483,10 @@ iped:
             type: [number, string]
             title: Context nonce for IV derivation
             description: >-
-              Optional 64-bit nonce used when key derivation is enabled. For ROM
-              configuration blobs the nonce is serialized and takes precedence
-              over an explicitly configured IV.
+              64-bit nonce used for IV derivation. Required for families using
+              the ROM configuration blob (RT266x) and when key derivation is
+              enabled. For ROM configuration blobs the nonce is serialized and
+              takes precedence over an explicitly configured IV.
             format: number
             template_value: "0x0011223344556677"
             skip_in_template: true
@@ -550,7 +559,9 @@ iped_v1_output:
       type: string
       title: Output config filename
       description: >-
-        Filename, without extension, of the IPED V1 configuration structure.
+        Filename, without extension, of the IPED V1 configuration structure. A
+        plain file name is placed into output_folder; a name containing a path
+        is relative to this configuration file.
       template_value: iped_config
       default: iped_config
 

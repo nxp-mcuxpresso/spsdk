@@ -138,14 +138,14 @@ def put_wpc_cert(
 @click.option(
     "-st",
     "--service-type",
-    type=click.Choice(list(WPC.SERVICES.keys()), case_sensitive=False),
+    type=click.Choice(list(WPC.SERVICES().keys()), case_sensitive=False),
     required=True,
     help="Name of the WPC service type.",
 )
 @click.option(
     "-tt",
     "--target-type",
-    type=click.Choice(list(WPC.TARGETS.keys()), case_sensitive=False),
+    type=click.Choice(list(WPC.TARGETS().keys()), case_sensitive=False),
     required=True,
     help="Name of the MCU target type.",
 )
@@ -155,8 +155,8 @@ def get_template(service_type: str, target_type: str, family: FamilyRevision, ou
     """Generate a configuration template."""
     template = WPC.get_config_template(
         family=family,
-        service=WPC.SERVICES[service_type],
-        target=WPC.TARGETS[target_type],
+        service=WPC.SERVICES()[service_type],  # pylint: disable=unsubscriptable-object
+        target=WPC.TARGETS()[target_type],  # pylint: disable=unsubscriptable-object
     )
     write_file(template, output)
     click.echo(

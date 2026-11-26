@@ -10,6 +10,7 @@ pipeline {
 
     options {
         timeout(time: 1, unit: 'HOURS', activity: true)   // timeout on whole pipeline job
+        buildDiscarder(logRotator(daysToKeepStr: '30'))   // discard builds older than one month
     }
 
     environment {
@@ -24,7 +25,8 @@ pipeline {
                         $class: 'GitSCM',
                         branches: scm.branches,
                         doGenerateSubmoduleConfigurations: scm.doGenerateSubmoduleConfigurations,
-                        extensions: scm.extensions + [[$class: 'CloneOption', noTags: false, reference: '', shallow: false]],
+                        extensions: scm.extensions + [[$class: 'CloneOption', noTags: false, reference: '', shallow: false],
+                                                      [$class: 'CleanBeforeCheckout', deleteUntrackedNestedRepositories: true]],
                         submoduleCfg: [],
                         userRemoteConfigs: scm.userRemoteConfigs
                     ])
@@ -32,8 +34,9 @@ pipeline {
         }
         stage('Codecheck') {
             steps {
+                // OS-independent checks (formatting, spelling, headers, ...) run on linux only
                 withVenv(
-                    'tox --recreate -e py310,py314 -- -dc gitcov'
+                    'tox --recreate -e py310,py314 -- -c pytest -c pylint -c mypy -c dependencies'
                 )
             }
         }
@@ -48,6 +51,10 @@ pipeline {
                 replyTo: '$DEFAULT_REPLYTO', subject: '${DEFAULT_SUBJECT}',
                 to: emailextrecipients([[$class: 'DevelopersRecipientProvider'],
                                         [$class: 'RequesterRecipientProvider']]))
+        }
+        cleanup {
+            // Per-PR workspaces (venvs, build outputs) are 1-2 GB each and fill agent disks.
+            cleanWs(deleteDirs: true, disableDeferredWipeout: true, notFailBuild: true)
         }
     }
 }

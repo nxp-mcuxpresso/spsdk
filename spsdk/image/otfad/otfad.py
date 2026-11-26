@@ -35,6 +35,7 @@ from spsdk.utils.misc import (
     Endianness,
     align_block,
     file_extension,
+    output_format_from_path,
     reverse_bits,
     split_data,
     value_to_bytes,
@@ -326,7 +327,8 @@ class KeyBlob:
 
         The method encrypts the provided data using AES-CTR mode with the key blob's
         encryption key. It supports byte swapping for different flash device organizations
-        and validates address alignment and ranges.
+        and validates address alignment. The address range is not checked, the caller is
+        responsible for it (image may be out of the key blob range e.g. with flash remap).
 
         :param base_address: Base address of data in target memory, must be 16-byte aligned.
         :param data: Data to be encrypted (e.g. plain image data).
@@ -339,15 +341,7 @@ class KeyBlob:
             raise SPSDKError("Invalid start address")  # Start address has to be 16 byte aligned
         data = align_block(data, self._ENCRYPTION_BLOCK_SIZE)  # align data length
         data_len = len(data)
-
-        # check start and end addresses
-        # Support dual image boot, do not raise exception
-        if not self.matches_range(base_address, base_address + data_len - 1):
-            logger.warning(
-                f"Image address range is not within key blob: "
-                f"{hex(self.start_addr)}-{hex(self.end_addr)}."
-                " Ignore this if flash remap feature is used"
-            )
+        # The image is not required to be within the key blob range (flash remap, dual image boot)
         result = b""
 
         if not counter_value:
@@ -922,6 +916,7 @@ class Otfad(FeatureBaseClass):
                     "encrypted_blobs",
                     config["output_folder"],
                     file_extension=file_extension(config.get_str("output_format", "bin")),
+                    keep_image_extension=True,
                 ),
                 offset=start_address - table_address,
             )
@@ -956,6 +951,7 @@ class Otfad(FeatureBaseClass):
             "OTFAD_Table",
             output_folder,
             file_extension=file_extension(config.get_str("output_format", "bin")),
+            keep_image_extension=True,
         )
         otfad_all = filepath_from_config(
             config,
@@ -963,6 +959,7 @@ class Otfad(FeatureBaseClass):
             "otfad_whole_image",
             output_folder,
             file_extension=file_extension(config.get_str("output_format", "bin")),
+            keep_image_extension=True,
         )
         generate_readme = config.get("generate_readme", True)
         data_alignment = config.get_int("data_alignment", 512)
@@ -1033,7 +1030,10 @@ class Otfad(FeatureBaseClass):
         sb21_supported = self.db.get_bool(DatabaseManager.OTFAD, "sb_21_supported", default=False)
         logger.info(f" The OTFAD image structure:\n{binary_image.draw()}")
         if self.otfad_all_name != "":
-            binary_image.save_binary_image(path=self.otfad_all_name, file_format=self.output_format)
+            binary_image.save_binary_image(
+                path=self.otfad_all_name,
+                file_format=output_format_from_path(self.otfad_all_name, self.output_format),
+            )
             logger.info(f"Created OTFAD Image:\n{self.otfad_all_name}")
         else:
             logger.info("Skipping export of OTFAD image")
@@ -1056,7 +1056,10 @@ class Otfad(FeatureBaseClass):
         for i, image in enumerate(binary_image.sub_images):
             if image.name != "":
                 image.offset = 0
-                image.save_binary_image(path=image.name, file_format=self.output_format)
+                image.save_binary_image(
+                    path=image.name,
+                    file_format=output_format_from_path(image.name, self.output_format),
+                )
                 generated_files.append(image.name)
                 logger.info(f"Created OTFAD Image:\n{image.name}")
                 memory_map += f"\n{image.name}:\n{image!s}"

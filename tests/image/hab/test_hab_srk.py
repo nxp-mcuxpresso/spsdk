@@ -14,8 +14,10 @@ import os
 from typing import Any
 
 import pytest
+from cryptography import x509
 
-from spsdk.crypto.certificate import Certificate
+from spsdk.crypto.certificate import Certificate, generate_name
+from spsdk.crypto.keys import EccCurve, PrivateKeyEcc, PrivateKeyRsa
 from spsdk.exceptions import SPSDKError
 from spsdk.image.hab.constants import EnumAlgorithm
 from spsdk.image.hab.hab_srk import (
@@ -26,6 +28,38 @@ from spsdk.image.hab.hab_srk import (
     SrkItemRSA,
     SrkTable,
 )
+
+
+def _key_usage(key_cert_sign: bool) -> x509.KeyUsage:
+    """Create Key Usage extension.
+
+    :param key_cert_sign: Value of keyCertSign bit.
+    :return: Key Usage extension.
+    """
+    return x509.KeyUsage(
+        digital_signature=False,
+        content_commitment=False,
+        key_encipherment=False,
+        data_encipherment=False,
+        key_agreement=False,
+        key_cert_sign=key_cert_sign,
+        crl_sign=False,
+        encipher_only=False,
+        decipher_only=False,
+    )
+
+
+def _netscape_cert_type(cert_type: int) -> x509.UnrecognizedExtension:
+    """Create Netscape certificate type extension.
+
+    :param cert_type: First octet of the certificate type bit string.
+    :return: Netscape certificate type extension.
+    """
+    unused_bits = (cert_type & -cert_type).bit_length() - 1
+    return x509.UnrecognizedExtension(
+        x509.ObjectIdentifier("2.16.840.1.113730.1.1"),
+        bytes([0x03, 0x02, unused_bits, cert_type]),
+    )
 
 
 def test_rsa_srk_table_parser(data_dir: str) -> None:
@@ -304,3 +338,76 @@ def test_srk_table_item_not_eq() -> None:
     srk_table = SrkTable(version=0x40)
     srk = SrkItemRSA(modulus=bytes(2048), exponent=bytes(4))
     assert srk != srk_table
+
+
+@pytest.mark.parametrize(
+    "extensions, expected_flag",
+    [
+        # SPSDK pki-tree style: Basic Constraints only
+        ([x509.BasicConstraints(ca=True, path_length=None)], 0x80),
+        ([x509.BasicConstraints(ca=False, path_length=None)], 0),
+        # CST hab4_pki_tree style: Basic Constraints and Key Usage with keyCertSign
+        ([x509.BasicConstraints(ca=True, path_length=None), _key_usage(True)], 0x80),
+        ([x509.BasicConstraints(ca=True, path_length=None), _key_usage(False)], 0),
+        ([x509.BasicConstraints(ca=False, path_length=None), _key_usage(True)], 0),
+        # No Basic Constraints: legacy CA when Key Usage allows certificate signing
+        ([_key_usage(True)], 0x80),
+        ([_key_usage(False)], 0),
+        # No Basic Constraints: legacy CA when Netscape certificate type has any CA bit
+        ([_netscape_cert_type(0x04)], 0x80),
+        ([_netscape_cert_type(0x02)], 0x80),
+        ([_netscape_cert_type(0x01)], 0x80),
+        ([_netscape_cert_type(0x80)], 0),
+        ([_netscape_cert_type(0x04), _key_usage(False)], 0),
+        ([x509.BasicConstraints(ca=False, path_length=None), _netscape_cert_type(0x04)], 0),
+        ([], 0),
+    ],
+)
+@pytest.mark.parametrize("key_type", ["rsa2048", "secp256r1"])
+def test_srk_item_ca_flag(
+    key_type: str, extensions: list[x509.ExtensionType], expected_flag: int
+) -> None:
+    """Test that SRK CA flag is derived from certificate the same way as CST srktool does.
+
+    :param key_type: Type of the SRK key.
+    :param extensions: Certificate extensions.
+    :param expected_flag: Expected flag value in the SRK item.
+    """
+    key = (
+        PrivateKeyRsa.generate_key(key_size=2048)
+        if key_type == "rsa2048"
+        else PrivateKeyEcc.generate_key(curve_name=EccCurve.SECP256R1)
+    )
+    name = generate_name([{"COMMON_NAME": "SRK"}])
+    cert = Certificate.generate_certificate(
+        subject=name,
+        issuer=name,
+        subject_public_key=key.get_public_key(),
+        issuer_private_key=key,
+        extensions=extensions,
+    )
+    srk_item = SrkItem.from_certificate(cert)
+    assert isinstance(srk_item, (SrkItemRSA, SrkItemEcc))
+    assert srk_item.flag == expected_flag
+    assert srk_item.export()[7] == expected_flag
+
+
+@pytest.mark.parametrize(
+    "cert_file, expected_flag",
+    [
+        # self-issued version 1 certificate is a legacy CA
+        ("srk_v1_self_issued_crt.pem", 0x80),
+        ("srk_v1_not_self_issued_crt.pem", 0),
+    ],
+)
+def test_srk_item_ca_flag_v1_certificate(data_dir: str, cert_file: str, expected_flag: int) -> None:
+    """Test SRK CA flag of X.509 version 1 certificates without extensions.
+
+    :param data_dir: Directory with test data.
+    :param cert_file: Certificate file name.
+    :param expected_flag: Expected flag value in the SRK item.
+    """
+    cert = Certificate.load(os.path.join(data_dir, cert_file))
+    srk_item = SrkItem.from_certificate(cert)
+    assert isinstance(srk_item, SrkItemEcc)
+    assert srk_item.flag == expected_flag

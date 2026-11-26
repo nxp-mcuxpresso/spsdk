@@ -1,0 +1,17 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ======================  PFR CMPA configuration for mcxn946 (internal NPX/PRINCE encryption)  ======================
+# NPX (on-chip flash PRINCE) encrypts the selected internal-flash sectors transparently. Each of the
+# four NPX contexts has a 64-bit sector bitmap (NPX_CTXn_WD0/WD1). Here context 0 encrypts the first
+# 16 flash sectors (bits 0..15 of WD0), which covers the demo application at address 0x0.
+# The RKTH is taken from the referenced certificate block during 'pfr export' (-e option).
+family: mcxn946
+revision: latest
+type: CMPA
+settings:
+  # Sector bitmap for NPX PRINCE context 0, sectors 0..31 (0x0000FFFF = sectors 0..15).
+  NPX_CTX0_WD0: '0x0000FFFF'
+  # Sector bitmap for NPX PRINCE context 0, sectors 32..63.
+  NPX_CTX0_WD1: '0x00000000'

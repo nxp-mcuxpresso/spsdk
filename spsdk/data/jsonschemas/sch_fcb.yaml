@@ -19,7 +19,17 @@ fcb:
     fcb_settings:
       type: object
       title: Settings of FCB
-      description: Flash Configuration settings for selected MCU.
+      description: >-
+        Flash Configuration settings for selected MCU. If a preset is used, these settings are
+        applied on top of the preset values.
       # properties will be added in runtime
+    preset:
+      type: string
+      title: FCB preset
+      description: >-
+        Name of the FCB preset for a standard memory. The preset values are used as a base and
+        the optional 'fcb_settings' are applied on top of them. Available presets:
+      skip_in_template: true
+      # enum: will be added in runtime, the property is removed for families without presets
 
   required: [fcb_settings]

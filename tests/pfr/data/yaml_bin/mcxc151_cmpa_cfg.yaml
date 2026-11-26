@@ -23,17 +23,10 @@ settings:
   # ------------------------------------------===== BOOT_CFG0 [Optional] =====------------------------------------------
   # Description: Offset: 0x00000000, Width: 32b; Boot configuration
   BOOT_CFG0:
-    # ----------------------------------------===== BOOT_SPEED [Optional] =====-----------------------------------------
-    # Description: Offset: 12b, Width: 2b, Core clock
-    # - 36MHZ_FRO_@1V0_0, (0): 36Mhz FRO @1v0
-    # - 72MHZ_FRO_@1V1?, (1): 72MHz FRO @1v1?
-    # - 36MHZ_FRO_@1V0_2, (2): 36Mhz FRO @1v0
-    # - 36MHZ_FRO_@1V0_3, (3): 36Mhz FRO @1v0
-    # Possible options: <36MHZ_FRO_@1V0_0, 72MHZ_FRO_@1V1?, 36MHZ_FRO_@1V0_2, 36MHZ_FRO_@1V0_3>
-    BOOT_SPEED: 36MHZ_FRO_@1V0_0
-    # ------------------------------------------===== Header [Optional] =====-------------------------------------------
-    # Description: Offset: 16b, Width: 16b, CMPA Header marker should be set to 0x5963
-    Header: 22883
+    # -------------------------------------===== CMPA_Header_marker [Optional] =====-------------------------------------
+    # Description: Offset: 16b, Width: 16b, The CMPA user configuration data is considered valid only when the CMPA user
+    # configuration header maker is properly configured and valid
+    CMPA_Header_marker: 22883
   # ------------------------------------------===== BOOT_CFG1 [Optional] =====------------------------------------------
   # Description: Offset: 0x00000004, Width: 32b; Boot configuration
   BOOT_CFG1:

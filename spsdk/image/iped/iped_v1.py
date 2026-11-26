@@ -17,18 +17,19 @@ import os
 from dataclasses import dataclass
 from typing import Any
 
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from typing_extensions import Self
 
+from spsdk.crypto.symmetric import aes_ecb_encrypt
 from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.fuses.fuses import FuseScript
+from spsdk.image.iped.iped_v2 import resolve_output_name
 from spsdk.image.iped.prince import get_prince_cipher
 from spsdk.utils.abstract_features import FeatureBaseClass
 from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_family
-from spsdk.utils.misc import align_block, file_extension, load_binary, value_to_int
+from spsdk.utils.misc import align_block, file_extension, get_abs_path, load_binary, value_to_int
 from spsdk.utils.verifier import Verifier, VerifierResult
 
 logger = logging.getLogger(__name__)
@@ -547,8 +548,8 @@ class IpedV1(FeatureBaseClass):
             regions=regions,
             fw_version=config.get_int("fw_version", 0),
             version=config.get_int("version", 0),
-            output_name=config.get_str("output_name", "iped_config"),
-            encrypted_name=config.get_str("encrypted_name", "encrypted_blob"),
+            output_name=resolve_output_name(config, "output_name", "iped_config"),
+            encrypted_name=resolve_output_name(config, "encrypted_name", "encrypted_blob"),
             output_format=config.get_str("output_format", "bin"),
             keyblob_address=keyblob_address,
             xspi_instance=xspi_instance,
@@ -599,8 +600,7 @@ class IpedV1(FeatureBaseClass):
 
         # AES key is user_key in little-endian byte order
         aes_key = bytes(reversed(self.user_key))
-        aes_cipher = Cipher(algorithms.AES(aes_key), modes.ECB())
-        cipher_data = aes_cipher.encryptor().update(aes_input)
+        cipher_data = aes_ecb_encrypt(aes_key, aes_input)
 
         return int.from_bytes(cipher_data[0:8], "little")
 
@@ -689,7 +689,7 @@ class IpedV1(FeatureBaseClass):
         generated_files: list[str] = []
 
         # Export IPED table
-        output_file = os.path.join(output_path, f"{self.output_name}{extension}")
+        output_file = get_abs_path(f"{self.output_name}{extension}", output_path)
         image = BinaryImage(name=self.output_name, binary=self.export(), size=self.table_size)
         image.save_binary_image(output_file, file_format=self.output_format)
         generated_files.append(output_file)
@@ -704,7 +704,7 @@ class IpedV1(FeatureBaseClass):
                 logger.info(f"Encrypted {len(plain_data)} bytes at 0x{blob.address:x}")
 
             # Write concatenated encrypted blob
-            encrypted_file = os.path.join(output_path, f"{self.encrypted_name}{extension}")
+            encrypted_file = get_abs_path(f"{self.encrypted_name}{extension}", output_path)
             encrypted_binary = b"".join(encrypted_parts)
             enc_image = BinaryImage(
                 name=self.encrypted_name, binary=encrypted_binary, size=len(encrypted_binary)

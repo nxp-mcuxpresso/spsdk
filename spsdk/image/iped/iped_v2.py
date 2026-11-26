@@ -23,9 +23,10 @@ from struct import pack, unpack_from
 from typing import Any
 
 from cryptography.hazmat.primitives import cmac
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives.ciphers import algorithms
 from typing_extensions import Self
 
+from spsdk.crypto.symmetric import aes_ecb_encrypt
 from spsdk.exceptions import SPSDKError, SPSDKKeyError, SPSDKValueError
 from spsdk.image.ahab.ahab_data import KeyblobLifeCycle
 from spsdk.image.iped.prince import PrinceError, PrinceV2Cipher
@@ -34,7 +35,7 @@ from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_family
-from spsdk.utils.misc import Endianness, align_block, file_extension, value_to_int
+from spsdk.utils.misc import Endianness, align_block, file_extension, get_abs_path, value_to_int
 from spsdk.utils.spsdk_enum import SpsdkEnum
 from spsdk.utils.verifier import Verifier, VerifierResult
 
@@ -44,6 +45,23 @@ ROM_CONFIG_HEADER_SIZE = 0x10
 ROM_CONFIG_REGION_SIZE = 0x20
 ROM_CONFIG_HEADER_TAG = 0x4C
 ROM_CONFIG_REGION_TAG = 0x43
+
+
+def resolve_output_name(config: Config, key: str, default: str) -> str:
+    """Resolve IPED output file name in the same way as OTFAD and IEE.
+
+    A plain file name is kept as is and placed into the output folder on export, while
+    a name containing a path is resolved relative to the configuration file.
+
+    :param config: IPED configuration.
+    :param key: Configuration key with the output name.
+    :param default: Default output name.
+    :return: Plain file name or absolute path, both without file extension.
+    """
+    name = config.get_str(key, default)
+    if not os.path.dirname(name):
+        return name
+    return get_abs_path(name, config.config_dir)
 
 
 def _uses_rom_config_blob(family: FamilyRevision | None) -> bool:
@@ -207,8 +225,7 @@ def _generate_iv(iv_key: bytes, fw_version: int, nonce: int) -> list[int]:
     plaintext = nonce.to_bytes(8, "little")
     plaintext += fw_version.to_bytes(4, "little")
     plaintext += bytes(4)
-    encryptor = Cipher(algorithms.AES(iv_key), modes.ECB()).encryptor()
-    ciphertext = encryptor.update(plaintext) + encryptor.finalize()
+    ciphertext = aes_ecb_encrypt(iv_key, plaintext)
     iv_msb = int.from_bytes(ciphertext[0:4], "big")
     iv_lsb = int.from_bytes(ciphertext[4:8], "big")
     return [iv_msb, iv_lsb]
@@ -1245,39 +1262,64 @@ class IpedV2(FeatureBaseClass):
         """
         return self.db.get_bool(self.FEATURE, "interleaved_gcm_tags", False)
 
-    def _get_context_for_range(self, start_address: int, data_size: int) -> tuple[int, IpedContext]:
-        """Find IPED context that fully contains data range.
+    def _get_context_at(self, address: int) -> tuple[int, IpedContext] | None:
+        """Find IPED context that contains the address.
+
+        :param address: Absolute address.
+        :return: Tuple with context index and context, or None if no context contains it.
+        """
+        for index, context in enumerate(self.contexts):
+            if context.start_address <= address < context.end_address:
+                return index, context
+        return None
+
+    def _split_by_contexts(
+        self, start_address: int, data_size: int
+    ) -> list[tuple[int, int, int | None]]:
+        """Split data range into parts covered by one IPED context or by none.
 
         :param start_address: Start address of the data.
         :param data_size: Data size in bytes.
-        :raises SPSDKError: If no context fully contains the data range.
-        :return: Tuple containing matching context index and context.
+        :return: List of (start offset, end offset, context index or None) tuples.
         """
-        for index, context in enumerate(self.contexts):
-            end_address = start_address + context.encrypted_data_size(data_size)
-            if context.matches_range(start_address, end_address):
-                return index, context
-        raise SPSDKError(
-            f"No IPED context covers data range starting at {hex(start_address)} "
-            f"with plaintext length {hex(data_size)}."
-        )
+        segments: list[tuple[int, int, int | None]] = []
+        data_end = start_address + data_size
+        address = start_address
+        while address < data_end:
+            found = self._get_context_at(address)
+            if found:
+                index: int | None = found[0]
+                segment_end = min(data_end, found[1].end_address)
+            else:
+                index = None
+                segment_end = min(
+                    [data_end]
+                    + [
+                        context.start_address
+                        for context in self.contexts
+                        if context.start_address > address
+                    ]
+                )
+            segments.append((address - start_address, segment_end - start_address, index))
+            address = segment_end
+        return segments
 
-    def encrypt_image(self, image: bytes, base_addr: int) -> bytes:
-        """Encrypt one data blob with the matching IPED context.
+    def _encrypt_segment(self, data: bytes, address: int, context_index: int) -> bytes:
+        """Encrypt one data segment with the given IPED context.
 
-        :param image: Plain data blob.
-        :param base_addr: Absolute address where the blob will be stored.
-        :raises SPSDKError: If no context matches the blob range or backend encryption fails.
-        :return: Encrypted data blob.
+        :param data: Plain data that fits into the context.
+        :param address: Absolute address of the data.
+        :param context_index: Index of the IPED context.
+        :return: Encrypted data.
         """
-        context_index, context = self._get_context_for_range(base_addr, len(image))
+        context = self.contexts[context_index]
         logger.debug(
-            f"Encrypting IPED data range {hex(base_addr)}:"
-            f"{hex(base_addr + len(image))} using {context.mode.label} context."
+            f"Encrypting IPED data range {hex(address)}:"
+            f"{hex(address + len(data))} using {context.mode.label} context."
         )
         return context.encrypt_data(
-            data=image,
-            address=base_addr,
+            data=data,
+            address=address,
             double_encryption=self.double_encryption,
             family=self.family,
             device=self.device,
@@ -1285,6 +1327,55 @@ class IpedV2(FeatureBaseClass):
             context_nr=context.region_id if context.region_id is not None else context_index,
             interleaved_gcm_tags=self.interleaved_gcm_tags,
         )
+
+    def encrypt_image(self, image: bytes, base_addr: int) -> bytes:
+        """Encrypt one data blob with the matching IPED contexts.
+
+        The blob does not have to fit into one context. Each part of the blob is encrypted
+        with the context that contains it, parts outside all contexts are kept as plaintext,
+        because the controller reads memory outside a context as plaintext.
+
+        :param image: Plain data blob.
+        :param base_addr: Absolute address where the blob will be stored.
+        :raises SPSDKError: If no context covers the blob, the data layout cannot be kept or
+            backend encryption fails.
+        :return: Encrypted data blob.
+        """
+        segments = self._split_by_contexts(base_addr, len(image))
+        if all(index is None for _, _, index in segments):
+            raise SPSDKError(
+                f"No IPED context covers data range starting at {hex(base_addr)} "
+                f"with plaintext length {hex(len(image))}."
+            )
+        encrypted = bytearray()
+        for segment_nr, (start, end, index) in enumerate(segments):
+            data = image[start:end]
+            address = base_addr + start
+            if index is None:
+                if any(data):
+                    logger.warning(
+                        f"Data blob range {hex(address)}:{hex(base_addr + end)} is not covered "
+                        "by any IPED context; it is stored as plaintext."
+                    )
+                encrypted.extend(data)
+                continue
+            encrypted_data = self._encrypt_segment(data, address, index)
+            encrypted.extend(encrypted_data)
+            if len(encrypted_data) != len(data) and segment_nr < len(segments) - 1:
+                # Interleaved GCM tags shift the data layout, so only trailing zero padding
+                # outside all contexts may follow; it has no fixed place to go and is dropped.
+                if any(image[end:]) or any(
+                    idx is not None for _, _, idx in segments[segment_nr + 1 :]
+                ):
+                    context = self.contexts[index]
+                    raise SPSDKError(
+                        f"IPED context {hex(context.start_address)}-{hex(context.end_address)} "
+                        f"changes the size of encrypted data range {hex(address)}:"
+                        f"{hex(base_addr + end)}, which would shift the data placed behind it. "
+                        "The context must cover the rest of the data blob."
+                    )
+                break
+        return bytes(encrypted)
 
     def export_image(self) -> BinaryImage | None:
         """Export encrypted data blobs.
@@ -1313,7 +1404,7 @@ class IpedV2(FeatureBaseClass):
         """
         iped_image = BinaryImage(self.image_name, offset=self.keyblob_address)
         keyblob = BinaryImage(
-            name=self.output_name,
+            name=os.path.basename(self.output_name),
             size=self.table_size,
             offset=0,
             description=f"IPED table/keyblob for {self.family}",
@@ -1333,9 +1424,14 @@ class IpedV2(FeatureBaseClass):
         """
         os.makedirs(output_path, exist_ok=True)
         extension = file_extension(self.output_format)
-        output_file = os.path.join(output_path, f"{self.output_name}{extension}")
-        table_data = self.export()
-        image = BinaryImage(name=self.output_name, binary=table_data, size=len(table_data))
+        # Sparse block size is used only for SPARSE format; the default 4 KiB block would pad
+        # the table and the encrypted data far beyond their real size.
+        sparse_block_size = self.db.get_int(self.FEATURE, "address_alignment")
+        output_file = get_abs_path(f"{self.output_name}{extension}", output_path)
+        image = BinaryImage(
+            name=os.path.basename(self.output_name), binary=self.export(), size=self.table_size
+        )
+        image.sparse_block_size = sparse_block_size
         image.save_binary_image(output_file, file_format=self.output_format)
         generated_files = [output_file]
 
@@ -1343,15 +1439,17 @@ class IpedV2(FeatureBaseClass):
         if encrypted_image is None:
             return generated_files
 
-        encrypted_file = os.path.join(output_path, f"{self.encrypted_name}{extension}")
+        encrypted_file = get_abs_path(f"{self.encrypted_name}{extension}", output_path)
         encrypted_export = deepcopy(encrypted_image)
         encrypted_export.offset = 0
+        encrypted_export.sparse_block_size = sparse_block_size
         encrypted_export.save_binary_image(encrypted_file, file_format=self.output_format)
         generated_files.append(encrypted_file)
 
         full_image = self.binary_image(encrypted_image=encrypted_image)
         full_image.offset -= self.keyblob_address
-        image_file = os.path.join(output_path, f"{self.image_name}{extension}")
+        full_image.sparse_block_size = sparse_block_size
+        image_file = get_abs_path(f"{self.image_name}{extension}", output_path)
         full_image.save_binary_image(image_file, file_format=self.output_format)
         generated_files.append(image_file)
         return generated_files
@@ -1523,6 +1621,11 @@ class IpedV2(FeatureBaseClass):
                 context_properties["region_id"]["skip_in_template"] = False
                 for key in ("iv", "key", "aad", "freeze"):
                     context_properties[key]["skip_in_template"] = True
+        if database.get_bool(cls.FEATURE, "rom_config_blob", False):
+            # ROM configuration blob serializes the nonce of every context
+            context_items = schemas["iped"]["properties"]["contexts"]["items"]
+            context_items["required"] = [*context_items["required"], "nonce"]
+            context_items["properties"]["nonce"]["skip_in_template"] = False
         return [sch_family, schemas["iped_output"], schemas["iped"]]
 
     @staticmethod
@@ -1693,10 +1796,10 @@ class IpedV2(FeatureBaseClass):
         :raises SPSDKValueError: If explicit output names collide.
         :return: Table name, encrypted data name, combined image name, and output format.
         """
-        output_name = config.get_str("output_name", "iped_table")
+        output_name = resolve_output_name(config, "output_name", "iped_table")
         output_format = config.get_str("output_format", "bin")
-        encrypted_name = config.get_str("encrypted_name", "encrypted_blob")
-        image_name = config.get_str("image_name", "iped_image")
+        encrypted_name = resolve_output_name(config, "encrypted_name", "encrypted_blob")
+        image_name = resolve_output_name(config, "image_name", "iped_image")
         if image_name == encrypted_name:
             if "image_name" in config:
                 raise SPSDKValueError("IPED image_name and encrypted_name must be different.")

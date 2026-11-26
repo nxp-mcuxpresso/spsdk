@@ -1,5 +1,5 @@
 {
-    "cpu": "MCXA457",
+    "cpu": "mcxa457",
     "groups": [
         {
             "group": {
@@ -411,7 +411,7 @@
                             "width": 5,
                             "id": "field004-bits16-20",
                             "name": "FLASH_REMAP_SIZE",
-                            "description": "Flash remap size. FLASH_REMAP_SIZE defines the size of the secondary boot image (the range of flash addresses that will be remapped)in internal flash, where remapped address end = (FLASH_REMAP_SIZE + 1)"
+                            "description": "Flash remap size. FLASH_REMAP_SIZE defines the size of the secondary boot image (the range of flash addresses that will be remapped)in internal flash, where remapped address end = (FLASH_REMAP_SIZE + 1) * 32 KB. For example, if FLASH_REMAP_SIZE = 2, then the first 96KB of addresses will be remapped to flash bank1 instead of flash bank0 when remap is active. Set this field to 0 if you do not want to use the flash remap feature"
                         },
                         {
                             "width": 3
@@ -420,7 +420,7 @@
                             "width": 8,
                             "id": "field004-bits24-31",
                             "name": "EXT_CMPA_32B_SIZE",
-                            "description": "Customer extended CMPA size expressed as multiple of 32 bytes. Total CMPA area = CMPA_BASE_ADDR + 32"
+                            "description": "Customer extended CMPA size expressed as multiple of 32 bytes. Total CMPA area = CMPA_BASE_ADDR + 32 * EXT_CMPA32B_SIZE. The minimum value for this field should be 16 and max value 160"
                         }
                     ]
                 },
@@ -740,7 +740,7 @@
                             "width": 10,
                             "id": "field014-bits7-16",
                             "name": "QSPI_IMAGE_OFFSET",
-                            "description": "Any offset in memory mapped FlexSPI Flash area could be remapped to offset zero to support eXecute In Place (XIP) of image programmed at different offset. This allows to build all update images with same RO base address, which are programmed at offset 0 or higher offset. FlLEXSPI_IMAGE_OFFSET field specifies the offset location of the second image. FLEXSPI_REMAP_IMAGE_SIZE field specifies the size multiple to determine the size of area to be remapped. If this field is left blank boot ROM will not enable FlexSPI remap feature. The physical flash offset is computed as below: physical offset = FLEXSPI_IMAGE_OFFSET"
+                            "description": "Any offset in memory mapped FlexSPI Flash area could be remapped to offset zero to support eXecute In Place (XIP) of image programmed at different offset. This allows to build all update images with same RO base address, which are programmed at offset 0 or higher offset. FlLEXSPI_IMAGE_OFFSET field specifies the offset location of the second image. FLEXSPI_REMAP_IMAGE_SIZE field specifies the size multiple to determine the size of area to be remapped. If this field is left blank boot ROM will not enable FlexSPI remap feature. The physical flash offset is computed as below: physical offset = FLEXSPI_IMAGE_OFFSET * 256KByte;"
                         },
                         {
                             "width": 4,
@@ -1120,7 +1120,44 @@
                             "width": 3,
                             "id": "field038-bits16-18",
                             "name": "EXT_XTAL_CLK",
-                            "description": "USB PHY input clock frequency. For USB high speed PHY external XTAL input is needed. This field specifies the frequency of XTAL used on board. - 000 - 24 MHz input clock (Divide by 15) - 001 - 30 MHz input clock (Divide by 16) - 010 - 32 MHz input clock (Divide by 20) - 011 - Reserved - 100 - 20 MHz input clock (Divide by 24) - 101 - 19.2 MHz input clock (Divide by 25) - 110 - 16 MHz input clock (Divide by 30) - 111 - 12 MHz input clock (Divide by 40)"
+                            "description": "USB PHY input clock frequency. For USB high speed PHY external XTAL input is needed. This field specifies the frequency of XTAL used on board",
+                            "values": [
+                                {
+                                    "name": "XTAL_24MHZ",
+                                    "value": 0,
+                                    "description": "24 MHz input clock (Divide by 15)"
+                                },
+                                {
+                                    "name": "XTAL_30MHZ",
+                                    "value": 1,
+                                    "description": "30 MHz input clock (Divide by 16)"
+                                },
+                                {
+                                    "name": "XTAL_32MHZ",
+                                    "value": 2,
+                                    "description": "32 MHz input clock (Divide by 20)"
+                                },
+                                {
+                                    "name": "XTAL_20MHZ",
+                                    "value": 4,
+                                    "description": "20 MHz input clock (Divide by 24)"
+                                },
+                                {
+                                    "name": "XTAL_19_2MHZ",
+                                    "value": 5,
+                                    "description": "19.2 MHz input clock (Divide by 25)"
+                                },
+                                {
+                                    "name": "XTAL_16MHZ",
+                                    "value": 6,
+                                    "description": "16 MHz input clock (Divide by 30)"
+                                },
+                                {
+                                    "name": "XTAL_12MHZ",
+                                    "value": 7,
+                                    "description": "12 MHz input clock (Divide by 40)"
+                                }
+                            ]
                         },
                         {
                             "width": 1,

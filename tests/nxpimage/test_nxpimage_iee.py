@@ -20,8 +20,9 @@ import yaml
 
 from spsdk.apps import nxpimage
 from spsdk.image.iee.iee import Iee
+from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.config import Config
-from spsdk.utils.misc import load_binary, load_configuration, use_working_directory
+from spsdk.utils.misc import load_binary, load_configuration, load_text, use_working_directory
 from tests.cli_runner import CliRunner
 
 INPUT_BINARY = "evkmimxrt1170_iled_blinky_cm7_QSPI_FLASH_bootable_nopadding.bin"
@@ -187,6 +188,66 @@ def test_iee_custom_output(
         assert not os.path.isfile(os.path.join(out_dir, "iee_rt117x_blhost.bcf"))
         assert os.path.isfile(os.path.join(out_dir, "readme.txt"))
         assert os.path.isfile(config_dict["output_name"] + ".bin")
+
+
+@pytest.mark.parametrize(
+    "keyblob_name,keyblob_format",
+    [("iee_keyblob.bin", "bin"), ("iee_keyblob.s19", "srec"), ("iee_keyblob", "hex")],
+)
+def test_iee_output_names_with_extension(
+    cli_runner: CliRunner, tmpdir: Any, data_dir: str, keyblob_name: str, keyblob_format: str
+) -> None:
+    """Test that IEE output names with an image file extension are respected.
+
+    A name with a known image file extension is kept as is and the extension selects the format
+    of the file, while a name without any extension gets the extension of the output_format.
+
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory for test files.
+    :param data_dir: Path to test data directory containing IEE test cases.
+    :param keyblob_name: Keyblob file name used in the configuration.
+    :param keyblob_format: Expected format of the keyblob file.
+    """
+    case = "aes_xts512"
+    work_dir = os.path.join(tmpdir, "iee", case)
+    shutil.copytree(os.path.join(data_dir, "iee", case), work_dir)
+    shutil.copy(os.path.join(data_dir, "iee", INPUT_BINARY), work_dir)
+
+    with use_working_directory(work_dir):
+        config_dict = load_configuration("iee_config.yaml")
+        out_dir = os.path.join(work_dir, config_dict["output_folder"])
+        config_dict["output_format"] = "hex"
+        config_dict["keyblob_name"] = keyblob_name
+        config_dict["encrypted_name"] = "encrypted_blobs.srec"
+        config_dict["output_name"] = "encrypted.bin"
+
+        modified_config = os.path.join(work_dir, "modified_config.yaml")
+        with open(modified_config, "w", encoding="utf-8") as f:
+            yaml.dump(config_dict, f)
+        cmd = f"iee export -c {modified_config}"
+        cli_runner.invoke(nxpimage.main, cmd.split())
+
+        expected_keyblob = keyblob_name if keyblob_format != "hex" else keyblob_name + ".hex"
+        keyblob_file = os.path.join(out_dir, expected_keyblob)
+        assert os.path.isfile(keyblob_file)
+        if keyblob_format == "bin":
+            assert load_binary(keyblob_file) == load_binary("iee_keyblobs.bin")
+        else:
+            keyblob = BinaryImage.load_binary_image(keyblob_file)
+            assert keyblob.export() == load_binary("iee_keyblobs.bin")
+            prefix = "S" if keyblob_format == "srec" else ":"
+            assert load_text(keyblob_file).startswith(prefix)
+
+        encrypted_file = os.path.join(out_dir, "encrypted_blobs.srec")
+        assert os.path.isfile(encrypted_file)
+        assert load_text(encrypted_file).startswith("S")
+        assert BinaryImage.load_binary_image(encrypted_file).export() == load_binary(
+            "evkmimxrt1170_iled_blinky_cm7_QSPI_FLASH_nopadding.bin"
+        )
+
+        whole_image_file = os.path.join(out_dir, "encrypted.bin")
+        assert os.path.isfile(whole_image_file)
+        assert not load_binary(whole_image_file).startswith(b":")
 
 
 @pytest.mark.parametrize(

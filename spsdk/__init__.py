@@ -117,6 +117,9 @@ def configure_logging(config_dict: dict) -> None:
     # Ensure any newly created spsdk.* loggers are also SPSDKLogger
     _ensure_spsdk_loggers_are_correct_type()
 
+    # dictConfig may replace the handlers of the 'spsdk' logger, re-apply strict warnings
+    refresh_warning_strict()
+
 
 def _ensure_spsdk_loggers_are_correct_type() -> None:
     """Ensure all spsdk.* loggers are instances of SPSDKLogger.
@@ -137,6 +140,100 @@ def _ensure_spsdk_loggers_are_correct_type() -> None:
                 # We need to change the class of this logger instance
                 # This is a bit "hacky" but it's the only way to convert existing loggers
                 logger.__class__ = SPSDKLogger
+
+
+class SPSDKWarningStrictHandler(logging.Handler):
+    """Logging handler promoting SPSDK warnings to errors.
+
+    When attached to the 'spsdk' logger, every WARNING record emitted by any 'spsdk.*' logger
+    is first dispatched to all remaining handlers (so the warning still appears in console and
+    log files) and then an SPSDKWarningError is raised from the logging call site.
+    Records of other levels (DEBUG, INFO, ERROR, CRITICAL) are not affected.
+    """
+
+    def __init__(self, logger: logging.Logger) -> None:
+        """Initialize the handler.
+
+        :param logger: Logger the handler is attached to.
+        """
+        super().__init__(level=logging.WARNING)
+        self.logger = logger
+
+    def _dispatch_to_other_handlers(self, record: logging.LogRecord) -> None:
+        """Pass the record to handlers which would otherwise not see it due to the raise.
+
+        These are the handlers registered on the attached logger after this handler and all
+        handlers of its ancestors (respecting the 'propagate' flag), mimicking
+        logging.Logger.callHandlers().
+
+        :param record: Log record to dispatch.
+        """
+        handlers = self.logger.handlers
+        if self in handlers:
+            handlers = handlers[handlers.index(self) + 1 :]
+        current: logging.Logger | None = self.logger
+        while current:
+            for handler in handlers:
+                if record.levelno >= handler.level:
+                    handler.handle(record)
+            if not current.propagate:
+                break
+            current = current.parent
+            handlers = current.handlers if current else []
+
+    def emit(self, record: logging.LogRecord) -> None:
+        """Log the warning record by remaining handlers and raise an exception.
+
+        :param record: Log record to process.
+        :raises SPSDKWarningError: When the record is a warning.
+        """
+        if record.levelno >= logging.ERROR:
+            return
+        # pylint: disable=import-outside-toplevel  # avoid circular import on package init
+        from spsdk.exceptions import SPSDKWarningError
+
+        self._dispatch_to_other_handlers(record)
+        raise SPSDKWarningError(
+            f"Warning promoted to error (SPSDK_WARNING_STRICT): {record.getMessage()}"
+        )
+
+
+_warning_strict_enabled = False
+
+
+def set_warning_strict(enabled: bool) -> None:
+    """Enable or disable promotion of all SPSDK warnings to errors.
+
+    It is enabled automatically on import when the SPSDK_WARNING_STRICT environment variable
+    is set to a truthy value. This function allows to change the behavior at runtime.
+
+    :param enabled: True to raise SPSDKWarningError on every SPSDK warning, False to only log.
+    """
+    global _warning_strict_enabled  # pylint: disable=global-statement
+    _warning_strict_enabled = enabled
+    spsdk_logger = logging.getLogger("spsdk")
+    for handler in list(spsdk_logger.handlers):
+        if isinstance(handler, SPSDKWarningStrictHandler):
+            spsdk_logger.removeHandler(handler)
+    if enabled:
+        spsdk_logger.addHandler(SPSDKWarningStrictHandler(spsdk_logger))
+
+
+def is_warning_strict() -> bool:
+    """Get information whether SPSDK warnings are promoted to errors.
+
+    :return: True if strict warning mode is enabled.
+    """
+    return _warning_strict_enabled
+
+
+def refresh_warning_strict() -> None:
+    """Re-apply the current strict warning mode to the 'spsdk' logger.
+
+    Must be called after any operation that may replace handlers of the 'spsdk' logger
+    (e.g. logging.config.dictConfig) to keep the strict warning handler installed.
+    """
+    set_warning_strict(_warning_strict_enabled)
 
 
 class SPSDKPlatformDirs(PlatformDirs):  # pylint: disable=abstract-method
@@ -229,12 +326,17 @@ __all__ = [
     "SPSDK_SCHEMA_STRICT",
     "SPSDK_SECRETS_PATH",
     "SPSDK_VERSION_BASE",
+    "SPSDK_WARNING_STRICT",
     "SPSDK_YML_INDENT",
     "SPSDKLogger",
     "SPSDKPlatformDirs",
+    "SPSDKWarningStrictHandler",
     "configure_logging",
     "get_logger",
     "get_spsdk_version",
+    "is_warning_strict",
+    "refresh_warning_strict",
+    "set_warning_strict",
     "value_to_bool",
 ]
 
@@ -301,6 +403,10 @@ SPSDK_DEBUG_LOG_FILE = os.environ.get(
 )
 SPSDK_DEPRECATED_STRICT = value_to_bool(os.environ.get("SPSDK_DEPRECATED_STRICT"))
 SPSDK_SCHEMA_STRICT = value_to_bool(os.environ.get("SPSDK_SCHEMA_STRICT"))
+# SPSDK_WARNING_STRICT promotes every warning logged by any 'spsdk.*' logger to SPSDKWarningError
+SPSDK_WARNING_STRICT = value_to_bool(os.environ.get("SPSDK_WARNING_STRICT"))
+if SPSDK_WARNING_STRICT:
+    set_warning_strict(True)
 
 SPSDK_SECRETS_PATH = os.environ.get(
     "SPSDK_SECRETS_PATH", os.path.expanduser("~/.spsdk/secrets.yaml")

@@ -106,6 +106,14 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         """
         return self._interface.is_opened
 
+    @property
+    def interface(self) -> MbootProtocolBase:
+        """Get the communication interface used by this McuBoot instance.
+
+        :return: Instance of the communication interface.
+        """
+        return self._interface
+
     def __init__(
         self,
         interface: MbootProtocolBase,
@@ -303,12 +311,20 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             logger.error("RX: No Response, Timeout Error !")
             raise McuBootConnectionError("No Response from Device") from e
         except SPSDKError as e:
-            logger.error(f"RX: {e}")
-            if expect_response:
-                response = self._interface.read()
-            else:
+            logger.error(
+                f"TX: Data phase interrupted after {total_sent} of {total_to_send} bytes: {e}"
+            )
+            if not expect_response:
                 self._status_code = StatusCode.FAIL.tag
                 raise McuBootCommandError(cmd_tag.label, self._status_code) from e
+            try:
+                response = self._interface.read()
+            except TimeoutError as exc:
+                self._status_code = StatusCode.NO_RESPONSE.tag
+                logger.error("RX: No Response, Timeout Error !")
+                raise McuBootConnectionError(
+                    f"No Response from Device after sending {total_sent} of {total_to_send} bytes"
+                ) from exc
 
         if expect_response:
             assert isinstance(response, CmdResponse)

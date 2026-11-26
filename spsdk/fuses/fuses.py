@@ -16,7 +16,9 @@ import functools
 import logging
 from abc import abstractmethod
 from collections.abc import Callable, Iterator
-from typing import Any
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from typing import Any, NoReturn
 
 from typing_extensions import Self
 
@@ -26,6 +28,7 @@ from spsdk.dat.dm_commands import StartDebugSession
 from spsdk.debuggers.debug_probe import DebugProbe, SPSDKDebugProbeError
 from spsdk.exceptions import (
     SPSDKAttributeError,
+    SPSDKConnectionError,
     SPSDKError,
     SPSDKKeyError,
     SPSDKTypeError,
@@ -33,6 +36,7 @@ from spsdk.exceptions import (
     SPSDKVerificationError,
 )
 from spsdk.fuses.fuse_registers import FuseLock, FuseRegister, FuseRegisters, IndividualWriteLock
+from spsdk.mboot.error_codes import StatusCode
 from spsdk.mboot.mcuboot import McuBoot
 from spsdk.utils.abstract_features import FeatureBaseClassComm
 from spsdk.utils.config import Config
@@ -40,6 +44,9 @@ from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.exceptions import SPSDKRegsError
 from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_family
 from spsdk.utils.misc import Endianness, get_abs_path, value_to_int, write_file
+from spsdk.utils.registers import RegsBitField
+from spsdk.utils.schema_validator import CommentedConfig
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +75,453 @@ class SPSDKRegsInvalidAttribute(SPSDKRegsError):
     attribute on a register object, such as missing shadow register addresses,
     undefined OTP indices, or other required register properties.
     """
+
+
+class FuseVerifyResult(SpsdkEnum):
+    """Per-fuse verification result enumeration.
+
+    This enumeration represents the outcome of comparing an expected fuse value
+    (loaded from a configuration file) against the actual value read from the
+    device during a verification operation.
+    """
+
+    MATCH = (0, "MATCH", "The actual fuse value matches the expected value.")
+    MISMATCH = (1, "MISMATCH", "The actual fuse value does not match the expected value.")
+    NOT_VERIFIABLE = (
+        2,
+        "NOT_VERIFIABLE",
+        "The fuse value could not be read back from the device for comparison.",
+    )
+
+
+class FuseVerifyStatus(SpsdkEnum):
+    """Overall fuse verification status enumeration.
+
+    This enumeration represents the aggregated result of a complete fuse
+    verification run across all fields defined in the expected configuration.
+    """
+
+    PASS = (0, "PASS", "All verifiable fuses match the expected configuration.")
+    FAIL = (1, "FAIL", "At least one fuse value does not match the expected configuration.")
+    PARTIAL = (
+        2,
+        "PARTIAL",
+        "All readable fuses match, but at least one fuse could not be verified.",
+    )
+
+
+class FuseCompareResult(SpsdkEnum):
+    """Per-field fuse configuration comparison result."""
+
+    DIFFERENT = (0, "DIFFERENT", "The field values differ between configurations.")
+    NOT_VERIFIABLE = (
+        1,
+        "NOT_VERIFIABLE",
+        "The field cannot be reliably compared because it is not readable.",
+    )
+
+
+class FuseCompareStatus(SpsdkEnum):
+    """Overall fuse configuration comparison status."""
+
+    IDENTICAL = (0, "IDENTICAL", "The fuse configurations are semantically identical.")
+    DIFFERENT = (1, "DIFFERENT", "At least one fuse field differs.")
+    PARTIAL = (
+        2,
+        "PARTIAL",
+        "Comparable fields are identical, but at least one field is not verifiable.",
+    )
+
+
+@dataclass
+class FuseVerifyRecord:
+    """Single fuse verification record.
+
+    Represents the comparison outcome for one fuse register/field between the
+    expected configuration value and the actual value read from the device.
+
+    :cvar name: Name of the verified fuse register.
+    :cvar expected: Expected value of the fuse as hexadecimal string.
+    :cvar actual: Actual value read from the device as hexadecimal string, or
+        None if the fuse could not be read.
+    :cvar result: Verification result for this fuse.
+    :cvar reason: Human-readable reason, set for MISMATCH and NOT_VERIFIABLE results.
+    :cvar description: Description of the fuse register, used to generate the
+        commented YAML report.
+    :cvar mask: Mask of compared bits as hexadecimal string, or None when the whole
+        register value is compared.
+    """
+
+    name: str
+    expected: str
+    actual: str | None
+    result: FuseVerifyResult
+    reason: str | None = None
+    description: str = ""
+    mask: str | None = None
+
+    def get_config(self) -> dict[str, Any]:
+        """Create a plain dictionary representation suitable for a YAML report.
+
+        Optional values (actual, mask, reason) are omitted when they are not available.
+
+        :return: Dictionary with expected/actual/mask/result/reason keys.
+        """
+        cfg: dict[str, Any] = {"expected": self.expected}
+        if self.actual is not None:
+            cfg["actual"] = self.actual
+        if self.mask is not None:
+            cfg["mask"] = self.mask
+        cfg["result"] = self.result.label
+        if self.reason:
+            cfg["reason"] = self.reason
+        return cfg
+
+    def get_validation_schema(self) -> dict[str, Any]:
+        """Create a JSON schema describing this fuse record for YAML comment generation.
+
+        :return: JSON schema dictionary with a title/description taken from the
+            fuse register and leaf schemas for each report field.
+        """
+        return {
+            "type": "object",
+            "title": self.name,
+            "description": self.description,
+            "required": ["expected", "result"],
+            "properties": {
+                "expected": {
+                    "type": "string",
+                    "title": "Expected value",
+                    "description": "Expected value loaded from the configuration file.",
+                    "template_value": self.expected,
+                },
+                "actual": {
+                    "type": "string",
+                    "title": "Actual value",
+                    "description": (
+                        "Actual value read back from the device. Omitted if the fuse "
+                        "could not be read."
+                    ),
+                    "template_value": self.actual or "",
+                },
+                "mask": {
+                    "type": "string",
+                    "title": "Compared bits mask",
+                    "description": (
+                        "Mask of bits compared between expected and actual value. Only bitfields "
+                        "defined in the configuration are compared. Omitted when the whole "
+                        "register is compared."
+                    ),
+                    "template_value": self.mask or "",
+                },
+                "result": {
+                    "type": "string",
+                    "title": "Verification result",
+                    "description": "Verification result for this fuse.",
+                    "enum_template": FuseVerifyResult.labels(),
+                    "template_value": self.result.label,
+                },
+                "reason": {
+                    "type": "string",
+                    "title": "Reason",
+                    "description": (
+                        "Human-readable reason for a MISMATCH or NOT_VERIFIABLE result. "
+                        "Omitted for MATCH results."
+                    ),
+                    "template_value": self.reason or "",
+                },
+            },
+        }
+
+
+@dataclass
+class FuseVerifyReport:
+    """Complete fuse verification report.
+
+    Aggregates individual fuse verification records and derives the overall
+    verification status for the whole configuration.
+
+    :cvar family: Family revision the verification was performed for.
+    :cvar records: List of individual per-fuse verification records.
+    """
+
+    family: FamilyRevision
+    records: list[FuseVerifyRecord] = field(default_factory=list)
+
+    @property
+    def status(self) -> FuseVerifyStatus:
+        """Get the overall verification status derived from individual records.
+
+        :return: PASS if all records matched, FAIL if any mismatch occurred,
+            PARTIAL if there was no mismatch but at least one record is not
+            verifiable.
+        """
+        results = [record.result for record in self.records]
+        if FuseVerifyResult.MISMATCH in results:
+            return FuseVerifyStatus.FAIL
+        if FuseVerifyResult.NOT_VERIFIABLE in results:
+            return FuseVerifyStatus.PARTIAL
+        return FuseVerifyStatus.PASS
+
+    def get_validation_schema(self) -> list[dict[str, Any]]:
+        """Create the JSON validation schema used to render the commented YAML report.
+
+        The schema is built dynamically from the actual verification records, so
+        each fuse entry carries its real register description as a YAML comment,
+        following the same pattern as :meth:`Registers.get_validation_schema`.
+
+        :return: List with a single top-level validation schema dictionary.
+        """
+        fuses_properties = {record.name: record.get_validation_schema() for record in self.records}
+        return [
+            {
+                "type": "object",
+                "title": "Fuses verification report",
+                "required": ["status", "family", "fuses"],
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "title": "Overall status",
+                        "description": "Overall result of the fuses verification.",
+                        "enum_template": FuseVerifyStatus.labels(),
+                        "template_value": self.status.label,
+                    },
+                    "family": {
+                        "type": "string",
+                        "title": "Family",
+                        "description": "Device family the verification was performed for.",
+                        "template_value": self.family.name,
+                    },
+                    "revision": {
+                        "type": "string",
+                        "title": "Revision",
+                        "description": "Device revision the verification was performed for.",
+                        "template_value": self.family.revision,
+                    },
+                    "fuses": {
+                        "type": "object",
+                        "title": "Fuses",
+                        "description": "Per-fuse verification results.",
+                        "required": list(fuses_properties.keys()),
+                        "properties": fuses_properties,
+                    },
+                },
+            }
+        ]
+
+    def get_config(self) -> dict[str, Any]:
+        """Create a plain dictionary representation of the report.
+
+        :return: Dictionary with status, family, revision, and per-fuse results.
+        """
+        return {
+            "status": self.status.label,
+            "family": self.family.name,
+            "revision": self.family.revision,
+            "fuses": {record.name: record.get_config() for record in self.records},
+        }
+
+    def get_report_yaml(self) -> str:
+        """Create a human-readable commented YAML report of the verification results.
+
+        :return: YAML string with a header comment, overall status, family/revision,
+            and per-fuse verification results, each annotated with the real fuse
+            description as a YAML comment.
+        """
+        main_title = (
+            f"Fuses verification report for {self.family}.\n"
+            f"Created: {datetime.now(timezone.utc).strftime('%d/%m/%Y %H:%M:%S')}.\n"
+            f"NXP SPSDK version: {spsdk_version}"
+        )
+        return CommentedConfig(
+            main_title=main_title,
+            schemas=self.get_validation_schema(),
+        ).get_config(self.get_config())
+
+
+@dataclass
+class FuseCompareRecord:
+    """Single semantic fuse configuration comparison record.
+
+    :cvar name: Canonical register or register.bitfield name.
+    :cvar old: Value from the first configuration, or None when absent.
+    :cvar new: Value from the second configuration, or None when absent.
+    :cvar result: Comparison result.
+    :cvar reason: Human-readable explanation of the result.
+    :cvar description: Register or bitfield description.
+    """
+
+    name: str
+    old: str | None
+    new: str | None
+    result: FuseCompareResult
+    reason: str
+    description: str = ""
+
+    def get_config(self) -> dict[str, str]:
+        """Create a dictionary representation suitable for a YAML report.
+
+        The old/new values are omitted when the field is absent in that configuration.
+
+        :return: Dictionary with old/new/result/reason keys.
+        """
+        cfg: dict[str, str] = {}
+        if self.old is not None:
+            cfg["old"] = self.old
+        if self.new is not None:
+            cfg["new"] = self.new
+        cfg["result"] = self.result.label
+        cfg["reason"] = self.reason
+        return cfg
+
+    def get_validation_schema(self) -> dict[str, Any]:
+        """Create a JSON schema describing this comparison record.
+
+        :return: JSON schema dictionary for commented YAML generation.
+        """
+        return {
+            "type": "object",
+            "title": self.name,
+            "description": self.description,
+            "required": ["result", "reason"],
+            "properties": {
+                "old": {
+                    "type": "string",
+                    "title": "Old value",
+                    "description": (
+                        "Value from the first configuration. Omitted if the field is not defined."
+                    ),
+                    "template_value": self.old or "",
+                },
+                "new": {
+                    "type": "string",
+                    "title": "New value",
+                    "description": (
+                        "Value from the second configuration. Omitted if the field is not defined."
+                    ),
+                    "template_value": self.new or "",
+                },
+                "result": {
+                    "type": "string",
+                    "title": "Comparison result",
+                    "description": "Semantic comparison result for this field.",
+                    "enum_template": FuseCompareResult.labels(),
+                    "template_value": self.result.label,
+                },
+                "reason": {
+                    "type": "string",
+                    "title": "Reason",
+                    "description": "Human-readable explanation of the result.",
+                    "template_value": self.reason,
+                },
+            },
+        }
+
+
+@dataclass
+class FuseCompareReport:
+    """Semantic comparison report for two fuse configurations.
+
+    :cvar first_family: Family revision loaded from the first configuration.
+    :cvar second_family: Family revision loaded from the second configuration.
+    :cvar records: Differing or non-verifiable fields.
+    """
+
+    first_family: FamilyRevision
+    second_family: FamilyRevision
+    records: list[FuseCompareRecord] = field(default_factory=list)
+
+    @property
+    def status(self) -> FuseCompareStatus:
+        """Get the overall comparison status.
+
+        :return: DIFFERENT when any field differs, PARTIAL when only non-verifiable
+            fields are present, otherwise IDENTICAL.
+        """
+        results = [record.result for record in self.records]
+        if FuseCompareResult.DIFFERENT in results:
+            return FuseCompareStatus.DIFFERENT
+        if FuseCompareResult.NOT_VERIFIABLE in results:
+            return FuseCompareStatus.PARTIAL
+        return FuseCompareStatus.IDENTICAL
+
+    def get_validation_schema(self) -> list[dict[str, Any]]:
+        """Create the schema used to render the commented YAML report.
+
+        :return: List containing the report validation schema.
+        """
+        field_properties = {record.name: record.get_validation_schema() for record in self.records}
+        return [
+            {
+                "type": "object",
+                "title": "Fuses configuration comparison report",
+                "required": ["status", "family", "fields"],
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "title": "Overall status",
+                        "description": "Overall semantic comparison result.",
+                        "enum_template": FuseCompareStatus.labels(),
+                        "template_value": self.status.label,
+                    },
+                    "family": {
+                        "type": "string",
+                        "title": "Family",
+                        "description": "Device family shared by both configurations.",
+                        "template_value": self.first_family.name,
+                    },
+                    "old_revision": {
+                        "type": "string",
+                        "title": "Old revision",
+                        "description": "Revision from the first configuration.",
+                        "template_value": self.first_family.revision,
+                    },
+                    "new_revision": {
+                        "type": "string",
+                        "title": "New revision",
+                        "description": "Revision from the second configuration.",
+                        "template_value": self.second_family.revision,
+                    },
+                    "fields": {
+                        "type": "object",
+                        "title": "Changed or non-verifiable fields",
+                        "description": (
+                            "Only fields that differ or cannot be reliably compared are listed."
+                        ),
+                        "required": list(field_properties),
+                        "properties": field_properties,
+                    },
+                },
+            }
+        ]
+
+    def get_config(self) -> dict[str, Any]:
+        """Create a plain dictionary representation of the report.
+
+        :return: Dictionary with status, family revisions, and field results.
+        """
+        return {
+            "status": self.status.label,
+            "family": self.first_family.name,
+            "old_revision": self.first_family.revision,
+            "new_revision": self.second_family.revision,
+            "fields": {record.name: record.get_config() for record in self.records},
+        }
+
+    def get_report_yaml(self) -> str:
+        """Create a human-readable commented YAML comparison report.
+
+        :return: Commented YAML comparison report.
+        """
+        main_title = (
+            f"Fuses configuration comparison report for {self.first_family.name}.\n"
+            f"Created: {datetime.now(timezone.utc).strftime('%d/%m/%Y %H:%M:%S')}.\n"
+            f"NXP SPSDK version: {spsdk_version}"
+        )
+        return CommentedConfig(
+            main_title=main_title,
+            schemas=self.get_validation_schema(),
+        ).get_config(self.get_config())
 
 
 class FuseOperator:
@@ -167,6 +621,24 @@ class FuseOperator:
         raise SPSDKKeyError(f"No such a fuse operator with name {name}")
 
 
+def raise_mboot_read_failure(mboot: McuBoot, index: int) -> NoReturn:
+    """Raise the proper exception for a failed mboot fuse read.
+
+    A missing response from the device is a communication problem, while any other
+    status code means the device refused the read (e.g. read-protected fuse).
+
+    :param mboot: McuBoot instance used for the failed read.
+    :param index: Index of the fuse that failed to be read.
+    :raises SPSDKConnectionError: The device did not respond.
+    :raises SPSDKFuseOperationFailure: The device rejected the read operation.
+    """
+    status = mboot.status_code
+    status_str = mboot.status_string
+    if status == StatusCode.NO_RESPONSE.tag:
+        raise SPSDKConnectionError(f"Reading of fuse {index} failed: {status_str}")
+    raise SPSDKFuseOperationFailure(f"Reading of fuse {index} failed: {status_str}")
+
+
 def mboot_operation_decorator(func: Callable) -> Callable:
     """Decorator to handle MCUboot operations with automatic connection management.
 
@@ -234,11 +706,12 @@ class BlhostFuseOperator(FuseOperator):
         :param index: Index of the fuse to read
         :param length: Length of fuse data in bits
         :raises SPSDKFuseOperationFailure: When the fuse reading operation fails
+        :raises SPSDKConnectionError: When the device does not respond
         :return: The value read from the specified fuse
         """
         ret = self.mboot.efuse_read_once(index)
         if ret is None:
-            raise SPSDKFuseOperationFailure("Reading of fuse failed.")
+            raise_mboot_read_failure(self.mboot, index)
         return ret
 
     @mboot_operation_decorator
@@ -341,10 +814,11 @@ class BlhostFuseOperatorLegacy(FuseOperator):
         :param length: Length of fuse in bits
         :return: Fuse value as integer
         :raises SPSDKFuseOperationFailure: When reading of fuse fails
+        :raises SPSDKConnectionError: When the device does not respond
         """
         ret = self.mboot.fuse_read(index, length // 8)
         if ret is None:
-            raise SPSDKFuseOperationFailure("Reading of fuse failed.")
+            raise_mboot_read_failure(self.mboot, index)
         return value_to_int(ret)
 
     @mboot_operation_decorator
@@ -456,13 +930,24 @@ class NxpeleFuseOperator(FuseOperator):
 
         :param index: Index of the fuse to read
         :param length: Length of fuse in bits (currently not used in implementation)
+        :raises SPSDKEleMessageError: When ELE rejects the read operation
+        :raises SPSDKConnectionError: When the communication with the device fails
         :return: The fuse value as an integer
         """
         from spsdk.ele import ele_message
+        from spsdk.ele.ele_comm import SPSDKEleMessageError
 
         read_common_fuse_msg = ele_message.EleMessageReadCommonFuse(index)
-        with self.ele_handler:
-            self.ele_handler.send_message(read_common_fuse_msg)
+        try:
+            with self.ele_handler:
+                self.ele_handler.send_message(read_common_fuse_msg)
+        except SPSDKEleMessageError:
+            # ELE responded, but refused the operation (e.g. read-protected fuse)
+            raise
+        except SPSDKError as exc:
+            raise SPSDKConnectionError(
+                f"Communication with ELE failed when reading fuse {index}: {exc}"
+            ) from exc
         return read_common_fuse_msg.fuse_value
 
     def write_fuse(
@@ -834,6 +1319,9 @@ class Fuses(FeatureBaseClassComm):
         self.registers = self.get_init_regs(family)
         self._cache_enabled = cache
         self._cache: set[str] = set()  # Store UIDs of cached lock fuse registers
+        # Masks of bits explicitly defined by the loaded configuration, keyed by register UID.
+        # None means that the whole register value was defined.
+        self._configured_masks: dict[str, int | None] = {}
 
     def __repr__(self) -> str:
         """Get string representation of the Fuses class.
@@ -972,10 +1460,29 @@ class Fuses(FeatureBaseClassComm):
         """
         fuses = cls(FamilyRevision.load_from_config(config), fuse_operator=fuse_operator)
         fuses.registers.load_from_config(config.get_config("registers"))
-        for reg_name in config["registers"]:
+        for reg_name, reg_value in config["registers"].items():
             reg = fuses.registers.find_reg(reg_name, include_group_regs=True)
             reg.loaded_from_config = True
+            fuses._configured_masks[reg.uid] = cls._get_configured_mask(reg, reg_value)
         return fuses
+
+    @staticmethod
+    def _get_configured_mask(reg: FuseRegister, reg_value: Any) -> int | None:
+        """Get the mask of register bits explicitly defined by the configuration.
+
+        :param reg: Register loaded from the configuration.
+        :param reg_value: Raw register value from the configuration.
+        :return: Mask of configured bits (applies to the register value returned by
+            ``get_value()``), or None when the whole register value is defined.
+        """
+        if not isinstance(reg_value, dict) or "value" in reg_value:
+            return None
+        mask = 0
+        for bitfield_name in reg_value.get("bitfields", reg_value):
+            bitfield = reg.find_bitfield(bitfield_name)
+            mask |= ((1 << bitfield.width) - 1) << bitfield.offset
+        full_mask = (1 << reg.width) - 1
+        return None if mask & full_mask == full_mask else mask & full_mask
 
     def read_all(
         self,
@@ -1132,6 +1639,16 @@ class Fuses(FeatureBaseClassComm):
         :param verify: Verify write operation after setting each register.
         :raises SPSDKError: If register write operation fails.
         """
+        self._write_multiple(self._get_loaded_registers(include_antipole=True), verify=verify)
+
+    def _get_loaded_registers(self, include_antipole: bool = False) -> list[FuseRegister]:
+        """Collect all fuse registers that were loaded from a configuration.
+
+        :param include_antipole: If True, also include antipole registers derived
+            from the loaded registers.
+        :return: List of registers (including resolved group sub-registers) that were
+            explicitly set from configuration.
+        """
         regs: list[FuseRegister] = []
         added_uids: set[str] = set()
 
@@ -1148,12 +1665,358 @@ class Fuses(FeatureBaseClassComm):
                     if sub_reg.loaded_from_config:
                         add_register(sub_reg)
 
-        # Add also antipole registers.
-        for reg in list(regs):
-            if reg.antipole_register:
-                add_register(reg.antipole_register)
+        if include_antipole:
+            # Add also antipole registers.
+            for reg in list(regs):
+                if reg.antipole_register:
+                    add_register(reg.antipole_register)
 
-        self._write_multiple(regs, verify=verify)
+        return regs
+
+    def verify_loaded(self, force: bool = False) -> FuseVerifyReport:
+        """Verify loaded (expected) fuse values against the actual device state.
+
+        For each fuse register that was loaded from the expected configuration (including
+        derived antipole registers), the method reads back the current value from the
+        device and compares it with the expected (configured) value. When a register is
+        defined by individual bitfields, only those bitfields are compared, so bits not
+        mentioned in the configuration do not cause a false MISMATCH. Fuses that cannot
+        be read from the device (e.g. due to read-protection or write-only access rights)
+        are reported as NOT_VERIFIABLE instead of causing the whole operation to fail.
+
+        :param force: Force reading of the fuse even when access rights or reserved
+            flag would normally prevent it.
+        :return: Verification report containing the per-fuse results and the overall
+            verification status.
+        """
+        regs = self._get_loaded_registers(include_antipole=True)
+        # Capture all expected values first: reading a fuse may update other local
+        # register values (lock fuses, antipole registers).
+        # Derived antipole registers (not defined in configuration) mapped to their source
+        antipole_sources = {
+            reg.antipole_register.uid: reg
+            for reg in regs
+            if reg.antipole_register and not reg.antipole_register.loaded_from_config
+        }
+        expected: dict[str, tuple[int, int | None]] = {}
+        for reg in regs:
+            mask_uid = antipole_sources[reg.uid].uid if reg.uid in antipole_sources else reg.uid
+            expected[reg.uid] = (reg.get_value(), self._configured_masks.get(mask_uid))
+
+        report = FuseVerifyReport(family=self.family)
+        for reg in regs:
+            expected_value, mask = expected[reg.uid]
+            report.records.append(
+                # Antipole registers are marked as reserved, so reading must be forced
+                self._verify_register(
+                    reg, expected_value, mask, force=force or reg.uid in antipole_sources
+                )
+            )
+        return report
+
+    def _verify_register(
+        self, reg: FuseRegister, expected_value: int, mask: int | None, force: bool
+    ) -> FuseVerifyRecord:
+        """Read one register from the device and compare it with the expected value.
+
+        :param reg: Register to be verified.
+        :param expected_value: Expected register value.
+        :param mask: Mask of bits to compare, None to compare the whole register.
+        :param force: Force reading of the fuse regardless of access rights.
+        :return: Verification record for the register.
+        """
+        description = f"Offset: 0x{reg.offset:08X}, Width: {reg.width}b; {reg.description}"
+        expected_hex = self._format_reg_value(reg, expected_value)
+        mask_hex = self._format_reg_value(reg, mask) if mask is not None else None
+        try:
+            self.read_single(reg.uid, force=force)
+        except (SPSDKFuseOperationFailure, SPSDKFuseConfigurationError) as exc:
+            logger.debug(f"Fuse '{reg.name}' could not be verified: {exc}")
+            return FuseVerifyRecord(
+                name=reg.name,
+                expected=expected_hex,
+                actual=None,
+                result=FuseVerifyResult.NOT_VERIFIABLE,
+                reason=str(exc),
+                description=description,
+                mask=mask_hex,
+            )
+        actual_value = reg.get_value()
+        actual_hex = self._format_reg_value(reg, actual_value)
+        compare_mask = mask if mask is not None else -1
+        if (actual_value & compare_mask) == (expected_value & compare_mask):
+            result, reason = FuseVerifyResult.MATCH, None
+        else:
+            result = FuseVerifyResult.MISMATCH
+            reason = f"Expected {expected_hex}, got {actual_hex} from device"
+            reason += f" (compared bits mask {mask_hex})." if mask_hex else "."
+        return FuseVerifyRecord(
+            name=reg.name,
+            expected=expected_hex,
+            actual=actual_hex,
+            result=result,
+            reason=reason,
+            description=description,
+            mask=mask_hex,
+        )
+
+    @staticmethod
+    def _format_reg_value(reg: FuseRegister, value: int) -> str:
+        """Format a register value the same way as ``FuseRegister.get_hex_value``.
+
+        :param reg: Register defining the width and formatting.
+        :param value: Value to be formatted.
+        :return: Hexadecimal string aligned to the register width.
+        """
+        ret = f"{value:0{reg.get_alt_width(value) // 4}X}"
+        return ret if reg.config_as_hexstring else "0x" + ret
+
+    @classmethod
+    def compare_configs(cls, first: Config, second: Config) -> FuseCompareReport:
+        """Compare two fuse configurations using register and bitfield semantics.
+
+        Values are normalized through the device database, so ordering, comments,
+        numeric formatting, and enum formatting do not affect the result. Fields
+        whose static access rights (from the device database) do not allow reading
+        are classified as NOT_VERIFIABLE; read locks derived from configured lock
+        fuse values are not taken into account.
+
+        Both configurations must target the same device family, but they may target
+        different revisions. In that case each configuration is interpreted using
+        the register definitions of its own revision and fields are matched by name.
+
+        :param first: First (old) fuse configuration.
+        :param second: Second (new) fuse configuration.
+        :raises SPSDKValueError: When configurations target different device families.
+        :return: Semantic field-level comparison report.
+        """
+        old_fuses = cls.load_from_config(first)
+        new_fuses = cls.load_from_config(second)
+        if old_fuses.family.name != new_fuses.family.name:
+            raise SPSDKValueError(
+                "Cannot compare fuse configurations for different families: "
+                f"{old_fuses.family.name} and {new_fuses.family.name}."
+            )
+
+        report = FuseCompareReport(old_fuses.family, new_fuses.family)
+        old_registers = cls._get_config_registers(old_fuses, first)
+        new_registers = cls._get_config_registers(new_fuses, second)
+        register_names = list(old_registers)
+        register_names.extend(name for name in new_registers if name not in old_registers)
+
+        for register_name in register_names:
+            old_entry = old_registers.get(register_name)
+            new_entry = new_registers.get(register_name)
+            old_reg = old_entry[0] if old_entry else None
+            new_reg = new_entry[0] if new_entry else None
+            reference_reg = old_reg or new_reg
+            assert reference_reg
+            if reference_reg.get_bitfields():
+                cls._compare_register_bitfields(report, old_entry, new_entry)
+            else:
+                cls._compare_register_value(report, old_entry, new_entry)
+        return report
+
+    @staticmethod
+    def _get_config_registers(
+        fuses: "Fuses", config: Config
+    ) -> dict[str, tuple[FuseRegister, Any]]:
+        """Get configured registers keyed by canonical register name.
+
+        :param fuses: Loaded fuses object.
+        :param config: Source configuration.
+        :return: Mapping of canonical names to loaded registers and source values.
+        """
+        registers: dict[str, tuple[FuseRegister, Any]] = {}
+        for register_name, value in config.get_config("registers").items():
+            register = fuses.registers.find_reg(register_name, include_group_regs=True)
+            registers[register.name] = (register, value)
+        return registers
+
+    @classmethod
+    def _compare_register_bitfields(
+        cls,
+        report: FuseCompareReport,
+        old_entry: tuple[FuseRegister, Any] | None,
+        new_entry: tuple[FuseRegister, Any] | None,
+    ) -> None:
+        """Compare configured bitfields in a register.
+
+        :param report: Report receiving comparison records.
+        :param old_entry: Old register and its source configuration value.
+        :param new_entry: New register and its source configuration value.
+        """
+        old_reg, old_value = old_entry or (None, None)
+        new_reg, new_value = new_entry or (None, None)
+        reference_reg = old_reg or new_reg
+        assert reference_reg
+
+        old_fields, old_is_full = cls._get_configured_bitfields(old_reg, old_value)
+        new_fields, new_is_full = cls._get_configured_bitfields(new_reg, new_value)
+        field_names = [
+            bitfield.name for bitfield in reference_reg.get_bitfields() if not bitfield.reserved
+        ]
+        field_names.extend(name for name in [*old_fields, *new_fields] if name not in field_names)
+
+        for field_name in field_names:
+            old_present = old_reg is not None and (old_is_full or field_name in old_fields)
+            new_present = new_reg is not None and (new_is_full or field_name in new_fields)
+            if not old_present and not new_present:
+                continue
+            cls._compare_bitfield(
+                report=report,
+                old_reg=old_reg,
+                new_reg=new_reg,
+                field_name=field_name,
+                old_present=old_present,
+                new_present=new_present,
+            )
+
+    @staticmethod
+    def _compare_bitfield(
+        report: FuseCompareReport,
+        old_reg: FuseRegister | None,
+        new_reg: FuseRegister | None,
+        field_name: str,
+        old_present: bool,
+        new_present: bool,
+    ) -> None:
+        """Compare one bitfield and append a report record when needed.
+
+        :param report: Report receiving comparison records.
+        :param old_reg: Register loaded from the old configuration.
+        :param new_reg: Register loaded from the new configuration.
+        :param field_name: Canonical bitfield name.
+        :param old_present: Whether the field is configured on the old side.
+        :param new_present: Whether the field is configured on the new side.
+        """
+        old_bitfield, old_numeric, old_display, old_unreadable = (
+            Fuses._get_bitfield_comparison_data(old_reg, field_name, old_present)
+        )
+        new_bitfield, new_numeric, new_display, new_unreadable = (
+            Fuses._get_bitfield_comparison_data(new_reg, field_name, new_present)
+        )
+        reference_bitfield = old_bitfield or new_bitfield
+        reference_reg = old_reg or new_reg
+        assert reference_bitfield and reference_reg
+        if old_unreadable or new_unreadable:
+            report.records.append(
+                FuseCompareRecord(
+                    name=f"{reference_reg.name}.{field_name}",
+                    old=old_display,
+                    new=new_display,
+                    result=FuseCompareResult.NOT_VERIFIABLE,
+                    reason="The register or bitfield is not readable in at least one configuration.",
+                    description=reference_bitfield.description,
+                )
+            )
+        elif old_numeric != new_numeric:
+            report.records.append(
+                FuseCompareRecord(
+                    name=f"{reference_reg.name}.{field_name}",
+                    old=old_display,
+                    new=new_display,
+                    result=FuseCompareResult.DIFFERENT,
+                    reason=(
+                        f"Old value {old_display or 'not defined'}, "
+                        f"new value {new_display or 'not defined'}."
+                    ),
+                    description=reference_bitfield.description,
+                )
+            )
+
+    @staticmethod
+    def _get_bitfield_comparison_data(
+        register: FuseRegister | None, field_name: str, present: bool
+    ) -> tuple[RegsBitField | None, int | None, str | None, bool]:
+        """Get normalized value and readability data for one bitfield.
+
+        :param register: Register loaded from one configuration.
+        :param field_name: Canonical bitfield name.
+        :param present: Whether the bitfield is explicitly represented.
+        :return: Bitfield, numeric value, display value, and unreadable flag.
+        """
+        if register is None:
+            return None, None, None, False
+        bitfield = register.find_bitfield(field_name)
+        if not present:
+            return bitfield, None, None, False
+        return (
+            bitfield,
+            bitfield.get_value(),
+            str(bitfield.get_enum_value()),
+            not register.access.is_readable or not bitfield.access.is_readable,
+        )
+
+    @staticmethod
+    def _get_configured_bitfields(
+        register: FuseRegister | None, source_value: Any
+    ) -> tuple[set[str], bool]:
+        """Get canonical explicitly configured bitfields and whole-register flag.
+
+        :param register: Loaded register, or None when absent from a configuration.
+        :param source_value: Raw register value from the source configuration.
+        :return: Canonical bitfield names and whether the whole register was configured.
+        """
+        if register is None:
+            return set(), False
+        if not isinstance(source_value, dict) or "value" in source_value:
+            return set(), True
+        source_fields = source_value.get("bitfields", source_value)
+        return {register.find_bitfield(name).name for name in source_fields}, False
+
+    @staticmethod
+    def _compare_register_value(
+        report: FuseCompareReport,
+        old_entry: tuple[FuseRegister, Any] | None,
+        new_entry: tuple[FuseRegister, Any] | None,
+    ) -> None:
+        """Compare a register that has no bitfields.
+
+        :param report: Report receiving comparison records.
+        :param old_entry: Old register and source value.
+        :param new_entry: New register and source value.
+        """
+        old_reg = old_entry[0] if old_entry else None
+        new_reg = new_entry[0] if new_entry else None
+        reference_reg = old_reg or new_reg
+        assert reference_reg
+        old_value = old_reg.get_hex_value() if old_reg else None
+        new_value = new_reg.get_hex_value() if new_reg else None
+        description = (
+            f"Offset: 0x{reference_reg.offset:08X}, Width: {reference_reg.width}b; "
+            f"{reference_reg.description}"
+        )
+        # Only static access rights from the database are considered. Read locks derived
+        # from configured lock fuse values describe the future device state, not the
+        # comparability of the configurations.
+        if (old_reg and not old_reg.access.is_readable) or (
+            new_reg and not new_reg.access.is_readable
+        ):
+            report.records.append(
+                FuseCompareRecord(
+                    name=reference_reg.name,
+                    old=old_value,
+                    new=new_value,
+                    result=FuseCompareResult.NOT_VERIFIABLE,
+                    reason="The register is not readable in at least one configuration.",
+                    description=description,
+                )
+            )
+        elif old_value != new_value:
+            report.records.append(
+                FuseCompareRecord(
+                    name=reference_reg.name,
+                    old=old_value,
+                    new=new_value,
+                    result=FuseCompareResult.DIFFERENT,
+                    reason=(
+                        f"Old value {old_value or 'not defined'}, "
+                        f"new value {new_value or 'not defined'}."
+                    ),
+                    description=description,
+                )
+            )
 
     def _write_multiple(
         self,

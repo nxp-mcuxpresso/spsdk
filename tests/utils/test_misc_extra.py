@@ -30,6 +30,7 @@ from spsdk.utils.misc import (
     get_printable_path,
     load_hex_string,
     numberify_version,
+    output_format_from_path,
     sanitize_version,
     split_data,
     swap32,
@@ -166,6 +167,29 @@ def test_file_extension_no_dot() -> None:
 def test_file_extension_srec() -> None:
     """Test that file_extension correctly handles 'srec'."""
     assert file_extension("srec") == ".srec"
+
+
+@pytest.mark.parametrize(
+    "path,expected",
+    [
+        ("image.bin", "bin"),
+        ("dir/image.HEX", "hex"),
+        ("image.ihex", "hex"),
+        ("image.srec", "srec"),
+        ("image.s19", "srec"),
+        ("image.s37", "srec"),
+        ("image.simg", "sparse"),
+        ("image", "default"),
+        ("image.txt", "default"),
+    ],
+)
+def test_output_format_from_path(path: str, expected: str) -> None:
+    """Test that output_format_from_path maps known image extensions to output formats.
+
+    :param path: File path to test.
+    :param expected: Expected output format.
+    """
+    assert output_format_from_path(path, "default") == expected
 
 
 # ---------------------------------------------------------------------------
@@ -636,6 +660,93 @@ def test_load_configuration_yaml_list_raises(tmpdir: Any) -> None:
     write_file("- item1\n- item2\n", path)
     with pytest.raises(SPSDKError, match="Invalid configuration file"):
         load_configuration(path)
+
+
+def test_load_configuration_jsonc_line_comments(tmpdir: Any) -> None:
+    """Test load_configuration correctly parses JSONC content with line comments.
+
+    :param tmpdir: Pytest tmpdir fixture.
+    """
+    from spsdk.utils.misc import load_configuration
+
+    path = os.path.join(str(tmpdir), "config.jsonc")
+    content = '// top-level comment\n{\n  "a": 1, // inline comment\n  "b": 2\n}\n'
+    write_file(content, path)
+    assert load_configuration(path) == {"a": 1, "b": 2}
+
+
+def test_load_configuration_jsonc_block_comments(tmpdir: Any) -> None:
+    """Test load_configuration correctly parses JSONC content with block comments.
+
+    :param tmpdir: Pytest tmpdir fixture.
+    """
+    from spsdk.utils.misc import load_configuration
+
+    path = os.path.join(str(tmpdir), "config.jsonc")
+    content = '/* header comment */\n{\n  "a": 1,\n  /* mid comment */\n  "b": 2\n}\n'
+    write_file(content, path)
+    assert load_configuration(path) == {"a": 1, "b": 2}
+
+
+def test_load_configuration_jsonc_trailing_comma(tmpdir: Any) -> None:
+    """Test load_configuration correctly parses JSON5/JSONC content with trailing commas.
+
+    :param tmpdir: Pytest tmpdir fixture.
+    """
+    from spsdk.utils.misc import load_configuration
+
+    path = os.path.join(str(tmpdir), "config.jsonc")
+    content = '{\n  "a": 1,\n  "b": 2,\n}\n'
+    write_file(content, path)
+    assert load_configuration(path) == {"a": 1, "b": 2}
+
+
+def test_load_configuration_jsonc_comments_and_trailing_comma(tmpdir: Any) -> None:
+    """Test load_configuration correctly parses JSONC with comments and trailing commas combined.
+
+    :param tmpdir: Pytest tmpdir fixture.
+    """
+    from spsdk.utils.misc import load_configuration
+
+    path = os.path.join(str(tmpdir), "config.jsonc")
+    content = (
+        "{\n"
+        "  // name of the device\n"
+        '  "name": "test_device",\n'
+        "  /* list of enabled\n"
+        "     features */\n"
+        '  "features": ["a", "b"],\n'
+        "}\n"
+    )
+    write_file(content, path)
+    assert load_configuration(path) == {"name": "test_device", "features": ["a", "b"]}
+
+
+def test_load_configuration_plain_json_still_works(tmpdir: Any) -> None:
+    """Test load_configuration remains backward compatible with plain, comment-free JSON.
+
+    :param tmpdir: Pytest tmpdir fixture.
+    """
+    from spsdk.utils.misc import load_configuration
+
+    path = os.path.join(str(tmpdir), "config.json")
+    write_file('{"a": 1, "b": 2}', path)
+    assert load_configuration(path) == {"a": 1, "b": 2}
+
+
+def test_load_configuration_jsonc_fixture_file(data_dir: str) -> None:
+    """Test load_configuration correctly parses the static .jsonc fixture file.
+
+    :param data_dir: Directory path containing test data files.
+    """
+    from spsdk.utils.misc import load_configuration
+
+    path = os.path.join(data_dir, "config_jsonc_sample.jsonc")
+    assert load_configuration(path) == {
+        "name": "test_device",
+        "features": ["a", "b"],
+        "revision": 1,
+    }
 
 
 # ---------------------------------------------------------------------------

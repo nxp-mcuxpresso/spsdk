@@ -1455,6 +1455,21 @@
             }
         },
         {
+            "home_page": "https://github.com/Kijewski/pyjson5",
+            "name": "pyjson5",
+            "package": {
+                "name": "pyjson5",
+                "license": "MIT OR Apache-2.0"
+            },
+            "github": {
+                "project_name": "Kijewski/pyjson5",
+                "license": ""
+            },
+            "manual": {
+                "license": "MIT"
+            }
+        },
+        {
             "home_page": "https://github.com/codedstructure/pylibftdi",
             "name": "pylibftdi",
             "package": {

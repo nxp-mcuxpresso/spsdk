@@ -10,15 +10,19 @@ utility, covering debug mailbox operations, probe handling, device modes,
 and debug credential generation across NXP MCU portfolio.
 """
 
+import contextlib
 import filecmp
 import os
+from collections.abc import Iterator
 from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
 
+from spsdk.apps import nxpdebugmbox
 from spsdk.apps.nxpdebugmbox import main
 from spsdk.apps.utils.utils import SPSDKAppError
+from spsdk.dat.debug_credential import DebugCredentialEdgeLockEnclaveV2
 from spsdk.dat.dm_commands import (
     EnterISPMode,
     EraseFlash,
@@ -29,7 +33,7 @@ from spsdk.dat.dm_commands import (
 )
 from spsdk.utils.exceptions import SPSDKTimeoutError
 from spsdk.utils.family import FamilyRevision, get_db, get_device, get_families
-from spsdk.utils.misc import use_working_directory
+from spsdk.utils.misc import load_binary, use_working_directory
 from tests.cli_runner import CliRunner
 from tests.debuggers.debug_probe_virtual import DebugProbeVirtual
 
@@ -142,6 +146,52 @@ def test_nxpdebugmbox_ispmode_exe(cli_runner: CliRunner) -> None:
     cli_runner.invoke(main, cmd.split())
     cmd = f"-i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {hw_responses} -vv cmd -f lpc55s69 ispmode"
     cli_runner.invoke(main, cmd.split())
+
+
+@pytest.mark.parametrize(
+    "family,mode_args,expected_mode",
+    [
+        ("kw43l43z92", [], 0xF),
+        ("kw43b43zc7", [], 0xF),
+        ("mcxw70ac", [], 0xF),
+        ("lpc55s69", [], 1),
+        ("mcxn947", [], 1),
+        ("kw43l43z97", ["-m", "0"], 0),
+        ("lpc55s69", ["-m", "0"], 0),
+    ],
+)
+def test_nxpdebugmbox_ispmode_default_mode(
+    cli_runner: CliRunner,
+    monkeypatch: pytest.MonkeyPatch,
+    family: str,
+    mode_args: list[str],
+    expected_mode: int,
+) -> None:
+    """Test that ispmode uses the family default ISP mode when no mode is given.
+
+    :param cli_runner: CLI runner fixture for testing command line interface.
+    :param monkeypatch: Pytest monkeypatch fixture.
+    :param family: Device family name.
+    :param mode_args: Additional mode arguments passed to the ispmode command.
+    :param expected_mode: Expected parameter of the ENTER_ISP_MODE command.
+    """
+    sent_params: list[Any] = []
+
+    @contextlib.contextmanager
+    def fake_open_debugmbox(*_args: Any, **_kwargs: Any) -> Iterator[MagicMock]:
+        yield MagicMock()
+
+    def fake_run(_self: EnterISPMode, params: list[int] | None = None) -> list[Any]:
+        sent_params.append(params)
+        return []
+
+    monkeypatch.setattr(nxpdebugmbox, "_open_debugmbox", fake_open_debugmbox)
+    monkeypatch.setattr(EnterISPMode, "run", fake_run)
+    monkeypatch.setattr(EnterISPMode, "__init__", lambda _self, dm: None)
+
+    cli_runner.invoke(main, ["-i", "virtual", "cmd", "-f", family, "ispmode", *mode_args])
+
+    assert sent_params == [[expected_mode]]
 
 
 def test_nxpdebugmbox_famode_exe(cli_runner: CliRunner) -> None:
@@ -478,6 +528,20 @@ def test_mcxc353_get_crp_prints_lifecycle_label(cli_runner: CliRunner) -> None:
     assert "CRP level is: IN_FIELD1." in result.output
 
 
+def test_mcxc151_get_crp_prints_lifecycle_label(cli_runner: CliRunner) -> None:
+    """``get-crp`` on mcxc151 maps the returned lifecycle byte to the lifecycle name.
+
+    mcxc151 also uses ``dmbox_ap_ix: 1``; RETURN register is substituted with 0x03 (DEVELOP).
+    """
+    hw_responses = '-o subs_ap={"16777468":[2752512],"16777224":[3]}'
+    cmd = (
+        f"-i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {hw_responses} -vv "
+        f"cmd -f mcxc151 get-crp"
+    )
+    result = cli_runner.invoke(main, cmd.split())
+    assert "CRP level is: DEVELOP." in result.output
+
+
 def test_program_lifecycle_handles_timeout() -> None:
     """Test that ProgramLifecycle treats post-reset unresponsiveness as success.
 
@@ -635,6 +699,45 @@ def test_generate_dc_file_mx95_a1(cli_runner: CliRunner, tmpdir: Any, data_dir: 
     with use_working_directory(data_dir):
         cli_runner.invoke(main, cmd.split())
         assert os.path.isfile(out_file)
+
+
+def test_dc_get_template_mimxrtl3450_is_hybrid_ele_v2(cli_runner: CliRunner, tmpdir: Any) -> None:
+    """Test the debug credential template of mimxrtl3450 is the hybrid ELE v2 (AHAB v2) one.
+
+    The template must describe the AHAB v2 certificate with two public keys and two signers
+    (ECC + PQC) instead of the legacy ELE v1 one with a single signer.
+
+    :param cli_runner: CLI test runner for invoking SPSDK commands.
+    :param tmpdir: Temporary directory for test output files.
+    """
+    out_file = os.path.join(tmpdir, "dc_rtl3450.yaml")
+    cli_runner.invoke(main, ["dat", "dc", "get-template", "-f", "mimxrtl3450", "-o", out_file])
+    with open(out_file, encoding="utf-8") as f:
+        keys = {line.split(":")[0] for line in f.read().splitlines() if ":" in line}
+    for key in ["public_key_0", "signer_0", "public_key_1", "signer_1"]:
+        assert key in keys
+    for key in ["rot_meta", "rot_id", "dck", "signer"]:
+        assert key not in keys
+
+
+def test_generate_dc_file_mimxrtl3450_hybrid(
+    cli_runner: CliRunner, tmpdir: Any, data_dir: str
+) -> None:
+    """Test generation of a hybrid (ECC P-384 + ML-DSA-87) debug credential for mimxrtl3450.
+
+    :param cli_runner: CLI test runner for invoking SPSDK commands.
+    :param tmpdir: Temporary directory for test output files.
+    :param data_dir: Directory containing test data and configuration files.
+    """
+    out_file = os.path.join(tmpdir, "dc_rtl3450.bin")
+    cmd = ["dat", "dc", "export", "-c", "dc_mimxrtl3450_hybrid.yaml", "-o", out_file]
+    with use_working_directory(data_dir):
+        cli_runner.invoke(main, cmd)
+        assert os.path.isfile(out_file)
+        dc = DebugCredentialEdgeLockEnclaveV2.parse(
+            load_binary(out_file), family=FamilyRevision("mimxrtl3450")
+        )
+    assert dc.certificate.public_key_1 is not None
 
 
 def test_generate_dc_file_lpc55s3x_384(cli_runner: CliRunner, tmpdir: Any, data_dir: str) -> None:
@@ -806,3 +909,48 @@ def test_nxpimage_famode_parse_cli(cli_runner: CliRunner, tmpdir: Any, data_dir:
         ]
         cli_runner.invoke(main, cmd)
         assert os.path.isdir(out_config)
+
+
+@pytest.mark.parametrize("auth_type", ["signed", "signed-nxp"])
+@pytest.mark.parametrize(
+    "family", sorted({family.name for family in get_families("dat", "famode_cert")})
+)
+def test_nxpdebugmbox_famode_export_without_digest(
+    cli_runner: CliRunner, tmpdir: Any, data_dir: str, family: str, auth_type: str
+) -> None:
+    """Test that the exported FA mode image has no manifest digest.
+
+    The ROM expects the signed FA request to end right after the signature, so the image
+    manifest must have no digest flag set and no digest may be appended to the image.
+
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory for test output files.
+    :param data_dir: Path to test data directory containing configuration files.
+    :param family: Target MCU family name.
+    :param auth_type: Image authentication type of the FA mode image.
+    """
+    with use_working_directory(tmpdir):
+        config_file = os.path.join(data_dir, "famode-image", "famode_image.yaml")
+        output_file = os.path.join(tmpdir, "famode.bin")
+        cmd = [
+            "famode-image",
+            "export",
+            "-c",
+            config_file,
+            "-oc",
+            f"family={family}",
+            "-oc",
+            f"outputImageAuthenticationType={auth_type}",
+            "-oc",
+            f"masterBootOutputFile={output_file}",
+        ]
+        cli_runner.invoke(main, cmd)
+        with open(output_file, "rb") as f:
+            data = f.read()
+    manifest_offset = data.find(b"imgm")
+    assert manifest_offset > 0
+    manifest_size = int.from_bytes(data[manifest_offset + 12 : manifest_offset + 16], "little")
+    manifest_flags = int.from_bytes(data[manifest_offset + 16 : manifest_offset + 20], "little")
+    assert manifest_flags == 0
+    # Only the ECDSA P-256 signature follows the manifest
+    assert len(data) == manifest_offset + manifest_size + 64

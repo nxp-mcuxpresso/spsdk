@@ -106,7 +106,7 @@ class ServiceProvider(abc.ABC):
         """Convert creation params from string into dictionary.
 
         The method parses a semicolon-separated string of key-value pairs into a dictionary.
-        Each pair should be in the format "key=value".
+        Each pair should be in the format "key=value"; the value may contain the "=" character.
 
         :param params: Semicolon-separated string of key-value pairs (e.g., "type=file;file_path=path").
         :raises SPSDKKeyError: Duplicate key found in the parameters.
@@ -114,20 +114,19 @@ class ServiceProvider(abc.ABC):
         :return: Dictionary containing the parsed key-value pairs.
         """
         result: dict[str, str] = {}
-        try:
-            for p in params.split(";"):
-                key, value = p.split("=")
+        for p in params.split(";"):
+            key, separator, value = p.partition("=")
+            if not separator or not key:
+                raise SPSDKValueError(
+                    f"Invalid parameter '{p}' in '{params}'. Parameters must be 'key=value' pairs "
+                    "separated by ';', e.g.: type=file;file_path=some_path"
+                )
 
-                # Check for duplicate keys
-                if key in result:
-                    raise SPSDKKeyError(f"Duplicate key found: {key}")
+            # Check for duplicate keys
+            if key in result:
+                raise SPSDKKeyError(f"Duplicate key found: {key}")
 
-                result[key] = value
-
-        except ValueError as e:
-            raise SPSDKValueError(
-                "Parameter must meet the following pattern: type=file;file_path=some_path"
-            ) from e
+            result[key] = value
 
         return result
 
@@ -141,15 +140,27 @@ class ServiceProvider(abc.ABC):
 
         :param params: Either a string identifier or dictionary containing provider configuration.
                        Dictionary must include 'type' key specifying the provider identifier.
+        :raises SPSDKValueError: Missing 'type' parameter or invalid parameters for the provider.
         :return: Instance of the matching signature provider class, or None if not found.
         """
         cls.load_plugins()
         if isinstance(params, str):
             params = cls.convert_params(params)
+        if "type" not in params:
+            raise SPSDKValueError(
+                f"Missing 'type' parameter in {cls.__name__} configuration. "
+                f"Available types: {', '.join(cls.get_types())}"
+            )
         sp_classes = cls.get_all_providers()
         for klass in sp_classes:  # pragma: no branch  # there always be at least one subclass
             if klass.identifier == params["type"]:
                 klass.filter_params(klass, params)
+                try:
+                    inspect.signature(klass).bind(**params)
+                except TypeError as exc:
+                    raise SPSDKValueError(
+                        f"Invalid parameters for {cls.__name__} of type '{klass.identifier}': {exc}"
+                    ) from exc
                 return klass(**params)
 
         logger.info(f"{cls.__name__} of type {params['type']} was not found.")

@@ -24,7 +24,7 @@ import pytest
 from click.testing import Result
 
 from spsdk.apps import nxpcrypto
-from spsdk.crypto.certificate import Certificate
+from spsdk.crypto.certificate import Certificate, generate_extensions, generate_name
 from spsdk.crypto.crc import Crc, CrcAlg, from_crc_algorithm
 from spsdk.crypto.crypto_types import SPSDKEncoding
 from spsdk.crypto.hash import EnumHashAlgorithm
@@ -1523,6 +1523,234 @@ def test_nxpcrypto_ahab_pki_tree_hierarchy(
     assert sgk_cert.self_signed is False, "SGK certificate should not be self-signed"
     assert sgk_cert.issuer == srk_cert.subject, "SGK certificate issuer should be SRK subject"
     assert sgk_cert.validate(srk_cert), "SGK certificate should be signed by SRK"
+
+
+def _generate_root_ca(
+    cli_runner: CliRunner, tmpdir: str, key_type: str, password: str = ""
+) -> tuple:
+    """Generate a stand-alone root CA via PKI tree command.
+
+    :param cli_runner: Click CLI test runner for executing commands.
+    :param tmpdir: Temporary directory path for test output files.
+    :param key_type: Type of the CA key.
+    :param password: Optional password protecting the CA key.
+    :return: Tuple of paths to the CA private key and the CA certificate.
+    """
+    root_path = os.path.join(tmpdir, f"root_{key_type}")
+    pwd = f"-p {password}" if password else ""
+    cmd = f"pki-tree ahab -k {key_type} -o {root_path} -n 1 {pwd}"
+    run_nxpcrypto(cli_runner, cmd, tmpdir)
+    return (
+        os.path.join(root_path, "keys", f"CA0_{key_type}_ca_key.pem"),
+        os.path.join(root_path, "crts", f"CA0_{key_type}_ca_cert.pem"),
+    )
+
+
+@pytest.mark.parametrize("pki_type", ["ahab", "hab"])
+@pytest.mark.parametrize("key_type", ["secp256r1", "rsa2048"])
+@pytest.mark.parametrize("encoding", ["pem", "der"])
+def test_nxpcrypto_pki_tree_existing_ca(
+    cli_runner: CliRunner, tmpdir: str, pki_type: str, key_type: str, encoding: str
+) -> None:
+    """Test PKI tree generation using an existing root CA.
+
+    The SRK certificates must be issued by the existing CA, the CA copy in the tree must be
+    identical to the existing one, the original files must stay untouched and the tree must
+    be extendable afterwards.
+
+    :param cli_runner: Click CLI test runner for executing commands.
+    :param tmpdir: Temporary directory path for test output files.
+    :param pki_type: Type of PKI tree to generate ('ahab' or 'hab').
+    :param key_type: Type of cryptographic keys to generate.
+    :param encoding: File encoding format for generated keys and certificates.
+    """
+    ca_key_path, ca_cert_path = _generate_root_ca(cli_runner, tmpdir, key_type, "root_pwd")
+    ca_key_data = load_binary(ca_key_path)
+    ca_cert_data = load_binary(ca_cert_path)
+    tree_path = os.path.join(tmpdir, "tree")
+    cmd = (
+        f"pki-tree {pki_type} -k {key_type} -o {tree_path} -e {encoding} -ca -n 2 "
+        f"--ca-key {ca_key_path} --ca-cert {ca_cert_path} --ca-password root_pwd -p tree_pwd"
+    )
+    run_nxpcrypto(cli_runner, cmd, tmpdir)
+
+    # the user inputs are not modified
+    assert load_binary(ca_key_path) == ca_key_data
+    assert load_binary(ca_cert_path) == ca_cert_data
+
+    ca_cert = Certificate.load(ca_cert_path)
+    ca_key = PrivateKey.load(ca_key_path, password="root_pwd")
+    tree_ca_cert = Certificate.load(f"{tree_path}/crts/CA0_{key_type}_ca_cert.{encoding}")
+    tree_ca_key = PrivateKey.load(
+        f"{tree_path}/keys/CA0_{key_type}_ca_key.{encoding}", password="tree_pwd"
+    )
+    assert tree_ca_cert.export() == ca_cert.export()
+    assert tree_ca_key.get_public_key() == ca_key.get_public_key()
+
+    def check_srk_certs(count: int) -> None:
+        srk_certs = sorted(glob.glob(f"{tree_path}/crts/SRK*_cert.{encoding}"))
+        assert len(srk_certs) == count
+        for srk_cert_path in srk_certs:
+            srk_cert = Certificate.load(srk_cert_path)
+            assert srk_cert.issuer == ca_cert.subject
+            assert srk_cert.validate(ca_cert)
+
+    check_srk_certs(2)
+    sub_prefix = "SGK" if pki_type == "ahab" else "IMG"
+    assert len(glob.glob(f"{tree_path}/crts/{sub_prefix}*")) == 2
+
+    # The tree created with existing CA can be extended
+    cmd = f"pki-tree {pki_type}-extend -i {tree_path} -e {encoding} -n 1 -p tree_pwd"
+    run_nxpcrypto(cli_runner, cmd, tmpdir)
+    check_srk_certs(3)
+
+
+def test_nxpcrypto_pki_tree_existing_ca_not_self_signed(cli_runner: CliRunner, tmpdir: str) -> None:
+    """Test PKI tree generation using an existing intermediate (not self-signed) CA.
+
+    The SRK certificate issuer must be the subject of the given CA certificate.
+
+    :param cli_runner: Click CLI test runner for executing commands.
+    :param tmpdir: Temporary directory path for test output files.
+    """
+    key_type = "secp384r1"
+    root_path = os.path.join(tmpdir, "root")
+    run_nxpcrypto(cli_runner, f"pki-tree ahab -k {key_type} -o {root_path} -n 1 -ca", tmpdir)
+    # SRK0 of the first tree is a CA certificate signed by the root CA
+    ca_key_path = f"{root_path}/keys/SRK0_{key_type}_ca_key.pem"
+    ca_cert_path = f"{root_path}/crts/SRK0_{key_type}_ca_cert.pem"
+    tree_path = os.path.join(tmpdir, "tree")
+    cmd = (
+        f"pki-tree ahab -k {key_type} -o {tree_path} -n 1 "
+        f"--ca-key {ca_key_path} --ca-cert {ca_cert_path}"
+    )
+    run_nxpcrypto(cli_runner, cmd, tmpdir)
+    ca_cert = Certificate.load(ca_cert_path)
+    assert ca_cert.issuer != ca_cert.subject
+    srk_cert = Certificate.load(f"{tree_path}/crts/SRK0_{key_type}_cert.pem")
+    assert srk_cert.issuer == ca_cert.subject
+    assert srk_cert.validate(ca_cert)
+
+
+def test_nxpcrypto_pki_tree_existing_ca_tree_password(cli_runner: CliRunner, tmpdir: str) -> None:
+    """Test that the tree password is used for the existing CA key if no CA password is given.
+
+    :param cli_runner: Click CLI test runner for executing commands.
+    :param tmpdir: Temporary directory path for test output files.
+    """
+    ca_key_path, ca_cert_path = _generate_root_ca(cli_runner, tmpdir, "secp256r1", "pwd")
+    tree_path = os.path.join(tmpdir, "tree")
+    cmd = (
+        f"pki-tree hab -k secp256r1 -o {tree_path} -n 1 "
+        f"--ca-key {ca_key_path} --ca-cert {ca_cert_path} -p pwd"
+    )
+    run_nxpcrypto(cli_runner, cmd, tmpdir)
+    srk_cert = Certificate.load(f"{tree_path}/crts/SRK0_secp256r1_cert.pem")
+    assert srk_cert.validate(Certificate.load(ca_cert_path))
+
+
+def test_nxpcrypto_pki_tree_existing_ca_unencrypted(cli_runner: CliRunner, tmpdir: str) -> None:
+    """Test that an unencrypted existing CA key is used even if a CA password is given.
+
+    :param cli_runner: Click CLI test runner for executing commands.
+    :param tmpdir: Temporary directory path for test output files.
+    """
+    ca_key_path, ca_cert_path = _generate_root_ca(cli_runner, tmpdir, "rsa2048")
+    tree_path = os.path.join(tmpdir, "tree")
+    cmd = (
+        f"pki-tree ahab -k rsa2048 -o {tree_path} -n 1 "
+        f"--ca-key {ca_key_path} --ca-cert {ca_cert_path} --ca-password unused"
+    )
+    run_nxpcrypto(cli_runner, cmd, tmpdir)
+    srk_cert = Certificate.load(f"{tree_path}/crts/SRK0_rsa2048_cert.pem")
+    assert srk_cert.validate(Certificate.load(ca_cert_path))
+    PrivateKey.load(f"{tree_path}/keys/CA0_rsa2048_ca_key.pem")
+
+
+@pytest.mark.parametrize("pki_type", ["ahab", "hab"])
+def test_nxpcrypto_pki_tree_existing_ca_mismatch(
+    cli_runner: CliRunner, tmpdir: str, pki_type: str
+) -> None:
+    """Test that the existing CA key not matching the CA certificate is rejected.
+
+    :param cli_runner: Click CLI test runner for executing commands.
+    :param tmpdir: Temporary directory path for test output files.
+    :param pki_type: Type of PKI tree to generate ('ahab' or 'hab').
+    """
+    ca_key_path, _ = _generate_root_ca(cli_runner, tmpdir, "secp256r1")
+    other_path = os.path.join(tmpdir, "other")
+    run_nxpcrypto(cli_runner, f"pki-tree ahab -k secp256r1 -o {other_path} -n 1", tmpdir)
+    other_cert = f"{other_path}/crts/CA0_secp256r1_ca_cert.pem"
+    tree_path = os.path.join(tmpdir, "tree")
+    cmd = (
+        f"pki-tree {pki_type} -k secp256r1 -o {tree_path} -n 1 "
+        f"--ca-key {ca_key_path} --ca-cert {other_cert}"
+    )
+    result = run_nxpcrypto(cli_runner, cmd, tmpdir, expected_code=1)
+    assert "does not match" in str(result.exception)
+    assert not glob.glob(f"{tree_path}/crts/SRK*")
+
+
+@pytest.mark.parametrize(
+    "options,error",
+    [
+        ("--ca-key {key}", "Both --ca-key and --ca-cert"),
+        ("--ca-cert {cert}", "Both --ca-key and --ca-cert"),
+        ("--ca-key {key} --ca-cert {cert} --ca-password pwd", "Specify --password"),
+        ("--ca-key {key} --ca-cert {cert} --ca-password wrong -p x", "Cannot load"),
+        ("--ca-key {srk_key} --ca-cert {srk_cert}", "not a CA certificate"),
+    ],
+)
+def test_nxpcrypto_pki_tree_existing_ca_invalid(
+    cli_runner: CliRunner, tmpdir: str, options: str, error: str
+) -> None:
+    """Test invalid usages of the existing CA options.
+
+    :param cli_runner: Click CLI test runner for executing commands.
+    :param tmpdir: Temporary directory path for test output files.
+    :param options: Existing CA options to use.
+    :param error: Expected part of the error message.
+    """
+    ca_key_path, ca_cert_path = _generate_root_ca(cli_runner, tmpdir, "secp256r1", "pwd")
+    plain_path = os.path.join(tmpdir, "plain")
+    run_nxpcrypto(cli_runner, f"pki-tree ahab -k secp256r1 -o {plain_path} -n 1", tmpdir)
+    opts = options.format(
+        key=ca_key_path,
+        cert=ca_cert_path,
+        srk_key=f"{plain_path}/keys/SRK0_secp256r1_key.pem",
+        srk_cert=f"{plain_path}/crts/SRK0_secp256r1_cert.pem",
+    )
+    cmd = f"pki-tree ahab -k secp256r1 -o {tmpdir}/tree -n 1 {opts}"
+    result = run_nxpcrypto(cli_runner, cmd, tmpdir, expected_code=1)
+    assert error in str(result.exception)
+
+
+def test_nxpcrypto_pki_tree_existing_ca_unsupported_type(
+    cli_runner: CliRunner, tmpdir: str
+) -> None:
+    """Test that an existing CA with an unsupported key type is rejected.
+
+    :param cli_runner: Click CLI test runner for executing commands.
+    :param tmpdir: Temporary directory path for test output files.
+    """
+    ca_key = PrivateKeyRsa.generate_key(key_size=1024)
+    ca_cert = Certificate.generate_certificate(
+        subject=generate_name([{"COMMON_NAME": "CA"}]),
+        issuer=generate_name([{"COMMON_NAME": "CA"}]),
+        subject_public_key=ca_key.get_public_key(),
+        issuer_private_key=ca_key,
+        extensions=generate_extensions({"BASIC_CONSTRAINTS": {"ca": True}}),
+    )
+    ca_key_path = os.path.join(tmpdir, "ca_key.pem")
+    ca_cert_path = os.path.join(tmpdir, "ca_cert.pem")
+    ca_key.save(ca_key_path)
+    ca_cert.save(ca_cert_path)
+    cmd = (
+        f"pki-tree ahab -k rsa2048 -o {tmpdir}/tree -n 1 "
+        f"--ca-key {ca_key_path} --ca-cert {ca_cert_path}"
+    )
+    result = run_nxpcrypto(cli_runner, cmd, tmpdir, expected_code=1)
+    assert "Unsupported type of the existing CA key" in str(result.exception)
 
 
 CRC_TEST_VECTORS = [

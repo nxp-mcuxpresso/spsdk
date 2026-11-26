@@ -1,0 +1,45 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ====================  Debug Credential configuration file for mimx9596, Revision: latest family.  ====================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mimx9596
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, a1, b0, latest>
+revision: latest
+# ======================================================================================================================
+#                                             == Debug Credential Content ==
+# ======================================================================================================================
+# -------------------------------------------===== SoC Usage [Required] =====-------------------------------------------
+# Description: A CC (constraint) value that is a bit mask, and whose bits are used in an SoCC-specific manner. These
+# bits are typically used for controlling which debug domains are accessed via the authentication protocol, but device-
+# specific debug options can be managed in this way also.
+cc_socu: "0x00FFFFF0"
+# ======================================================================================================================
+#                                   == Configuration of AHAB Container Certificate ==
+# ======================================================================================================================
+# ------------------------------------------===== Device UUID [Optional] =====------------------------------------------
+# Description: Optional 128-bit IETF RFC4122 compliant non-sequential Universally Unique Identifier (UUID)
+uuid: "00000000000000000000000000000000"
+# -----------------------------------------===== Fuse version [Optional] =====------------------------------------------
+# Description: The value must be equal or greater than the version stored in fuses to allow loading this container.
+fuse_version: 0
+# -----------------------------------===== Certificate public key 0 [Required] =====------------------------------------
+# Description: Path to Public key 0 file. This is the Debug Credential Key (DCK) public key that is embedded into the
+# debug credential and used later to verify the debugger's signature during authentication.
+public_key_0: ../../_data/keys/ecc384/dck_ecc384.pub
+# -------------------------------------------===== Signer 0 [Required] =====--------------------------------------------
+# Description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>' or the
+# private key 0 used for signing the certificate container. This is one of the Root of Trust (SRK) private keys.
+signer_0: ../../_data/keys/ecc384/srk0_ecc384.pem
+# ---------------------------------------===== Hash Algorithm 0 [Optional] =====----------------------------------------
+# Description: Hash algorithm used for SRK records. If not specified, default algorithm based on key type will be used.
+# Possible options: <default, sha256, sha384, sha512, sha3_256, sha3_384, sha3_512, shake_128_256, shake_256_512, sm3>
+hash_algorithm_0: default

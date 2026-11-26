@@ -19,6 +19,7 @@ import pytest
 
 from spsdk.apps import nxpmemcfg
 from spsdk.memcfg.memcfg import Memory, MemoryConfig, SPSDKUnsupportedInterface
+from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision, get_db
 from tests.cli_runner import CliRunner
 
@@ -89,6 +90,8 @@ def test_app_family_info(
         ("mimxrt1189", "flexspi_nand", [0xC1020026, 0x000000C2]),
         ("mimxrt1189", "sd", [0xD0000002]),
         ("lpc55s3x", "flexspi_nor", [0xC100_0007, 0x0000_0001]),
+        ("mimxrt798s", "spi_nor", [0xC031_2000, 0x0000_0000]),
+        ("mimxrt798s", "spi_nor", [0xC0D3_2000, 0x0000_0001]),
     ],
 )
 def test_app_parse_export(
@@ -120,6 +123,64 @@ def test_app_parse_export(
     assert ret.exit_code == 0
     for x in ow:
         assert f"0x{x:08X}" in ret.output
+
+
+@pytest.mark.parametrize("family", ["mimxrt798s", "mimxrt758s", "mimxrt735s"])
+def test_spi_nor_lpspi_instances(family: str) -> None:
+    """Test LPSPI NOR option words decoding on RT7xx devices.
+
+    The LPSPI NOR recovery boot may use any LP_FLEXCOMM instance 0-13 and the ROM
+    supports manual and auto-detected memory type.
+
+    :param family: Target MCU family name.
+    """
+    ow = [0xC0D3_2000, 0x0000_0001]
+    data = b"".join(x.to_bytes(4, "little") for x in ow)
+    memcfg = MemoryConfig.parse(data, FamilyRevision(family), "spi_nor")
+    assert memcfg.option_words == ow
+    opt0 = memcfg.regs.find_reg("ConfigOption0")
+    assert opt0.find_bitfield("SpiIndex").get_enum_value() == "LPSPI13"
+    assert opt0.find_bitfield("PcsIndex").get_enum_value() == "PCS3"
+    assert opt0.find_bitfield("MemoryType").get_enum_value() == "Auto"
+    assert memcfg.regs.find_reg("ConfigOption1").find_bitfield("SpiSpeed").get_value() == 1
+
+
+def test_spi_nor_lpspi_legacy_names() -> None:
+    """Test that legacy LPSPI NOR enumeration labels are still accepted on RT7xx."""
+    config = Config(
+        {
+            "family": "mimxrt798s",
+            "peripheral": "spi_nor",
+            "interface": "spi",
+            "settings": {
+                "ConfigOption0": {
+                    "PageSize": "1MB",
+                    "MemoryType": "Auto",
+                    "PcsIndex": "PCS1",
+                    "SpiIndex": "SPI3",
+                }
+            },
+        }
+    )
+    memcfg = MemoryConfig.load_from_config(config)
+    assert memcfg.option_words == [0xC031_2002, 0x0000_0000]
+
+
+@pytest.mark.parametrize("family", ["mimxrt798s", "mimxrt758s", "mimxrt735s"])
+def test_spi_nor_lpspi_always_two_option_words(family: str) -> None:
+    """Test that RT7xx LPSPI NOR always produces both option words.
+
+    The RT7xx ROM reads option1 (SPI speed) unconditionally and treats bits [27:24] of
+    option0 as reserved, so the option word count must not depend on those bits.
+
+    :param family: Target MCU family name.
+    """
+    memcfg = MemoryConfig(FamilyRevision(family), "spi_nor")
+    opt0 = memcfg.regs.find_reg("ConfigOption0")
+    assert "OptionSize" not in [bf.name for bf in opt0.get_bitfields()]
+    assert len(memcfg.option_words) == 2
+    assert len(memcfg.export()) == 8
+    assert memcfg.option_words[0] >> 24 == 0xC0
 
 
 @pytest.mark.parametrize(

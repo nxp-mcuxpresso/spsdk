@@ -543,14 +543,28 @@ def test_load_database() -> None:
     assert isinstance(DatabaseManager().db, Database)
 
 
-def test_load_database_without_cache() -> None:
+def test_load_database_without_cache(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """Test database loading functionality with caching disabled.
 
-    This test verifies that the DatabaseManager can properly instantiate and return
-    a Database object when the SPSDK cache is explicitly disabled.
+    The quick info database built with the cache disabled must contain the same devices
+    and features as the one used with the cache enabled.
+
+    :param monkeypatch: Pytest monkeypatch fixture.
+    :param tmp_path: Temporary directory used as the cache folder.
     """
-    database.SPSDK_CACHE_DISABLED = True
-    assert isinstance(DatabaseManager().db, Database)
+    cached_quick_info = DatabaseManager().quick_info
+    monkeypatch.setattr(database, "SPSDK_CACHE_DISABLED", True)
+    monkeypatch.setattr(database, "get_spsdk_cache_dirname", lambda: str(tmp_path))
+    monkeypatch.setattr(DatabaseManager, "_db", None)
+
+    quick_info = DatabaseManager._get_quick_info_db()
+
+    assert isinstance(DatabaseManager.get_db(), Database)
+    assert quick_info.devices.get_family_names() == cached_quick_info.devices.get_family_names()
+    for feature in [DatabaseManager.TZ, DatabaseManager.MBI, DatabaseManager.DAT]:
+        assert quick_info.devices.get_devices_with_feature(
+            feature
+        ) == cached_quick_info.devices.get_devices_with_feature(feature)
 
 
 def test_restricted_data(  # pylint: disable=redefined-outer-name
@@ -1577,6 +1591,19 @@ def test_quick_database_split_devices_to_groups() -> None:
         assert s in all_in_groups
 
 
+def test_quick_database_split_devices_to_groups_sorted() -> None:
+    """Groups are ordered case-insensitively by name and devices inside groups alphabetically."""
+    qdb = DatabaseManager().quick_info
+    sample = list(reversed(qdb.devices.get_family_names()))
+    groups = qdb.split_devices_to_groups(sample)
+    names = list(groups)
+    assert names == sorted(names, key=str.casefold)
+    for group, devices in groups.items():
+        assert devices == sorted(devices)
+        for device in devices:
+            assert qdb.devices.devices[device].info.purpose == group
+
+
 # Database.get_defaults with invalid feature
 
 
@@ -1615,13 +1642,13 @@ def test_database_load_db_cfg_file_invalid(tmp_path: Path) -> None:
 
 
 def test_database_manager_clear_cache_nonexistent(monkeypatch: Any, caplog: Any) -> None:
-    """clear_cache logs error when no cache files exist."""
+    """clear_cache logs info when no cache files exist."""
     import logging
 
     monkeypatch.setattr(
         database, "get_spsdk_cache_dirname", lambda: "/nonexistent/path/xyz_no_dir_abc"
     )
-    with caplog.at_level(logging.ERROR, logger="spsdk.utils.database"):
+    with caplog.at_level(logging.INFO, logger="spsdk.utils.database"):
         DatabaseManager.clear_cache()
     assert any("nothing to clear" in r.message for r in caplog.records)
 

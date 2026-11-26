@@ -6,6 +6,8 @@
 
 """Tests for AHAB signature block."""
 
+from pathlib import Path
+
 import pytest
 
 from spsdk.crypto.hash import EnumHashAlgorithm
@@ -22,10 +24,12 @@ from spsdk.image.ahab.ahab_data import (
 from spsdk.image.ahab.ahab_sign_block import SignatureBlock, SignatureBlockV2
 from spsdk.image.ahab.ahab_signature import ContainerSignature
 from spsdk.image.ahab.ahab_srk import SRKRecord, SRKRecordV2, SRKTable, SRKTableArray, SRKTableV2
+from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
 from spsdk.utils.verifier import Verifier
 
 FAMILY = FamilyRevision("mimxrt1189")
+KEYS_DIR = Path(__file__).resolve().parents[2] / "_data" / "keys"
 
 
 @pytest.fixture(scope="module")
@@ -1025,3 +1029,52 @@ def test_signature_block_v2_layout_unchanged_for_packed_devices() -> None:
     assert block._srk_assets_offset == block.fixed_length()
     assert block._signature_offset == block._srk_assets_offset + len(srk_assets)
     assert len(block) == block._signature_offset + len(block.signature)
+
+
+@pytest.mark.parametrize(
+    "used_srk_id,cert_key,hash_algorithm",
+    [(0, "ecc256/srk0_ecc256", "sha256"), (3, "ecc384/srk3_ecc384", "sha384")],
+)
+def test_certificate_verify_rt2660_mixed_srk(
+    used_srk_id: int, cert_key: str, hash_algorithm: str
+) -> None:
+    """Certificate key is checked against the SRK used for signing in a mixed SRK table.
+
+    :param used_srk_id: Index of the SRK used to sign the certificate.
+    :param cert_key: Key used both as certificate public key and as signing SRK.
+    :param hash_algorithm: SRK table hash algorithm matching the default hash of the certificate key.
+    """
+    family = FamilyRevision("mimxrt2662")
+    chip_config = AhabChipContainerConfig(
+        base=create_chip_config(family=family), used_srk_id=used_srk_id
+    )
+    srk_table = SRKTableV2.load_from_config(
+        Config(
+            {
+                "hash_algorithm": hash_algorithm,
+                "srk_array": [
+                    str(KEYS_DIR / "ecc256" / "srk0_ecc256.pub"),
+                    str(KEYS_DIR / "ecc256" / "srk1_ecc256.pub"),
+                    str(KEYS_DIR / "ecc384" / "srk2_ecc384.pub"),
+                    str(KEYS_DIR / "ecc384" / "srk3_ecc384.pub"),
+                ],
+            }
+        ),
+        chip_config=chip_config.base,
+    )
+    srk_table.update_fields()
+    srk_array = SRKTableArray(chip_config=chip_config, srk_tables=[srk_table])
+    srk_array.update_fields()
+
+    cert = AhabCertificate.load_from_config(
+        Config(
+            {
+                "family": family.name,
+                "public_key_0": str(KEYS_DIR / f"{cert_key}.pub"),
+                "signer_0": str(KEYS_DIR / f"{cert_key}.pem"),
+            }
+        )
+    )
+    cert.update_fields()
+
+    assert not cert.verify(srk_array).has_errors

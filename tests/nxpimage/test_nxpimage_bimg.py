@@ -26,10 +26,17 @@ from spsdk.image.ahab.ahab_data import AhabTargetMemory
 from spsdk.image.ahab.ahab_image import AHABImage
 from spsdk.image.bootable_image.bimg import BootableImage
 from spsdk.image.bootable_image.segments import BootableImageSegment
+from spsdk.image.mbi.mbi import MasterBootImage
 from spsdk.image.mem_type import MemoryType
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
-from spsdk.utils.misc import load_binary, load_configuration, use_working_directory, write_file
+from spsdk.utils.misc import (
+    load_binary,
+    load_configuration,
+    load_text,
+    use_working_directory,
+    write_file,
+)
 from spsdk.utils.verifier import Verifier, VerifierRecord, VerifierResult
 from tests.cli_runner import CliRunner
 
@@ -91,6 +98,8 @@ FULL_LIST_TO_TEST = [
     ("mcxn947", "flexspi_nor", "starting_fcb_1", ["fcb", "mbi"]),
     ("rw612", "flexspi_nor", None, ["fcb", "mbi"]),
     ("mimxrt798s", "xspi_nor", None, ["fcb", "mbi"]),
+    ("mimxrt798s", "recovery_spi_mbi", None, ["mbi"]),
+    ("mimxrt798s", "recovery_spi_sb31", None, ["sb31"]),
 ]
 
 
@@ -123,6 +132,8 @@ FULL_LIST_TO_TEST = [
         ("flexspi_nand", "mimxrt1166", None, "config.yaml"),
         ("flexspi_nand", "mimxrt1176", None, "config.yaml"),
         ("flexspi_nand", "mimxrt1176", None, "config_yaml.yaml"),
+        ("recovery_spi_mbi", "mimxrt798s", None, "config.yaml"),
+        ("recovery_spi_sb31", "mimxrt798s", None, "config.yaml"),
     ],
 )
 def test_nxpimage_bimg_merge(
@@ -294,6 +305,11 @@ def test_nxpimage_bimg_template_cli(
         ("mimxrt1166", "mimxrt1166/flexspi_nand/merged_image.bin", "flexspi_nand"),
         ("mimxrt1166", "mimxrt1166/semc_nand/merged_image.bin", "flexspi_nand"),
         ("mcxn947", "mcxn947/flexspi_nor/full/merged_image.bin", "flexspi_nor"),
+        (
+            "mimxrt798s",
+            "mimxrt798s/recovery_spi_sb31/merged_image.bin",
+            "recovery_spi_sb31",
+        ),
     ],
 )
 def test_nxpimage_bimg_parse_autodetect_mem_type(
@@ -462,7 +478,9 @@ def test_find_the_exact_layout_match_first(caplog: Any, data_dir: str) -> None:
         msg
         for msg in caplog.messages
         if msg
-        == 'Multiple possible memory types detected: "Internal memory", "Recovery SPI with MBI".The "Internal memory" memory type will be used.'
+        == 'Multiple possible memory types detected: "Internal memory", "Recovery SPI with MBI". '
+        'The "Internal memory" memory type will be used. '
+        "Specify the memory type explicitly if this is not intended."
     )
 
 
@@ -826,6 +844,29 @@ def test_bimg_get_supported_memory_types_all() -> None:
                 MemoryType.RECOVERY_SPI_SB31,
                 MemoryType.RECOVERY_SPI_MBI,
                 MemoryType.INTERNAL,
+            ],
+        ),
+        *[
+            (
+                family,
+                [
+                    MemoryType.XSPI_NOR,
+                    MemoryType.SD,
+                    MemoryType.EMMC,
+                    MemoryType.RECOVERY_SPI_MBI,
+                    MemoryType.RECOVERY_SPI_SB31,
+                ],
+            )
+            for family in ["mimxrt798s", "mimxrt758s", "mimxrt735s"]
+        ],
+        (
+            "mimx93w52",
+            [
+                MemoryType.SERIAL_DOWNLOADER,
+                MemoryType.EMMC,
+                MemoryType.EMMC_BOOT,
+                MemoryType.SD,
+                MemoryType.RECOVERY_SPI,
             ],
         ),
     ],
@@ -1309,6 +1350,12 @@ def test_verifier_add_record_range_malformed_input() -> None:
             ["imx93-11x11-lpddr4x-evk"],
         ),
         (
+            "mimx93w52",
+            ["emmc_boot", "serial_downloader", "emmc", "sd", "recovery_spi"],
+            ["imx_boot_flash_singleboot"],
+            ["imx93w-14x12-lpddr4x-evk", "imx93w-14x12-lpddr4x-frdm"],
+        ),
+        (
             "mimx9596",
             ["emmc_boot", "flexspi_nor", "serial_downloader", "emmc", "sd", "recovery_spi"],
             ["imx_boot_flash_all"],
@@ -1406,6 +1453,8 @@ def test_nxpimage_bimg_get_all_templates(
     "family,template,board",
     [
         ("mimx9352", "imx_boot_flash_singleboot", "imx93-11x11-lpddr4x-evk"),
+        ("mimx93w52", "imx_boot_flash_singleboot", "imx93w-14x12-lpddr4x-evk"),
+        ("mimx93w52", "imx_boot_flash_singleboot", "imx93w-14x12-lpddr4x-frdm"),
         ("mimx9596", "imx_boot_flash_all", "imx95-15x15-lpddr4x-evk"),
         ("mimx9596", "imx_boot_flash_all", "imx95-19x19-lpddr5-evk"),
         ("mimx9596", "imx_boot_flash_all", "imx95-19x19-verdin"),
@@ -1692,6 +1741,57 @@ def test_nxpimage_bimg_mx943_part_aliases(family: str) -> None:
     :param family: Orderable i.MX94 part alias.
     """
     assert BootableImage.get_supported_templates(FamilyRevision(family)) == ["imx_boot_flash_all"]
+
+
+def test_nxpimage_bimg_mimx93w52_boards() -> None:
+    """Test i.MX93W52 inherits the i.MX93 template but replaces the i.MX93 boards with its own."""
+    family = FamilyRevision("mimx93w52")
+    assert BootableImage.get_supported_templates(family) == ["imx_boot_flash_singleboot"]
+    assert BootableImage.get_supported_boards(family) == [
+        "imx93w-14x12-lpddr4x-evk",
+        "imx93w-14x12-lpddr4x-frdm",
+    ]
+
+
+def test_nxpimage_bimg_mimx93w52_no_flexspi_nor() -> None:
+    """Test i.MX93W52 rejects FlexSPI NOR boot inherited from i.MX93."""
+    with pytest.raises(SPSDKValueError):
+        BootableImage(FamilyRevision("mimx93w52"), MemoryType.FLEXSPI_NOR)
+
+
+@pytest.mark.parametrize("board", ["imx93w-14x12-lpddr4x-evk", "imx93w-14x12-lpddr4x-frdm"])
+def test_nxpimage_bimg_mimx93w52_board_alt_filenames(
+    cli_runner: CliRunner, tmpdir: str, board: str
+) -> None:
+    """Test i.MX93W52 board templates offer the SD and ECC SPL and U-Boot file names.
+
+    :param cli_runner: CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory for output files.
+    :param board: Board name for board-specific filenames.
+    """
+    cmd = (
+        f"bootable-image get-templates -f mimx93w52 --output {tmpdir}"
+        f" -t imx_boot_flash_singleboot -b {board}"
+    )
+    cli_runner.invoke(nxpimage.main, cmd.split())
+
+    for file_name, prefix in [
+        ("spl.yaml", f"u-boot-spl.bin-{board}-"),
+        ("uboot.yaml", f"u-boot-{board}.bin-"),
+    ]:
+        # Comments are line-wrapped, so compare without whitespace and comment markers
+        content = "".join(load_text(os.path.join(tmpdir, file_name)).replace("#", "").split())
+        for variant in ["sd", "ecc"]:
+            assert f"{prefix}{variant}" in content
+
+
+def test_nxpimage_bimg_mimx93w32_alias() -> None:
+    """Test i.MX93W32 inherits the i.MX93W52 boards and memory types without FlexSPI NOR."""
+    w52, w32 = FamilyRevision("mimx93w52"), FamilyRevision("mimx93w32")
+    assert BootableImage.get_supported_boards(w32) == BootableImage.get_supported_boards(w52)
+    mem_types = BootableImage.get_supported_memory_types(w32)
+    assert mem_types == BootableImage.get_supported_memory_types(w52)
+    assert MemoryType.FLEXSPI_NOR not in mem_types
 
 
 def test_nxpimage_bimg_imx943_a1_dummy_entries(data_dir: str) -> None:
@@ -2218,3 +2318,192 @@ def test_mimxrt266x_xspi_nand_layout(family: str) -> None:
         BootableImageSegment.XMCD: 0x0,
         BootableImageSegment.AHAB_CONTAINER: 0x400,
     }
+
+
+def _mimxrt798s_image_with_oversized_ivt_length(data_dir: str) -> bytes:
+    """Build a MIMXRT798S XSPI NOR image whose IVT declares more data than available.
+
+    The returned image is a valid bootable image (FCB at 0x0, MBI at 0x4000) where the
+    IVT total length field declares the whole flash area reserved by the linker. Such
+    images are produced whenever the trailing padding is not materialized, for example
+    when the input is an ELF/AXF file.
+
+    :param data_dir: Base test data directory.
+    :return: Bootable image binary with an over-declared IVT total length.
+    """
+    merged = bytearray(
+        load_binary(
+            os.path.join(data_dir, "bootable_image", "mimxrt798s", "xspi_nor", "merged_image.bin")
+        )
+    )
+    # IVT total length field of the MBI segment placed at offset 0x4000
+    merged[0x4020:0x4024] = (0x180000).to_bytes(4, "little")
+    return bytes(merged)
+
+
+def test_nxpimage_bimg_parse_keeps_boot_header_with_oversized_ivt_length(data_dir: str) -> None:
+    """Test that FCB is reported even when the MBI IVT declares more data than available.
+
+    The declared IVT total length is only the area reserved by the linker, so it may be
+    larger than the data really present in the image. Such a discrepancy must not make
+    the parser fall back to an interpretation that starts at the MBI offset, because that
+    would silently hide the FCB segment inside the MBI segment.
+
+    :param data_dir: Base test data directory.
+    """
+    bimg = BootableImage.parse(
+        _mimxrt798s_image_with_oversized_ivt_length(data_dir),
+        family=FamilyRevision("mimxrt798s"),
+    )
+    assert bimg.mem_type == MemoryType.XSPI_NOR
+    assert [seg.NAME.label for seg in bimg.segments] == ["fcb", "mbi"]
+    assert bimg.get_segment(BootableImageSegment.FCB).full_image_offset == 0x0
+    assert bimg.get_segment(BootableImageSegment.MBI).full_image_offset == 0x4000
+
+
+def test_nxpimage_bimg_oversized_ivt_length_is_only_warning(data_dir: str) -> None:
+    """Test that an over-declared IVT total length is reported as a warning, not an error.
+
+    The missing bytes are the trailing padding, not image content, so the image is still
+    usable and the verifier must not reject it.
+
+    :param data_dir: Base test data directory.
+    """
+    bimg = BootableImage.parse(
+        _mimxrt798s_image_with_oversized_ivt_length(data_dir),
+        family=FamilyRevision("mimxrt798s"),
+    )
+    verifier = bimg.verify()
+    assert not verifier.has_errors
+    assert verifier.has_warnings
+    assert "is greater than the available data length" in verifier.draw(colorize=False)
+
+
+@pytest.mark.parametrize(
+    "mbi_class,is_error",
+    [
+        ("plain_xip", False),
+        ("crc_xip", False),
+        ("signed_xip", False),
+        ("plain_ram", True),
+        ("crc_ram", True),
+        ("signed_ram", True),
+    ],
+)
+def test_mbi_oversized_ivt_length_severity_depends_on_image_target(
+    mbi_class: str, is_error: bool
+) -> None:
+    """Test that a missing trailing padding is an error only for load-to-RAM images.
+
+    For XIP images the declared length is just the area reserved by the linker and the
+    device never executes the missing padding, so a warning is enough. For load-to-RAM
+    images the length drives how many bytes the boot ROM copies into RAM, so missing data
+    means the ROM reads past the end of the image and that must be reported as an error.
+
+    :param mbi_class: Name of the MBI class to instantiate.
+    :param is_error: True when the discrepancy has to be reported as an error.
+    """
+    mbi_cls = MasterBootImage.create_mbi_class(mbi_class, FamilyRevision("mimxrt798s"))
+    mbi = mbi_cls(family=FamilyRevision("mimxrt798s"))
+    # total_len is a computed property, override it to emulate the stripped padding
+    mbi_cls.total_len = property(lambda _self: 0x6A7C)  # type: ignore[assignment]
+
+    verifier = Verifier("test")
+    mbi._verify_parsed_ivt_total_length(  # type: ignore[attr-defined]
+        verifier, parsed_image_type=0x4, parsed_total_length=0x180000
+    )
+
+    assert verifier.has_errors == is_error
+    assert verifier.has_warnings != is_error
+    assert "is greater than the available data length" in verifier.draw(colorize=False)
+
+
+def test_nxpimage_bimg_parse_skips_init_offset_hiding_identified_segment(data_dir: str) -> None:
+    """Test that init offsets placed behind an identified segment are not used.
+
+    The FCB segment is recognized by its magic tag, so it cannot match by chance. Once it
+    is identified at its layout offset, no interpretation starting behind it may be used.
+
+    :param data_dir: Base test data directory.
+    """
+    family = FamilyRevision("mimxrt798s")
+    data = _mimxrt798s_image_with_oversized_ivt_length(data_dir)
+
+    # The FCB is unambiguously identified at the very beginning of the image
+    assert BootableImage._get_identified_offsets(data, family, MemoryType.XSPI_NOR) == [0x0]
+
+    # Therefore the MBI based interpretation (init offset 0x4000) must be dropped
+    instances = BootableImage._parse_incomplete_images(
+        data, family, [MemoryType.XSPI_NOR], no_errors=False, dek_map=None, parse_errors=None
+    )
+    for instance in instances:
+        assert instance.init_offset == 0x0
+
+
+def test_nxpimage_bimg_identified_offsets_ignores_data_without_fcb(data_dir: str) -> None:
+    """Test that no offsets are identified when the FCB magic tag is not present.
+
+    Only a successfully parsed segment with a unique identifier may restrict the init
+    offsets, so an image without a valid FCB must keep all fallback options available.
+
+    :param data_dir: Base test data directory.
+    """
+    family = FamilyRevision("mimxrt798s")
+    data = bytearray(_mimxrt798s_image_with_oversized_ivt_length(data_dir))
+    # Break the FCB magic tag
+    data[0:4] = b"\x00\x00\x00\x00"
+
+    assert BootableImage._get_identified_offsets(bytes(data), family, MemoryType.XSPI_NOR) == []
+
+
+@pytest.mark.parametrize("family", ["mimx9596", "mimx943"])
+def test_nxpimage_bimg_parse_absent_secondary_ahab(
+    cli_runner: CliRunner, tmpdir: str, data_dir: str, family: str
+) -> None:
+    """Test parse -> config -> export round trip of image without secondary AHAB container.
+
+    The FlexSPI NOR bootable image contains only FCB and the primary image container set.
+    Parsing must succeed and keep the empty value for the absent optional secondary segment,
+    and the generated configuration must be valid to export the same image again.
+
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory path for output files.
+    :param data_dir: Test data directory containing configuration files.
+    :param family: Target MPU family name.
+    """
+    work_dir = os.path.join(tmpdir, "work")
+    shutil.copytree(os.path.join(data_dir, "bootable_image", family, "serial_downloader"), work_dir)
+    with use_working_directory(work_dir):
+        cli_runner.invoke(
+            nxpimage.main, ["bootable-image", "fcb", "get-templates", "-f", family, "-o", "fcb"]
+        )
+        bimg_config = Config(
+            {
+                "family": family,
+                "memory_type": "flexspi_nor",
+                "fcb": f"fcb/fcb_{family}_flexspi_nor.yaml",
+                "primary_image_container_set": "spl.yaml",
+                "output": "input.bin",
+            }
+        )
+        write_file(yaml.safe_dump(dict(bimg_config)), "bimg.yaml")
+        cli_runner.invoke(nxpimage.main, ["bootable-image", "export", "-c", "bimg.yaml"])
+        input_binary = load_binary("input.bin")
+
+        cli_runner.invoke(
+            nxpimage.main,
+            ["bootable-image", "parse", "-f", family, "-m", "flexspi_nor", "-b", "input.bin"]
+            + ["-o", "parsed"],
+        )
+        parsed_config_path = os.path.join("parsed", f"bootable_image_{family}_flexspi_nor.yaml")
+        parsed_config = load_configuration(parsed_config_path)
+        assert parsed_config["secondary_image_container_set"] == ""
+        assert parsed_config["keyblob"] == ""
+
+        cli_runner.invoke(
+            nxpimage.main,
+            ["bootable-image", "export", "-c", parsed_config_path]
+            + ["-oc", "primary_image_container_set=segment_spl.bin"]
+            + ["-oc", f"output={os.path.join(work_dir, 'output.bin')}"],
+        )
+        assert load_binary("output.bin") == input_binary

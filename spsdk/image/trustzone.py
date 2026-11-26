@@ -69,7 +69,29 @@ class TrustZone(FeatureBaseClass):
         self.family = family
         if family.name not in [x.name for x in get_families(DatabaseManager.TZ)]:
             raise SPSDKValueError(f"The {family} family doesn't support TrustZone")
-        self.regs = Registers(family, DatabaseManager.TZ, base_endianness=Endianness.LITTLE)
+        # Registers are loaded lazily as the database specification is large and in many
+        # cases (TrustZone enabled with default values) the registers are never needed.
+        self._regs: Registers | None = None
+
+    @property
+    def regs(self) -> Registers:
+        """Get TrustZone registers, loading them from the database on first access.
+
+        :return: TrustZone registers of the family.
+        """
+        if self._regs is None:
+            self._regs = Registers(
+                self.family, DatabaseManager.TZ, base_endianness=Endianness.LITTLE
+            )
+        return self._regs
+
+    @regs.setter
+    def regs(self, value: Registers) -> None:
+        """Set TrustZone registers.
+
+        :param value: TrustZone registers to be used.
+        """
+        self._regs = value
 
     @classmethod
     def get_validation_schemas_from_cfg(cls, config: Config) -> list[dict[str, Any]]:
@@ -152,6 +174,9 @@ class TrustZone(FeatureBaseClass):
 
         :return: True if the TrustZone is customized, False otherwise.
         """
+        if self._regs is None:
+            # Registers not loaded yet, so they still hold their reset values
+            return False
         return not self.regs.has_reset_value
 
     def verify(self) -> Verifier:
@@ -185,6 +210,16 @@ class TrustZone(FeatureBaseClass):
                             important=False,
                         )
         return ret
+
+    def __bool__(self) -> bool:
+        """Get truth value of TrustZone object.
+
+        The TrustZone object is always considered as valid one. This avoids implicit loading
+        of registers through :meth:`__len__` in truth value testing.
+
+        :return: Always True.
+        """
+        return True
 
     def __len__(self) -> int:
         """Get the total size of TrustZone registers in bytes.

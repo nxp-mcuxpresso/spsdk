@@ -318,6 +318,14 @@ class TestGenerateBashDispatcher:
         # There should be at most the case for arg type dispatch, not per-path cases
         assert dispatcher.count("case") <= 3
 
+    def test_file_completion_uses_filenames_mode(self, dispatcher: str) -> None:
+        """File completions go through a helper that enables readline filename handling."""
+        assert "_spsdk_files_root() {" in dispatcher
+        assert "compopt -o filenames" in dispatcher
+        assert "IFS=$'\\n'" in dispatcher
+        assert dispatcher.count('_spsdk_files_root "$cur"') == 2
+        assert 'COMPREPLY=($(compgen -f -- "$cur"))' not in dispatcher
+
 
 # ---------------------------------------------------------------------------
 # generate_zsh_dispatcher
@@ -626,6 +634,21 @@ class TestGeneratePowerShellScript:
         )
         # substring fallback
         assert '"*$wordToComplete*"' in script or "*$wordToComplete*" in script
+
+    def test_file_completion_keeps_typed_directory(self, tree: dict) -> None:
+        """Path completion uses the native file name completer, which keeps the typed prefix.
+
+        Completions built from ``Get-ChildItem`` item names would replace the whole
+        token (e.g. ``subfolder/a``) with a bare name (``a.bin``), dropping ``subfolder/``.
+        """
+        script = generate_powershell_script("root", tree)
+        native = (
+            "[System.Management.Automation.CompletionCompleters]::CompleteFilename($wordToComplete)"
+        )
+        # both the option-value and the positional-argument branch
+        assert script.count(native) == 2
+        assert "Get-ChildItem" not in script
+        assert "$_.Name" not in script
 
 
 # ---------------------------------------------------------------------------

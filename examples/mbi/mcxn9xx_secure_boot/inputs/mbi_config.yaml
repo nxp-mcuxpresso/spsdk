@@ -1,0 +1,23 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ==========================  Master Boot Image configuration for mcxn946 (signed XIP)  ==========================
+# NXP chip family identifier.
+family: mcxn946
+# Revision of silicon.
+revision: latest
+# Execute-in-place image (runs directly from internal flash).
+outputImageExecutionTarget: xip
+# Signed authentication - the boot ROM verifies the image against the Root of Trust.
+outputImageAuthenticationType: signed
+# The path for the resulting signed master boot image.
+masterBootOutputFile: ../workspace/mcxn9xx_signed.bin
+# Plain input application image to be converted into a signed Master Boot Image.
+inputImageFile: frdm_mcxn947_led_blinky.bin
+# XIP load/execution address (start of internal flash).
+outputImageExecutionAddress: 0
+# Path to the certificate block configuration holding the Root of Trust.
+certBlock: cert_block_mcxn9xx.yaml
+# Private key used to sign the image (must match a root certificate in the cert block).
+signer: ../../_data/keys/ecc256/srk0_ecc256.pem

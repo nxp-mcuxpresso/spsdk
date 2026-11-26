@@ -1888,7 +1888,8 @@ class QuickDatabase:
         """Sort given devices to groups by their purposes.
 
         The method organizes devices into groups based on their purpose attribute from the
-        device database. Each group contains devices with the same purpose, sorted alphabetically.
+        device database. Each group contains devices with the same purpose, sorted alphabetically,
+        and the groups are ordered alphabetically (case-insensitive) by their names.
 
         :param devices: List of device names to be grouped.
         :return: Dictionary where the key is group name and value is list of devices.
@@ -1902,7 +1903,7 @@ class QuickDatabase:
 
         for grp in ret.values():
             grp.sort()
-        return ret
+        return dict(sorted(ret.items(), key=lambda item: item[0].casefold()))
 
 
 class Database:
@@ -2333,6 +2334,7 @@ class FeaturesEnum(SpsdkEnum):
     HSE = (39, "hse", "Hardware Security Engine")
     IPED = (40, "iped", "Inline PRINCE Encryption/Decryption")
     DEBUG_PROBE = (41, "debug_probe", "Debug probe access configuration")
+    AISEC = (42, "aisec", "AISEC protected-directory container")
 
 
 class DatabaseManager:
@@ -2383,7 +2385,7 @@ class DatabaseManager:
                     except (PermissionError, OSError) as exc:
                         logger.error(f"Cannot clear cache file '{candidate}': {exc!s}")
         if not removed_any:
-            logger.error(f"No SPSDK cache files found in '{current_path}', nothing to clear.")
+            logger.info(f"No SPSDK cache files found in '{current_path}', nothing to clear.")
 
     @staticmethod
     def get_restricted_data() -> str | None:
@@ -2444,7 +2446,7 @@ class DatabaseManager:
 
         if SPSDK_CACHE_DISABLED:
             DatabaseManager.clear_cache()
-            return QuickDatabase.create(cls.get_db())
+            return QuickDatabase.create(cls.get_db(complete_load=True))
 
         db_hash = DatabaseManager.get_quick_info_hash(
             [SPSDK_DATA_FOLDER, restricted_data, SPSDK_ADDONS_DATA_FOLDER]
@@ -2640,6 +2642,7 @@ class DatabaseManager:
     TLV_BLOB = FeaturesEnum.TLV_BLOB.label
     HSE = FeaturesEnum.HSE.label
     DEBUG_PROBE = FeaturesEnum.DEBUG_PROBE.label
+    AISEC = FeaturesEnum.AISEC.label
 
 
 def get_schema_file(feature: str) -> dict[str, Any]:

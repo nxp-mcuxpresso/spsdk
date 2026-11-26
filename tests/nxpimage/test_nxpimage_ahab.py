@@ -129,6 +129,42 @@ def test_nxpimage_ahab_export(
         assert filecmp.cmp(os.path.join(data_dir, "ahab", ref_binary), new_binary, shallow=False)
 
 
+def test_nxpimage_ahab_export_override_config_types(
+    cli_runner: CliRunner, tmpdir: str, data_dir: str
+) -> None:
+    """Test that override configuration values are converted to the schema defined types.
+
+    The boolean value from the command line must be accepted for a boolean schema item and
+    the result must be the same as with the value defined in the configuration file.
+
+    :param cli_runner: CLI runner instance for invoking nxpimage commands.
+    :param tmpdir: Temporary directory path for test output.
+    :param data_dir: Directory containing test data files.
+    """
+    with use_working_directory(data_dir):
+        config_file = f"{data_dir}/ahab/config_ctcm.yaml"
+        ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir, "output")
+        image_key = "containers/0/container/images/0"
+        cmd = [
+            "ahab",
+            "export",
+            "-c",
+            new_config,
+            "-oc",
+            f"{image_key}/is_encrypted=false",
+            "-oc",
+            "containers/0/container/sw_version=0x0",
+            "-oc",
+            f"{image_key}/load_address=0x1FFE0000",
+        ]
+        cli_runner.invoke(nxpimage.main, cmd)
+        assert filecmp.cmp(os.path.join(data_dir, "ahab", ref_binary), new_binary, shallow=False)
+
+        cmd[5] = f"{image_key}/is_encrypted=maybe"
+        result = cli_runner.invoke(nxpimage.main, cmd, expected_code=1)
+        assert "is_encrypted must be boolean" in str(result.exception)
+
+
 @pytest.mark.parametrize(
     "config_file,tool_override",
     [
@@ -1675,8 +1711,8 @@ def test_nxpimage_ahab_sign_rt2660_mixed_mldsa_lms(
         srk_assets = container.signature_block.srk_assets
         assert isinstance(srk_assets, SRKTableArray)
         srk_table = srk_assets._srk_tables[0]
-        assert srk_table.srk_records[0].hash_algorithm.label == "SHA384"
-        assert srk_table.srk_records[3].hash_algorithm.label == "SHA256"
+        # Default hash algorithm of the first SRK key (ML-DSA-65) is used for the whole table
+        assert {rec.hash_algorithm.label for rec in srk_table.srk_records} == {"SHA384"}
 
         container.flags |= 1 << AHABContainerV2.FLAGS_PARALLEL_VERIFICATION_OFFSET
         verification = ahab.verify()
@@ -1942,6 +1978,43 @@ def test_nxpimage_ahab_sign_preserves_absent_fields(
                         assert (
                             container.fuse_version == 3
                         ), f"fuse_version was overwritten: expected 3, got {container.fuse_version}"
+
+
+def test_nxpimage_ahab_sign_warns_on_changed_container_settings(
+    data_dir: str, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Test that AHAB signing warns when the signing config changes container settings.
+
+    Changes of container flags or versions made by the signing configuration must be reported
+    as warnings to be visible without verbose logging, while setting the SRK set of an unsigned
+    container (the purpose of signing) must not be reported.
+
+    :param data_dir: Directory containing test data files.
+    :param caplog: Pytest log capture fixture.
+    """
+    with use_working_directory(data_dir):
+        sign_config = Config.create_from_file(
+            os.path.join(data_dir, "ahab", "container_sign_config.yaml")
+        )
+        binary_path = os.path.join(data_dir, "ahab", "test_img_for_sign.bin")
+        # Align the SRK ID with the unsigned image to get a configuration without changes
+        sign_config["used_srk_id"] = 1
+
+        with caplog.at_level(logging.WARNING, logger="spsdk.image.ahab.utils"):
+            ahab_sign_image(binary_path, sign_config, "flexspi_nor", 0)
+        assert not [rec for rec in caplog.records if "changed settings" in rec.message]
+
+        caplog.clear()
+        sign_config["used_srk_id"] = 0
+        sign_config["sw_version"] = 5
+        with caplog.at_level(logging.WARNING, logger="spsdk.image.ahab.utils"):
+            ahab_sign_image(binary_path, sign_config, "flexspi_nor", 0)
+        warnings = [rec for rec in caplog.records if "changed settings" in rec.message]
+        assert warnings
+        assert all(rec.levelno == logging.WARNING for rec in warnings)
+        assert "used_srk_id: 1 -> 0" in warnings[0].message
+        assert "sw_version: 0 -> 5" in warnings[0].message
+        assert "srk_set" not in warnings[0].message
 
 
 @pytest.mark.skip(reason="not ready yet")

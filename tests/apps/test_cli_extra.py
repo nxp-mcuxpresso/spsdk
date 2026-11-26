@@ -15,6 +15,8 @@ from spsdk.apps import pfr as pfr_cli
 from spsdk.apps.nxpimage import main as nxpimage_main
 from spsdk.apps.spsdk_apps import main as spsdk_main
 from spsdk.apps.utils.common_cli_options import FamilyChoice, GetFamiliesCommand
+from spsdk.utils.database import DatabaseManager
+from spsdk.utils.family import get_families
 from tests.cli_runner import CliRunner
 
 # Helpers
@@ -514,6 +516,17 @@ class TestSpsdkAppsCli:
         result = cli_runner.invoke(spsdk_main, ["--help"])
         for tool in ("nxpimage", "pfr", "nxpdice", "blhost"):
             assert tool in result.output
+
+    def test_spsdk_utils_families_grouped(self, cli_runner: CliRunner) -> None:
+        """Test spsdk utils families prints the families grouped by device purpose."""
+        result = cli_runner.invoke(spsdk_main, ["utils", "families", "-f", "pfr"])
+        families = sorted({family.name for family in get_families("pfr")})
+        groups = DatabaseManager().quick_info.split_devices_to_groups(families)
+        positions = [result.output.index(f" - {group}:") for group in groups]
+        assert positions == sorted(positions)
+        for group, devices in groups.items():
+            group_output = result.output.split(f" - {group}:")[1].split(" - ")[0]
+            assert all(f"{device}[" in group_output for device in devices)
 
     @pytest.mark.parametrize("feature", ["mbi", "pfr", "ahab"])
     def test_spsdk_utils_families_parametrized(self, cli_runner: CliRunner, feature: str) -> None:

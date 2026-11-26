@@ -362,8 +362,27 @@ class SB21Helper:
 
         # Encrypt only if the ADE and VLD flags are set
         if bool(end_addr & keyblob.KEY_FLAG_ADE) and bool(end_addr & keyblob.KEY_FLAG_VLD):
+            data = align_block(data, 512)
+            image_end = address + len(data) - 1
+            # Image out of the key blob range is valid with flash remap (dual image boot)
+            if not keyblob.matches_range(address, image_end):
+                other_ids = [
+                    kb["keyblob_id"]
+                    for kb in keyblobs
+                    if kb["keyblob_id"] != keyblob_id
+                    and kb["keyblob_content"]
+                    and value_to_int(kb["keyblob_content"][0]["start"]) <= address
+                    and image_end <= value_to_int(kb["keyblob_content"][0]["end"])
+                ]
+                hint = f" The image is within key blob {other_ids}." if other_ids else ""
+                logger.warning(
+                    f"Encrypt command (keyblob_id={keyblob_id}, file={cmd_args.get('file')}): "
+                    f"Image address range {hex(address)}-{hex(image_end)} is not within key blob:"
+                    f" {hex(start_addr)}-{hex(end_addr)}.{hint}"
+                    " Ignore this if flash remap feature is used."
+                )
             encoded_data = keyblob.encrypt_image(
-                base_address=address, data=align_block(data, 512), byte_swap=byte_swap
+                base_address=address, data=data, byte_swap=byte_swap
             )
         else:
             encoded_data = data

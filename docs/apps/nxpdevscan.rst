@@ -22,6 +22,18 @@ nxpdevscan - USB
 
 :ref:`USB device identification in SPSDK`
 
+--------------------
+nxpdevscan - plugins
+--------------------
+
+*nxpdevscan* lists devices found by device interface plugins (installed packages registering
+the ``spsdk.device.interface`` entry point) in section *Connected Plugin Devices*. Each plugin
+interface is scanned by calling its ``scan`` class method without parameters; interfaces whose
+``scan`` method requires mandatory parameters are skipped. A failure of one plugin is reported
+as a warning and scanning continues with the remaining plugins.
+
+Debug probes are not listed by *nxpdevscan*, use ``nxpdebugmbox tools list-probes`` instead.
+
 ----------------------
 Command line interface
 ----------------------

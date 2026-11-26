@@ -22,7 +22,7 @@ import yaml
 from spsdk.apps import nxpimage
 from spsdk.image.otfad.otfad import Otfad
 from spsdk.utils.family import FamilyRevision
-from spsdk.utils.misc import load_configuration, load_text, use_working_directory
+from spsdk.utils.misc import load_binary, load_configuration, load_text, use_working_directory
 from tests.cli_runner import CliRunner
 
 
@@ -373,3 +373,49 @@ def test_otfad_custom_output(
         assert os.path.isfile(os.path.join(out_dir, "keyblob.bin"))
         assert not os.path.isfile(os.path.join(out_dir, "readme.txt"))
         assert os.path.isfile(config_dict["output_name"] + ".bin")
+
+
+def test_otfad_output_names_with_extension(
+    cli_runner: CliRunner, tmpdir: Any, data_dir: str
+) -> None:
+    """Test that OTFAD output names with an image file extension are respected.
+
+    A name with a known image file extension is kept as is and the extension selects the format
+    of the file, while a name without any extension gets the extension of the output_format.
+
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory for test files.
+    :param data_dir: Path to test data directory containing OTFAD test files.
+    """
+    work_dir = os.path.join(tmpdir, "otfad")
+    shutil.copytree(os.path.join(data_dir, "otfad"), work_dir)
+
+    with use_working_directory(work_dir):
+        config_dict = load_configuration("otfad_rt1170_custom_name.yaml")
+        out_dir = os.path.join(work_dir, config_dict["output_folder"])
+        config_dict["output_format"] = "srec"
+        config_dict["output_name"] = "otfad_whole_image"
+        config_dict["keyblob_name"] = "otfad_keyblobs.bin"
+        config_dict["encrypted_name"] = "encrypted_blob.hex"
+
+        modified_config = os.path.join(work_dir, "modified_config.yaml")
+        with open(modified_config, "w", encoding="utf-8") as f:
+            yaml.dump(config_dict, f)
+        cmd = f"otfad export -c {modified_config}"
+        cli_runner.invoke(nxpimage.main, cmd.split())
+
+        keyblob_file = os.path.join(out_dir, "otfad_keyblobs.bin")
+        assert os.path.isfile(keyblob_file)
+        assert not os.path.isfile(keyblob_file + ".srec")
+        keyblob = load_binary(keyblob_file)
+        assert len(keyblob) == 256
+        assert not keyblob.startswith(b"S")
+
+        encrypted_file = os.path.join(out_dir, "encrypted_blob.hex")
+        assert os.path.isfile(encrypted_file)
+        assert not os.path.isfile(encrypted_file + ".srec")
+        assert load_text(encrypted_file).startswith(":")
+
+        whole_image_file = os.path.join(out_dir, "otfad_whole_image.srec")
+        assert os.path.isfile(whole_image_file)
+        assert load_text(whole_image_file).startswith("S")

@@ -311,7 +311,35 @@ class TestVerifyEleBasedProtocolWarningExtended:
         )
         result = dar.verify()
         proto_record = next(r for r in result.records if "Protocol version" in r.name)
-        assert proto_record.result == VerifierResult.WARNING
+        assert proto_record.result == VerifierResult.SUCCEEDED
+        assert not proto_record.important
+
+    @pytest.mark.parametrize("family_name", ["mimx9352", "mimx8ulp", "mimxrt1189"])
+    def test_ele_based_family_different_versions_no_warning(self, family_name: str) -> None:
+        """ELE returns its own DAC version, a different DC version must not raise a warning."""
+        family = FamilyRevision(family_name)
+        mock_dac = MagicMock()
+        mock_dac.version = ProtocolVersion("2.0")
+        mock_dac.socc = 0
+        mock_dac.uuid = bytes(16)
+        mock_dac.rotid_rkth_hash = b"\x00" * 32
+        mock_dac.challenge = b"\x00" * 32
+        mock_dc = MagicMock()
+        mock_dc.version = ProtocolVersion("2.1")
+        mock_dc.socc = 0
+        mock_dc.uuid = bytes(16)
+        mock_dc.calculate_hash.return_value = b"\x00" * 32
+        dar = DebugAuthenticateResponseRSA(
+            family=family,
+            debug_credential=mock_dc,
+            auth_beacon=0,
+            dac=mock_dac,
+            sign_provider=None,
+        )
+        result = dar.verify()
+        proto_record = next(r for r in result.records if "Protocol version" in r.name)
+        assert proto_record.result == VerifierResult.SUCCEEDED
+        assert "Protocol version" not in result.draw(colorize=False)
 
 
 # ---------------------------------------------------------------------------
@@ -414,6 +442,55 @@ class TestEleV2GetValidationSchemasExtended:
         )
         DebugAuthenticateResponse.get_validation_schemas_from_cfg(config)
         assert "Unknown property found in configuration: 'srk_revoke_mask'" not in caplog.text
+
+    @pytest.mark.parametrize("family_str", ["mimx9596", "mimx943"])
+    def test_check_all_signatures_is_recognized_property(self, family_str: str) -> None:
+        """SPSDK-7227: check_all_signatures must be usable for secure debug (DAT) as well.
+
+        The AHAB container header flag (also exposed for the standalone AHAB Signed
+        Message V2 container) overrides the fuse-driven signature-verification policy.
+        STEC confirmed the flag is meant to be usable for secure debug responses too, so
+        it must remain a known DAT/DAR config property for AHAB-v2-based (ELE v2) families
+        instead of being stripped from the Signed Message schema.
+        """
+        family = FamilyRevision(family_str)
+        schemas = DebugAuthenticateResponseEdgelockEnclaveV2.get_validation_schemas(family)
+        smsg_schema = schemas[1]
+        assert "check_all_signatures" in smsg_schema["properties"]
+        # optional - not part of required fields, config check should not warn about it
+        assert "check_all_signatures" not in smsg_schema.get("required", [])
+
+    @pytest.mark.parametrize("family_str", ["mimx9596", "mimx943"])
+    def test_check_all_signatures_visible_in_template(self, family_str: str) -> None:
+        """SPSDK-7227: check_all_signatures must be shown in the generated DAT config template.
+
+        The AHAB/Signed-Message-V2 schema hides the property by default
+        (``skip_in_template: True``) and only reveals it for container-type-2 (V2) capable
+        families. The DAR schema is derived from the Signed Message schema, so this
+        family-specific override must be preserved for the DAT config template as well.
+        """
+        family = FamilyRevision(family_str)
+        schemas = DebugAuthenticateResponseEdgelockEnclaveV2.get_validation_schemas(family)
+        smsg_schema = schemas[1]
+        assert smsg_schema["properties"]["check_all_signatures"]["skip_in_template"] is False
+
+    def test_check_all_signatures_no_unknown_property_warning(self, caplog) -> None:  # type: ignore[no-untyped-def]
+        """SPSDK-7227: config containing check_all_signatures must not trigger the warning."""
+        family = FamilyRevision("mimx9596")
+        config = Config(
+            {
+                "family": family.name,
+                "revision": family.revision,
+                "check_all_signatures": "check_all_signatures",
+                "srk_set": "oem",
+                "used_srk_id": 0,
+                "signer": "dummy.pem",
+                "certificate": "dummy.bin",
+                "srk_table": {"srk_array": []},
+            }
+        )
+        DebugAuthenticateResponse.get_validation_schemas_from_cfg(config)
+        assert "Unknown property found in configuration: 'check_all_signatures'" not in caplog.text
 
 
 # ---------------------------------------------------------------------------
@@ -592,7 +669,7 @@ class TestEleV2VerifySrkRevokeMask:
 
     def test_matching_masks_succeeds(self) -> None:
         """Both DAC and DC carry the same SRK revoke mask – result should be SUCCEEDED."""
-        family = FamilyRevision("mimx9596")
+        family = FamilyRevision("mimxrt2662")
         dar = self._make_dar(family, dac_revoke_mask=0x03, dc_revoke_mask=0x03)
         record = dar._verify_srk_revoke_mask()
         assert record.result == VerifierResult.SUCCEEDED
@@ -600,14 +677,14 @@ class TestEleV2VerifySrkRevokeMask:
 
     def test_zero_masks_succeeds(self) -> None:
         """Both DAC and DC have no revocations (zero mask) – result should be SUCCEEDED."""
-        family = FamilyRevision("mimx9596")
+        family = FamilyRevision("mimxrt2662")
         dar = self._make_dar(family, dac_revoke_mask=0, dc_revoke_mask=0)
         record = dar._verify_srk_revoke_mask()
         assert record.result == VerifierResult.SUCCEEDED
 
     def test_dc_superset_succeeds(self) -> None:
         """DC revoking MORE keys than fuses already have is valid (superset) – SUCCEEDED."""
-        family = FamilyRevision("mimx9596")
+        family = FamilyRevision("mimxrt2662")
         # fuses have bit 0 revoked; signed message also revokes bit 1 – allowed
         dar = self._make_dar(family, dac_revoke_mask=0x01, dc_revoke_mask=0x03)
         record = dar._verify_srk_revoke_mask()
@@ -615,7 +692,7 @@ class TestEleV2VerifySrkRevokeMask:
 
     def test_dc_missing_fuse_bit_errors(self) -> None:
         """DC omitting a key already revoked in fuses – ELE will reject, result should be ERROR."""
-        family = FamilyRevision("mimx9596")
+        family = FamilyRevision("mimxrt2662")
         # fuses have bits 0 and 1 revoked; signed message only includes bit 1 – bit 0 is missing
         dar = self._make_dar(family, dac_revoke_mask=0x03, dc_revoke_mask=0x02)
         record = dar._verify_srk_revoke_mask()
@@ -625,14 +702,14 @@ class TestEleV2VerifySrkRevokeMask:
 
     def test_missing_container_error(self) -> None:
         """No signed message container present – result should be ERROR."""
-        family = FamilyRevision("mimx9596")
+        family = FamilyRevision("mimxrt2662")
         dar = self._make_dar(family, dac_revoke_mask=0, dc_revoke_mask=0, container_is_none=True)
         record = dar._verify_srk_revoke_mask()
         assert record.result == VerifierResult.ERROR
 
     def test_verify_includes_srk_revoke_mask_record(self) -> None:
         """The overridden verify() must include the SRK revoke mask check."""
-        family = FamilyRevision("mimx9596")
+        family = FamilyRevision("mimxrt2662")
         dar = self._make_dar(family, dac_revoke_mask=0, dc_revoke_mask=0)
         verifier = dar.verify()
         record_names = [r.name for r in verifier.records]
@@ -640,7 +717,36 @@ class TestEleV2VerifySrkRevokeMask:
 
     def test_verify_srk_revoke_mismatch_causes_error_in_verifier(self) -> None:
         """A mask mismatch propagates as an error into the overall verifier."""
-        family = FamilyRevision("mimx9596")
+        family = FamilyRevision("mimxrt2662")
         dar = self._make_dar(family, dac_revoke_mask=0x05, dc_revoke_mask=0x00)
         verifier = dar.verify()
         assert verifier.has_errors
+
+    def test_dac_bit_offset_is_applied_before_comparison(self) -> None:
+        """mimx9596 reports the OEM_SRK_RVK field at bit offset 12 in the raw DAC fuse word.
+
+        Regression test for SPSDK-7226: the DAC's rotid_rkh_revocation carries the raw fuse
+        word (OEM_SRK_RVK at bits 12-15 on i.MX95/i.MX94), while the signed message's
+        flag_srk_revoke_keys is already normalized to bits 0-3. SRK2 and SRK3 revoked in fuses
+        (bits 14 and 15 set -> raw value 0xC000) must correctly match a signed message that
+        revokes SRK2 and SRK3 (normalized mask 0x0C).
+        """
+        family = FamilyRevision("mimx9596")
+        dar = self._make_dar(family, dac_revoke_mask=0xC000, dc_revoke_mask=0x0C)
+        record = dar._verify_srk_revoke_mask()
+        assert record.result == VerifierResult.SUCCEEDED
+
+    def test_dac_bit_offset_missing_bit_still_detected(self) -> None:
+        """With the bit-offset applied, a genuinely missing revoked key is still caught."""
+        family = FamilyRevision("mimx9596")
+        # fuses revoke SRK2 and SRK3 (raw 0xC000), signed message only revokes SRK3 (0x08)
+        dar = self._make_dar(family, dac_revoke_mask=0xC000, dc_revoke_mask=0x08)
+        record = dar._verify_srk_revoke_mask()
+        assert record.result == VerifierResult.ERROR
+
+    def test_dac_bit_offset_default_zero_for_other_families(self) -> None:
+        """Families without an explicit offset keep comparing bits 0-3 directly (no shift)."""
+        family = FamilyRevision("mimxrt2662")
+        dar = self._make_dar(family, dac_revoke_mask=0x0C, dc_revoke_mask=0x0C)
+        record = dar._verify_srk_revoke_mask()
+        assert record.result == VerifierResult.SUCCEEDED

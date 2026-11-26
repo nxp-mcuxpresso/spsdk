@@ -116,6 +116,18 @@ loadKeyBlob: >2
     #     wrappingKeyId: NXP_CUST_KEK_EXT_SK
     #     file: wrapped_key_blob.bin
     #
+    # additional plain user keys can be wrapped by the device as well, specify the key type
+    # and optionally the key properties (bit 0: key size, bit 30: PPROT0, bit 31: PPROT1)
+    # you may also wrap the key in advance using `nxpdevhsm wrap-key` command
+    # (use the key blob offset defined for the key in the device reference manual)
+    # - loadKeyBlob:
+    #     offset: 0x0
+    #     wrappingKeyId: NXP_CUST_KEK_EXT_SK
+    #     file: my_aes_key.bin
+    #     plainInput: bin
+    #     keyType: AESK
+    #     keyProperties: 0x1
+    #
 
 writeIFR: >2
     # Write IFR (Information Flash Region) - CFPA and CMPA configuration

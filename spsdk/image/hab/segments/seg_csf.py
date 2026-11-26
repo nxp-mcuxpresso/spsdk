@@ -620,7 +620,9 @@ class HabSegmentCSF(HabSegmentBase):
         """Parse CSF segment block from image binary.
 
         Extracts and parses the Command Sequence File (CSF) segment from HAB container
-        binary data using the IVT to locate the CSF address.
+        binary data using the IVT to locate the CSF address. Unsigned images may have the
+        CSF address defined in IVT while the CSF area is not filled in (reserved space only),
+        such CSF segment is reported as not present.
 
         :param data: Binary data of HAB container to be parsed.
         :param family: Target device family revision.
@@ -630,6 +632,10 @@ class HabSegmentCSF(HabSegmentBase):
         ivt = HabSegmentIvt.parse(data)
         if ivt.csf_address:
             offset = ivt.csf_address - ivt.ivt_address
+            if len(data) <= offset or data[offset] != SegmentTag.CSF.tag:
+                raise SPSDKSegmentNotPresent(
+                    f"Segment {cls.__name__} is not present, the CSF area is empty"
+                )
             segment = cls(SegCSF.parse(data[offset : offset + cls.CSF_SIZE]))
             segment.offset = offset
             return segment

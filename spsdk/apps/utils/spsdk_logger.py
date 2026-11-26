@@ -28,6 +28,7 @@ from spsdk import (
     SPSDK_DEBUG_LOGGING_DISABLED,
     SPSDK_LOG_LEVEL_TRACE,
     __version__,
+    refresh_warning_strict,
 )
 from spsdk.utils.misc import find_file, load_configuration
 
@@ -45,6 +46,8 @@ try:
     )
     config_data = load_configuration(logging_config_file)
     logging.config.dictConfig(config_data)
+    # dictConfig may replace the handlers of the 'spsdk' logger, re-apply strict warnings
+    refresh_warning_strict()
     print(f"Logging config loaded from {logging_config_file}")
 except Exception as exc:
     # no logging config file found
@@ -184,6 +187,8 @@ def install(
         handler.setFormatter(formatter)
         target_logger.addHandler(handler)
     target_logger.propagate = True
+    # Make sure the SPSDK_WARNING_STRICT handler is (re)installed on the 'spsdk' logger
+    refresh_warning_strict()
 
     # Create and configure debug file logger if requested
     if create_debug_logger and not SPSDK_DEBUG_LOGGING_DISABLED:

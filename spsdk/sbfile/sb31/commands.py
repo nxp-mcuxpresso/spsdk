@@ -22,6 +22,7 @@ from typing_extensions import Self
 
 from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
 from spsdk.exceptions import SPSDKError, SPSDKKeyError, SPSDKValueError
+from spsdk.mboot.commands import TrustProvKeyType
 from spsdk.sbfile.sb31.constants import EnumCmdTag
 from spsdk.utils.abstract import BaseClass
 from spsdk.utils.binary_image import BinaryImage
@@ -1411,8 +1412,20 @@ class CmdLoadKeyBlob(BaseCmd):
             raise SPSDKValueError(f"KeyWraps version {key_wraps_version} is not defined")
         return key_wraps[key_name.name].value
 
+    # HSM_STORE_KEY key properties: bit 0 is the key size (0: 128-bit, 1: 256-bit)
+    KEY_PROP_SIZE_256 = 0x01
+    KEY_PROP_PPROT0 = 1 << 30
+    KEY_PROP_PPROT1 = 1 << 31
+    PLAIN_KEY_SIZES = {16: 0, 32: KEY_PROP_SIZE_256}
+
     def __init__(
-        self, offset: int, data: bytes, key_wrap_id: int, plain_input: bool = False
+        self,
+        offset: int,
+        data: bytes,
+        key_wrap_id: int,
+        plain_input: bool = False,
+        key_type: TrustProvKeyType = TrustProvKeyType.CKDFK,
+        key_properties: int | None = None,
     ) -> None:
         """Initialize SB3.1 command with key wrapping parameters.
 
@@ -1420,11 +1433,47 @@ class CmdLoadKeyBlob(BaseCmd):
         :param data: Wrapped key blob data to be processed.
         :param key_wrap_id: Key wrap identifier (NXP_CUST_KEK_INT_SK = 16, NXP_CUST_KEK_EXT_SK = 17).
         :param plain_input: Whether the input data is in plain format, defaults to False.
+        :param key_type: Type of the plain key used to wrap it on the device, defaults to CKDFK
+            (CUST_MK_SK). Used only for plain input.
+        :param key_properties: HSM_STORE_KEY key properties of the plain key (bit 0: key size,
+            bit 30: PPROT0, bit 31: PPROT1). If not set, the key size is derived from the key length.
+            Used only for plain input.
         """
         super().__init__(address=offset, length=len(data))
         self.key_wrap_id = key_wrap_id
         self.data = data
         self.plain_input = plain_input
+        self.key_type = key_type
+        self.key_properties = key_properties
+
+    @classmethod
+    def get_plain_key_properties(cls, key: bytes, key_properties: int | None = None) -> int:
+        """Get HSM_STORE_KEY key properties for the plain key.
+
+        :param key: Plain key.
+        :param key_properties: Requested key properties, if not set, only the key size is derived
+            from the key length.
+        :raises SPSDKValueError: Invalid key length or key size in key properties doesn't match.
+        :return: Key properties for HSM_STORE_KEY command.
+        """
+        size_prop = cls.PLAIN_KEY_SIZES.get(len(key))
+        if size_prop is None:
+            raise SPSDKValueError(
+                f"Invalid plain key length {len(key)} bytes, supported lengths are 16 and 32 bytes"
+            )
+        if key_properties is None:
+            return size_prop
+        allowed = cls.KEY_PROP_SIZE_256 | cls.KEY_PROP_PPROT0 | cls.KEY_PROP_PPROT1
+        if key_properties & ~allowed:
+            raise SPSDKValueError(
+                f"Invalid key properties 0x{key_properties:08X}, only bits 0, 30 and 31 can be set"
+            )
+        if key_properties & cls.KEY_PROP_SIZE_256 != size_prop:
+            raise SPSDKValueError(
+                f"Key size in key properties 0x{key_properties:08X} doesn't match "
+                f"the plain key length {len(key)} bytes"
+            )
+        return key_properties
 
     def __str__(self) -> str:
         """Get string representation of the LOAD_KEY_BLOB command.
@@ -1549,8 +1598,17 @@ class CmdLoadKeyBlob(BaseCmd):
         else:
             data = load_binary(config.get_input_file_name("file"))
 
+        plain_key_type = TrustProvKeyType.from_label(config.get_str("keyType", "CKDFK"))
+        key_properties = config.get("keyProperties")
         return [
-            cls(offset=offset, data=data, key_wrap_id=key_wrap_id, plain_input=plain_input != "no")
+            cls(
+                offset=offset,
+                data=data,
+                key_wrap_id=key_wrap_id,
+                plain_input=plain_input != "no",
+                key_type=plain_key_type,
+                key_properties=None if key_properties is None else value_to_int(key_properties),
+            )
         ]
 
     def get_config_context(self, data_path: str = "./") -> Config:
@@ -1584,8 +1642,11 @@ class CmdLoadKeyBlob(BaseCmd):
         config_dict = {"offset": self.address, "wrappingKeyId": key_wrap_type}
 
         # Set plain input format type
-        if hasattr(self, "plain_input") and self.plain_input:
-            config_dict["plainInput"] = "hex"
+        if self.plain_input:
+            config_dict["plainInput"] = "bin"
+            config_dict["keyType"] = self.key_type.label
+            if self.key_properties is not None:
+                config_dict["keyProperties"] = f"0x{self.key_properties:08X}"
 
         # Create a file name for the key blob
         file_name = f"key_blob_{self.address:08x}.bin"

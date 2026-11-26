@@ -131,21 +131,18 @@ class EL2GOClient(HTTPClientBase):
 
         if not api_response.ok:
             logger.info(f"Response status is not OK: {api_response}")
+            try:
+                extra_data = api_response.json()
+            except json.JSONDecodeError:
+                extra_data = {}
             if self.raise_exceptions:
-                try:
-                    extra_data = api_response.json()
-                except json.JSONDecodeError as json_decode_error:
-                    extra_data = {}
-                    raise SPSDKHTTPClientError(
-                        api_response.status_code,
-                        extra_data,
-                        f"Error {api_response.status_code} ({api_response.reason}) occurred when calling {url}\n"
-                        f"Extra response data: {extra_data or 'N/A'}",
-                    ) from json_decode_error
-            response = EL2GOApiResponse(
-                status_code=api_response.status_code, json_body=api_response.json()
-            )
-            return response
+                raise SPSDKHTTPClientError(
+                    api_response.status_code,
+                    extra_data,
+                    f"Error {api_response.status_code} ({api_response.reason}) occurred when calling {url}\n"
+                    f"Extra response data: {extra_data or 'N/A'}",
+                )
+            return EL2GOApiResponse(status_code=api_response.status_code, json_body=extra_data)
 
         if api_response.url.endswith("register-devices"):
             return EL2GOApiResponse(

@@ -15,44 +15,17 @@
                     "default_value_int": "0x59630000",
                     "bitfields": [
                         {
-                            "width": 12
-                        },
-                        {
-                            "width": 2,
-                            "id": "field000-bits12-13",
-                            "name": "BOOT_SPEED",
-                            "description": "Core clock",
-                            "values": [
-                                {
-                                    "name": "36MHZ_FRO_@1V0_0",
-                                    "value": 0,
-                                    "description": "36Mhz FRO @1v0"
-                                },
-                                {
-                                    "name": "72MHZ_FRO_@1V1?",
-                                    "value": 1,
-                                    "description": "72MHz FRO @1v1?"
-                                },
-                                {
-                                    "name": "36MHZ_FRO_@1V0_2",
-                                    "value": 2,
-                                    "description": "36Mhz FRO @1v0"
-                                },
-                                {
-                                    "name": "36MHZ_FRO_@1V0_3",
-                                    "value": 3,
-                                    "description": "36Mhz FRO @1v0"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 2
+                            "width": 16
                         },
                         {
                             "width": 16,
+                            "access": "WRITE_CONST",
                             "id": "field000-bits16-31",
-                            "name": "Header",
-                            "description": "CMPA Header marker should be set to 0x5963"
+                            "name": "CMPA_Header_marker",
+                            "deprecated_names": [
+                                "Header"
+                            ],
+                            "description": "The CMPA user configuration data is considered valid only when the CMPA user configuration header maker is properly configured and valid"
                         }
                     ]
                 },
@@ -432,7 +405,59 @@
                             "description": "I2C slave address A 7-bit Address used for selecting our device on shared I2C bus system. By default ROM uses 0x10 as slave address. If this address conflicts with another slave on board customer could use this field to override the address"
                         },
                         {
-                            "width": 18
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 8
+                        },
+                        {
+                            "width": 2,
+                            "id": "field020-bits24-25",
+                            "name": "QUICK_GPIO_CUST",
+                            "description": "Use customer defined quick gpio configuration",
+                            "values": [
+                                {
+                                    "name": "DEFAULT_GPIO_SETTING_0",
+                                    "value": 0,
+                                    "description": "Default gpio setting"
+                                },
+                                {
+                                    "name": "CUSTOMER_DEFINED_BY_THE_F",
+                                    "value": 1,
+                                    "description": "Customer defined by the following QUICK_SETGPIO and QUICK_CLR_GPIO"
+                                },
+                                {
+                                    "name": "DEFAULT_GPIO_SETTING_2",
+                                    "value": 2,
+                                    "description": "Default gpio setting"
+                                },
+                                {
+                                    "name": "DEFAULT_GPIO_SETTING_3",
+                                    "value": 3,
+                                    "description": "Default gpio setting"
+                                }
+                            ]
                         },
                         {
                             "width": 2,
@@ -561,38 +586,50 @@
                             "description": "Image check enforcement. This field defines the minimum image verification procedure (CRC32, MISR)",
                             "values": [
                                 {
-                                    "name": "ALL_ALLOWED",
+                                    "name": "ALL_IMAGE_TYPES_ALLOWED",
                                     "value": 0,
-                                    "description": "All Image types are allowed"
+                                    "description": "All Image types are allowed",
+                                    "deprecated_names": [
+                                        "ALL_ALLOWED"
+                                    ]
                                 },
                                 {
-                                    "name": "CRC_IMAGE",
+                                    "name": "ALLOW_CRC_IMAGE",
                                     "value": 1,
-                                    "description": "CRC image is allowed. CRC32 is used to do the check"
+                                    "description": "CRC image is allowed. CRC32 is used to do the check",
+                                    "deprecated_names": [
+                                        "CRC_IMAGE"
+                                    ]
                                 },
                                 {
-                                    "name": "MISR_IMAGE",
+                                    "name": "ALLOW_MISR_IMAGE",
                                     "value": 2,
-                                    "description": "MISR image is allowed. MISR is used to do the check"
+                                    "description": "MISR image is allowed. MISR is used to do the check",
+                                    "deprecated_names": [
+                                        "MISR_IMAGE"
+                                    ]
                                 },
                                 {
-                                    "name": "ALL_ALLOWED_OVERRIDE",
+                                    "name": "ALL_IMAGE_TYPES_ALLOWED_3",
                                     "value": 3,
-                                    "description": "All Image types are allowed"
+                                    "description": "All Image types are allowed",
+                                    "deprecated_names": [
+                                        "ALL_ALLOWED_OVERRIDE"
+                                    ]
                                 }
                             ]
                         },
                         {
-                            "width": 2
-                        },
-                        {
-                            "width": 2
+                            "width": 4
                         },
                         {
                             "width": 2,
                             "id": "field024-bits6-7",
                             "name": "LP_CRC_EN",
-                            "description": "Image check enforcement for low power wakeup flow. This field defines the whether do CRC32 check for image",
+                            "deprecated_names": [
+                                "LP_IMG_CHECK_ENF"
+                            ],
+                            "description": "This field defines whether do CRC32 check for low power wakeup path",
                             "values": [
                                 {
                                     "name": "IMAGE_CHECK_DISABLED_0",
@@ -600,9 +637,12 @@
                                     "description": "Image check is disabled"
                                 },
                                 {
-                                    "name": "CRC32_CHECK",
+                                    "name": "CRC32_CHECK_IS_NEEDED",
                                     "value": 1,
-                                    "description": "CRC32 is used to do the check"
+                                    "description": "CRC32 check is needed",
+                                    "deprecated_names": [
+                                        "CRC32_CHECK"
+                                    ]
                                 },
                                 {
                                     "name": "IMAGE_CHECK_DISABLED_2",
@@ -617,7 +657,38 @@
                             ]
                         },
                         {
-                            "width": 6
+                            "width": 2,
+                            "id": "field024-bits8-9",
+                            "name": "FAST_WAKEUP_EN",
+                            "description": "This field defines whether to go fast wakeup flow when wake up from Deep Power Down mode",
+                            "values": [
+                                {
+                                    "name": "BOOTLOADER_GO_NORMAL_BO_0",
+                                    "value": 0,
+                                    "description": "Bootloader go normal boot flow when wakeup from DPD mode"
+                                },
+                                {
+                                    "name": "BOOTLOADER_GO_LOW_POWER_W",
+                                    "value": 1,
+                                    "description": "Bootloader go low power wakeup path when wakeup from DPD mode.Note that SRAM should be retained when set this field",
+                                    "deprecated_names": [
+                                        "BOOTLOADER_GO_FAST_WAKEUP"
+                                    ]
+                                },
+                                {
+                                    "name": "BOOTLOADER_GO_NORMAL_BO_2",
+                                    "value": 2,
+                                    "description": "Bootloader go normal boot flow when wakeup from DPD mode"
+                                },
+                                {
+                                    "name": "BOOTLOADER_GO_NORMAL_BO_3",
+                                    "value": 3,
+                                    "description": "Bootloader go normal boot flow when wakeup from DPD mode"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 4
                         },
                         {
                             "width": 2,
@@ -636,9 +707,12 @@
                                     "description": "GLBAC4 is used. FLASH_ACL settings are ignored"
                                 },
                                 {
-                                    "name": "FLASH_ACL_PROT",
+                                    "name": "PROTECTION_IS_DEFINED_USI",
                                     "value": 2,
-                                    "description": "Protection is defined using the CMPA FLASH_ACL settings"
+                                    "description": "Protection is defined using the CMPA FLASH_ACL settings and IFR0_ACL_settings",
+                                    "deprecated_names": [
+                                        "FLASH_ACL_PROT"
+                                    ]
                                 },
                                 {
                                     "name": "GLBAC4_USED_3",
@@ -648,7 +722,35 @@
                             ]
                         },
                         {
-                            "width": 14
+                            "width": 12
+                        },
+                        {
+                            "width": 2,
+                            "id": "field024-bits28-29",
+                            "name": "TRNG_INIT",
+                            "description": "Enable the TRNG for customer at boot stage",
+                            "values": [
+                                {
+                                    "name": "NOT_CLEAR_0",
+                                    "value": 0,
+                                    "description": "Not clear"
+                                },
+                                {
+                                    "name": "INIT_TRNG_WITH_LOW_QUALIT",
+                                    "value": 1,
+                                    "description": "Init TRNG with Low quality entropy"
+                                },
+                                {
+                                    "name": "INIT_TRNG_WITH_HIGH_QUALI",
+                                    "value": 2,
+                                    "description": "Init TRNG with High quality entropy"
+                                },
+                                {
+                                    "name": "NOT_CLEAR_3",
+                                    "value": 3,
+                                    "description": "Not clear"
+                                }
+                            ]
                         },
                         {
                             "width": 2,
@@ -679,21 +781,12 @@
                             ]
                         }
                     ]
-                }
-            ]
-        },
-        {
-            "group": {
-                "name": "Reserved 00028-0002C",
-                "description": "Reserved 00028-0002C"
-            },
-            "registers": [
+                },
                 {
-                    "id": "Reserved00028",
-                    "name": "Reserved 0x00028",
-                    "description": "This field is reserved for internal use",
+                    "id": "field028",
+                    "name": "LP_CTX_ADDR_CFG",
+                    "description": "LP CTX addr configuration",
                     "offset_int": "0x0028",
-                    "is_reserved": true,
                     "default_value_int": "0"
                 },
                 {
@@ -811,7 +904,7 @@
         {
             "group": {
                 "name": "Flash Access Control",
-                "description": "Flash access control"
+                "description": "Flash and IFR0 access control"
             },
             "registers": [
                 {
@@ -1428,6 +1521,9 @@
                     "name": "FLASH_ACL_8_9",
                     "description": "Flash ACL 8 9",
                     "offset_int": "0x0064",
+                    "deprecated_names": [
+                        "FLASH_ACL_14_15"
+                    ],
                     "default_value_int": "0x44444444",
                     "bitfields": [
                         {
@@ -1584,16 +1680,22 @@
                 },
                 {
                     "id": "field068",
-                    "name": "FLASH_ACL_10_17",
-                    "description": "Flash ACL 10 17",
+                    "name": "IFR0_ACL_8_15",
+                    "description": "IFR0 ACL 8 15",
                     "offset_int": "0x0068",
+                    "deprecated_names": [
+                        "FLASH_ACL_10_17"
+                    ],
                     "default_value_int": "0x44444444",
                     "bitfields": [
                         {
                             "width": 3,
                             "id": "field068-bits0-2",
-                            "name": "ACL_SEC_10",
-                            "description": "ACL sec 10",
+                            "name": "IFR0_ACL_SEC_8",
+                            "deprecated_names": [
+                                "ACL_SEC_10"
+                            ],
+                            "description": "IFR0 ACL sec 8",
                             "values": [
                                 {
                                     "name": "DEFAULT_RW_UNLOCKED",
@@ -1667,8 +1769,11 @@
                         {
                             "width": 3,
                             "id": "field068-bits4-6",
-                            "name": "ACL_SEC_11",
-                            "description": "ACL sec 11",
+                            "name": "IFR0_ACL_SEC_9",
+                            "deprecated_names": [
+                                "ACL_SEC_11"
+                            ],
+                            "description": "IFR0 ACL sec 9",
                             "values": [
                                 {
                                     "name": "DEFAULT_RW_UNLOCKED",
@@ -1742,8 +1847,11 @@
                         {
                             "width": 3,
                             "id": "field068-bits8-10",
-                            "name": "ACL_SEC_12",
-                            "description": "ACL sec 12",
+                            "name": "IFR0_ACL_SEC_10",
+                            "deprecated_names": [
+                                "ACL_SEC_12"
+                            ],
+                            "description": "IFR0 ACL sec 10",
                             "values": [
                                 {
                                     "name": "DEFAULT_RW_UNLOCKED",
@@ -1817,8 +1925,11 @@
                         {
                             "width": 3,
                             "id": "field068-bits12-14",
-                            "name": "ACL_SEC_13",
-                            "description": "ACL sec 13",
+                            "name": "IFR0_ACL_SEC_11",
+                            "deprecated_names": [
+                                "ACL_SEC_13"
+                            ],
+                            "description": "IFR0 ACL sec 11",
                             "values": [
                                 {
                                     "name": "DEFAULT_RW_UNLOCKED",
@@ -1892,8 +2003,11 @@
                         {
                             "width": 3,
                             "id": "field068-bits16-18",
-                            "name": "ACL_SEC_14",
-                            "description": "ACL sec 14",
+                            "name": "IFR0_ACL_SEC_12",
+                            "deprecated_names": [
+                                "ACL_SEC_14"
+                            ],
+                            "description": "IFR0 ACL sec 12",
                             "values": [
                                 {
                                     "name": "DEFAULT_RW_UNLOCKED",
@@ -1967,8 +2081,11 @@
                         {
                             "width": 3,
                             "id": "field068-bits20-22",
-                            "name": "ACL_SEC_15",
-                            "description": "ACL sec 15",
+                            "name": "IFR0_ACL_SEC_13",
+                            "deprecated_names": [
+                                "ACL_SEC_15"
+                            ],
+                            "description": "IFR0 ACL sec 13",
                             "values": [
                                 {
                                     "name": "DEFAULT_RW_UNLOCKED",
@@ -2042,8 +2159,11 @@
                         {
                             "width": 3,
                             "id": "field068-bits24-26",
-                            "name": "ACL_SEC_16",
-                            "description": "ACL sec 16",
+                            "name": "IFR0_ACL_SEC_14",
+                            "deprecated_names": [
+                                "ACL_SEC_16"
+                            ],
+                            "description": "IFR0 ACL sec 14",
                             "values": [
                                 {
                                     "name": "DEFAULT_RW_UNLOCKED",
@@ -2117,8 +2237,11 @@
                         {
                             "width": 3,
                             "id": "field068-bits28-30",
-                            "name": "ACL_SEC_17",
-                            "description": "ACL sec 17",
+                            "name": "IFR0_ACL_SEC_15",
+                            "deprecated_names": [
+                                "ACL_SEC_17"
+                            ],
+                            "description": "IFR0 ACL sec 15",
                             "values": [
                                 {
                                     "name": "DEFAULT_RW_UNLOCKED",
@@ -2193,16 +2316,22 @@
                 },
                 {
                     "id": "field06C",
-                    "name": "FLASH_ACL_18",
-                    "description": "Flash ACL 18",
+                    "name": "IFR0_ACL_7",
+                    "description": "IFR0 ACL 7",
                     "offset_int": "0x006C",
-                    "default_value_int": "0x44444444",
+                    "deprecated_names": [
+                        "FLASH_ACL_18"
+                    ],
+                    "default_value_int": "0x0004",
                     "bitfields": [
                         {
                             "width": 3,
                             "id": "field06C-bits0-2",
-                            "name": "ACL_SEC_18",
-                            "description": "ACL sec 18",
+                            "name": "IFR0_ACL_SEC_7",
+                            "deprecated_names": [
+                                "ACL_SEC_18"
+                            ],
+                            "description": "IFR0 ACL sec 7",
                             "values": [
                                 {
                                     "name": "DEFAULT_RW_UNLOCKED",
@@ -2274,46 +2403,7 @@
                             "width": 1
                         },
                         {
-                            "width": 3
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 3
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 3
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 3
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 3
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 3
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 3
-                        },
-                        {
-                            "width": 1
+                            "width": 28
                         }
                     ]
                 }
@@ -2328,7 +2418,7 @@
                 {
                     "id": "field070",
                     "name": "CMPA_CRC32",
-                    "description": "CMPA CRC32 for address range (0x0 - 0x6c)",
+                    "description": "CMPA CRC32 for address range (0x0 - 0x6F)",
                     "offset_int": "0x0070",
                     "access": "RO",
                     "default_value_int": "0"

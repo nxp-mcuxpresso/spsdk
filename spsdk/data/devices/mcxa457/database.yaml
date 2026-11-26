@@ -239,6 +239,13 @@ features:
   tz:
     version: v2 # TrustZone configuration version v2.0
 
+  # ======== DICE configuration ========
+  dice:
+    buffer_address: 0x20028000
+    buffer_size: 0x1000
+    rkth_length: 64
+    rkth_truncated_length: 48
+
   # ======== PFR section ========
   pfr:
     sub_features: [update, cfpa, cmpa, update_cfpa, update_cfpa_cmpa]

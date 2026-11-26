@@ -31,6 +31,7 @@ from deepmerge.strategy.set import SetStrategies
 from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap as CMap
 from ruamel.yaml.comments import CommentedSeq as CSeq
+from yaml import YAMLError, safe_load
 
 from spsdk import (
     SPSDK_CACHE_DISABLED,
@@ -684,6 +685,109 @@ def _print_validation_fail_reason(
     return message
 
 
+def get_schema_types(schema: dict[str, Any], key_path: list[str | int]) -> set[str] | None:
+    """Get the JSON types allowed by the schema for the item at the given key path.
+
+    The method walks the schema through ``properties``, ``additionalProperties`` and
+    ``items`` and collects the types from all ``oneOf``/``anyOf``/``allOf`` and
+    ``if``/``then``/``else`` branches where the key path exists.
+
+    :param schema: JSON schema dictionary.
+    :param key_path: Path to the configuration item, string keys for objects and integer
+        indexes for arrays.
+    :return: Set of allowed JSON types, None if the item or its type is not described.
+    """
+    if not isinstance(schema, dict):
+        return None
+
+    types: set[str] = set()
+    found = False
+    for keyword in ("oneOf", "anyOf", "allOf"):
+        for sub_schema in schema.get(keyword, []):
+            sub_types = get_schema_types(sub_schema, key_path)
+            if sub_types is not None:
+                types.update(sub_types)
+                found = True
+    for keyword in ("then", "else"):
+        if keyword not in schema:
+            continue
+        sub_types = get_schema_types(schema[keyword], key_path)
+        if sub_types is not None:
+            types.update(sub_types)
+            found = True
+
+    if not key_path:
+        schema_type = schema.get("type")
+        if isinstance(schema_type, str):
+            types.add(schema_type)
+            found = True
+        elif isinstance(schema_type, list):
+            types.update(schema_type)
+            found = True
+        return types if found else None
+
+    key, rest = key_path[0], key_path[1:]
+    child: Any = None
+    if isinstance(key, int) and isinstance(schema.get("items"), dict):
+        child = schema["items"]
+    else:
+        properties = schema.get("properties", {})
+        if isinstance(properties, dict) and str(key) in properties:
+            child = properties[str(key)]
+        elif isinstance(schema.get("additionalProperties"), dict):
+            child = schema["additionalProperties"]
+    if child is not None:
+        sub_types = get_schema_types(child, rest)
+        if sub_types is not None:
+            types.update(sub_types)
+            found = True
+    return types if found else None
+
+
+def convert_value_to_schema_type(value: str, types: set[str] | None) -> Any:
+    """Convert a string value (typically from command line) to the type required by schema.
+
+    The value is converted only if the schema doesn't accept a string for the item, so
+    values like keys, paths or hexadecimal strings that are valid as strings stay
+    untouched. If the conversion is not possible the original string is returned and the
+    following schema validation reports the problem.
+
+    :param value: String value to convert.
+    :param types: Set of JSON types allowed by the schema, None if unknown.
+    :return: Converted value, or the original string.
+    """
+    if not types or "string" in types:
+        return value
+    stripped = value.strip()
+    if "null" in types and stripped.lower() in ("", "null", "none", "~"):
+        return None
+    if types & {"integer", "number"}:
+        try:
+            return value_to_int(stripped)
+        except SPSDKError:
+            pass
+        if "number" in types:
+            try:
+                return float(stripped)
+            except ValueError:
+                pass
+    if "boolean" in types:
+        if stripped.lower() in ("true", "yes", "on", "1"):
+            return True
+        if stripped.lower() in ("false", "no", "off", "0"):
+            return False
+    if types & {"array", "object"}:
+        try:
+            loaded = safe_load(stripped)
+        except YAMLError:
+            loaded = None
+        if (isinstance(loaded, list) and "array" in types) or (
+            isinstance(loaded, dict) and "object" in types
+        ):
+            return loaded
+    return value
+
+
 def check_unknown_properties(config_dict: dict, schema_dict: dict, path: str = "") -> None:
     """Recursively check for unknown properties in configuration against schema.
 
@@ -1307,19 +1411,20 @@ class CommentedConfig:
                 return t in option_type
             return t == option_type
 
-        if cust_val:
-            if isinstance(cust_val, dict) and check_type(one_of, "object"):
-                properties = one_of.get("properties")
-                if not properties:
-                    raise SPSDKError("Properties must be defined")
-                if all(key in properties for key in cust_val):
-                    return True
-
-            if isinstance(cust_val, str) and check_type(one_of, "string"):
+        # Falsy values such as an empty string (absent optional file) or zero are valid
+        # configuration data, so match them by type as well
+        if isinstance(cust_val, dict) and check_type(one_of, "object"):
+            properties = one_of.get("properties")
+            if not properties:
+                raise SPSDKError("Properties must be defined")
+            if all(key in properties for key in cust_val):
                 return True
 
-            if isinstance(cust_val, int) and check_type(one_of, "number"):
-                return True
+        if isinstance(cust_val, str) and check_type(one_of, "string"):
+            return True
+
+        if isinstance(cust_val, int) and check_type(one_of, "number"):
+            return True
 
         return False
 
@@ -1427,7 +1532,7 @@ class CommentedConfig:
             :raises SPSDKError: When neither custom_value nor template_value is defined in block.
             :return: The custom value if available, otherwise the template value from block.
             """
-            if not (custom_value or "template_value" in block):
+            if custom_value is None and "template_value" not in block:
                 raise SPSDKError("Custom value or template_value must be defined")
             return (
                 custom_value
@@ -1438,7 +1543,7 @@ class CommentedConfig:
         ret: CMap | CSeq | str | int | float | None = None
         if "oneOf" in block and "properties" not in block:
             ret = self._handle_one_of_block(block["oneOf"], custom_value)
-            if not ret:
+            if not ret and custom_value is None:
                 ret = get_custom_or_template()
         else:
             schema_type = block.get("type")

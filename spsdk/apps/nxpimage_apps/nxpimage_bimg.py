@@ -982,22 +982,40 @@ def fcb_parse(family: FamilyRevision, mem_type: MemoryType, binary: str, output:
 
 @fcb.command(name="get-templates", no_args_is_help=True)
 @spsdk_family_option(families=FCB.get_supported_families())
+@click.option(
+    "-p",
+    "--presets",
+    is_flag=True,
+    default=False,
+    help=(
+        "Create also the configuration files filled by the FCB presets of standard memories, "
+        "if the family has any presets defined."
+    ),
+)
 @spsdk_output_option(directory=True, force=True)
-def fcb_get_templates_command(family: FamilyRevision, output: str) -> None:
+def fcb_get_templates_command(family: FamilyRevision, presets: bool, output: str) -> None:
     """Create template of configurations in YAML format for all memory types.
 
     The template files folder name is specified as argument of this command.
     """
-    fcb_get_templates(family, output)
+    fcb_get_templates(family, output, presets)
 
 
-def fcb_get_templates(family: FamilyRevision, output_folder: str) -> None:
+def fcb_get_templates(family: FamilyRevision, output_folder: str, presets: bool = False) -> None:
     """Create template of configurations in YAML format for all memory types."""
     mem_types = FCB.get_supported_memory_types(family)
     for mem_type in mem_types:
         output = os.path.join(output_folder, f"fcb_{family.name}_{mem_type.label}.yaml")
         click.echo(f"Creating {output} template file.")
         write_file(FCB.get_config_template(family, mem_type), output)
+        if not presets:
+            continue
+        for preset in FCB.get_presets(family, mem_type):
+            output = os.path.join(
+                output_folder, f"fcb_{family.name}_{mem_type.label}_{preset}.yaml"
+            )
+            click.echo(f"Creating {output} preset configuration file.")
+            write_file(FCB.get_config_template(family, mem_type, preset), output)
 
 
 @bootable_image_group.group(name="xmcd", cls=CommandsTreeGroup)

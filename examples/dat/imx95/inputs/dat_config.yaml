@@ -1,0 +1,73 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ==============================  dat Configuration template for mimx9596, Revision: latest.  ==============================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mimx9596
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, a1, b0, latest>
+revision: latest
+# ---------------------------------------===== Container version [Optional] =====---------------------------------------
+# Description: Force container version, if not specified the default version is used. This configuration option is valid
+# only for chips that supports both AHAB container versions. Possible options <2, 1>
+container_version: 2
+
+# ======================================================================================================================
+#                                            == Settings of Signed Message ==
+# ======================================================================================================================
+# -----------------------------------===== Super Root Key (SRK) set [Required] =====------------------------------------
+# Description: Defines which set is used to authenticate the signed message.
+# Possible options: <none, oem, nxp>
+srk_set: oem
+# -------------------------------------------===== Used SRK [Required] =====--------------------------------------------
+# Description: Which key from SRK set is being used.
+used_srk_id: 0
+# ----------------------------------------===== SRK revoke mask [Required] =====----------------------------------------
+# Description: Bitmask to indicate which SRKs to revoke. Bit set to 1 means revoke key. Bit 0 = revoke SRK_0, bit 1 =
+# revoke SRK_1 etc.
+srk_revoke_mask: 0
+# --------------------------------===== Signed Message container signer [Required] =====--------------------------------
+# Description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>' or a
+# private key used for sign the container header. This is the Debug Credential Key (DCK) private key that pairs with the
+# public key embedded into the debug credential file.
+signer: ../../_data/keys/ecc384/dck_ecc384.pem
+
+# ======================================================================================================================
+#                                    == Configuration of Signed Message SRK table ==
+# ======================================================================================================================
+# -------------------------------------------===== SRK Table [Required] =====-------------------------------------------
+# Description: SRK (Super Root key) table definition.
+srk_table:
+  # -------------------------------------------===== CA Flag [Optional] =====-------------------------------------------
+  # Description: CA Flag is used by HAB to indicate if the SRK is allowed to sign other keys. In AHAB CA Flag only
+  # affects the final SRKH (Super Root Key Hash) value burned into chip fuses. It is not used in the AHAB signing
+  # process itself. This option exists only for compatibility with systems where fuses are already programmed. In most
+  # cases, this should remain false.
+  flag_ca: false
+  # ------------------------------------===== Hash Algorithm [Optional] =====-------------------------------------
+  # Description: Hash algorithm used for SRK records. If not specified, default algorithm based on key type will
+  # be used.
+  # Possible options: <default, sha256, sha384, sha512, sha3_256, sha3_384, sha3_512, sm3>
+  hash_algorithm: default
+  # ---------------------------------===== Super Root Key (SRK) table [Required] =====----------------------------------
+  # Description: Table containing the used SRK records. All SRKs must be of the same type.
+  srk_array:
+    - ../../_data/keys/ecc384/srk0_ecc384.pub
+    - ../../_data/keys/ecc384/srk1_ecc384.pub
+    - ../../_data/keys/ecc384/srk2_ecc384.pub
+    - ../../_data/keys/ecc384/srk3_ecc384.pub
+
+# ======================================================================================================================
+#              == Optional configuration of AHAB Container Certificate (if not used, erase the section) ==
+# ======================================================================================================================
+# -------------------------------------===== The AHAB certificate [Required] =====--------------------------------------
+# Description: The file that contains AHAB certificate. It could be used already prepared binary form signed by SRK, or
+# it is possible to use configuration YAML file of certificate and the AHAB export process it will export it itself.
+certificate: ../workspace/mx95_dc.bin

@@ -199,6 +199,15 @@ class SPSDKIndexError(SPSDKError, IndexError):
     """
 
 
+class SPSDKWarningError(SPSDKError):
+    """SPSDK exception raised for a warning promoted to an error.
+
+    This exception is raised instead of only logging a warning when the
+    ``SPSDK_WARNING_STRICT`` environment variable is enabled. It allows automated
+    test suites to treat every SPSDK warning as a hard failure.
+    """
+
+
 class SPSDKNotTextFileError(SPSDKError):
     """SPSDK exception for non-text file errors.
 

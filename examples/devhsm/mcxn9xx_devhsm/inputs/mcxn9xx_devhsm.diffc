@@ -1,0 +1,17 @@
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/devhsm_template.yaml
+user_cfg: inputs/devhsm_config.yaml
+custom_command: "%! nxpdevhsm get-template -f mcxn946 -o workspace/devhsm_template.yaml --force"
+
+comments:
+  containerKeyBlobEncryptionKey: "Path to the CUST_MK_SK (Part Common Key) to be provisioned"
+  initialReset: "Do not reset the device before the operation"
+  finalReset: "Reset the device after provisioning so the image can boot"
+  containerOutputFile: "Path to the generated DEVHSM provisioning SB file"
+  oemRandomShare: "Omitted - a random seed is generated automatically"
+  oemEncMasterShare: "Omitted - not restoring an existing secure session"
+  workspace: "Omitted - no intermediate artifacts needed"
+  bufferAddress: "Omitted - default communication buffer address is used"
+  load: "Load CMPA/CFPA chip configuration"
+  programFuses: "Commented out - advancing life cycle is irreversible"

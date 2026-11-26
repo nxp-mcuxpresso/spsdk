@@ -27,6 +27,7 @@ from spsdk.apps.utils.common_cli_options import spsdk_apps_common_options, timeo
 from spsdk.apps.utils.utils import catch_spsdk_error
 from spsdk.utils import nxpdevscan
 from spsdk.utils.devicedescription import (
+    PluginDeviceDescription,
     SDIODeviceDescription,
     SIODeviceDescription,
     UartDeviceDescription,
@@ -40,6 +41,7 @@ _AnyDevice = (
     | UartDeviceDescription
     | SIODeviceDescription
     | UUUDeviceDescription
+    | PluginDeviceDescription
 )
 
 _VERTICAL_SEP = "\x00"  # sentinel emitted by _build_vertical_lines between devices
@@ -146,6 +148,18 @@ def _fill_sdio_table(table: "pt.PrettyTable", devices: Sequence[_AnyDevice]) -> 
         table.add_row([f"0x{dev.vid:04x}", f"0x{dev.pid:04x}", dev.path])
 
 
+def _fill_plugin_table(table: "pt.PrettyTable", devices: Sequence[_AnyDevice]) -> None:
+    """Populate a PrettyTable with rows of devices found by interface plugins.
+
+    :param table: PrettyTable instance to fill.
+    :param devices: Sequence of PluginDeviceDescription objects.
+    """
+    table.field_names = ["Protocol", "Interface", "Device"]
+    for dev in devices:
+        assert isinstance(dev, PluginDeviceDescription)
+        table.add_row([dev.protocol, dev.identifier, dev.device])
+
+
 def _make_device_table(devices: Sequence[_AnyDevice]) -> "pt.PrettyTable":
     """Create and populate a borderless PrettyTable for the given device sequence.
 
@@ -171,6 +185,8 @@ def _make_device_table(devices: Sequence[_AnyDevice]) -> "pt.PrettyTable":
         _fill_uuu_table(table, devices)
     elif isinstance(first, SDIODeviceDescription):
         _fill_sdio_table(table, devices)
+    elif isinstance(first, PluginDeviceDescription):
+        _fill_plugin_table(table, devices)
 
     table.align = "l"
 
@@ -428,6 +444,12 @@ def _display_scan_result(
     flag_value="uuu",
     help="Search only for UUU devices",
 )
+@optgroup.option(  # type: ignore[arg-type]
+    "--plugin",
+    "scope",
+    flag_value="plugin",
+    help="Search only for devices using device interface plugins",
+)
 @spsdk_apps_common_options
 def main(
     extend_vids: str,
@@ -497,6 +519,16 @@ def main(
             )
         nxp_uuu_devices = nxpdevscan.search_uuu_usb_devices()
         _display_scan_result(output, is_stdout, nxp_uuu_devices, "Connected NXP UUU Devices")
+
+    if scope in ["all", "plugin"]:
+        if is_stdout:
+            click.echo(
+                click.style("Scanning plugin interface devices...", fg="bright_black"),
+                nl=False,
+                file=output,
+            )
+        plugin_devices = nxpdevscan.search_plugin_devices()
+        _display_scan_result(output, is_stdout, plugin_devices, "Connected Plugin Devices")
 
 
 @catch_spsdk_error

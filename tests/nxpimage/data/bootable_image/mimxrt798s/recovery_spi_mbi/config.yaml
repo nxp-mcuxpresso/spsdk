@@ -1,0 +1,9 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+family: mimxrt798s
+revision: latest
+memory_type: recovery_spi_mbi
+init_offset: 0
+mbi: mbi.bin

@@ -25,6 +25,7 @@ from spsdk.ele.ele_constants import (
     EleImemState,
     EleInfo2Commit,
     EleTrngState,
+    HsmResponseIndication,
     KeyBlobEncryptionAlgorithm,
     KeyBlobEncryptionIeeCtrModes,
     LifeCycle,
@@ -59,6 +60,8 @@ class EleMessage:
     :cvar RSP_TAG: Message tag identifier for responses (0xE1).
     :cvar VERSION: Message protocol version (0x06).
     :cvar ELE_MSG_ALIGN: Memory alignment requirement for messages (8 bytes).
+    :cvar RESPONSE_INDICATIONS: Enumeration used to decode the response indication.
+    :cvar RESPONSE_ROOT_CAUSES: Command specific root causes of response indications.
     """
 
     CMD = 0x00
@@ -75,6 +78,8 @@ class EleMessage:
     MAX_RESPONSE_DATA_SIZE = 0
     MAX_COMMAND_DATA_SIZE = 0
     COULD_RESET_CHIP = False
+    RESPONSE_INDICATIONS: ClassVar[type[SpsdkEnum]] = ResponseIndication
+    RESPONSE_ROOT_CAUSES: ClassVar[dict[int, str]] = {}
 
     def __init__(self) -> None:
         """Initialize ELE message object.
@@ -251,19 +256,34 @@ class EleMessage:
         Converts the response status and indication codes into a human-readable string
         representation for easier debugging and logging purposes.
 
-        :return: Human-readable status string - "Succeeded" for success, "Failed: <indication>"
+        :return: Human-readable status string - "Succeeded" for success, "Failed: <reason>"
                  for failures, or "Invalid status!" for unknown status codes.
         """
         if not ResponseStatus.contains(self.status):
             return "Invalid status!"
         if self.status == ResponseStatus.ELE_SUCCESS_IND:
             return "Succeeded"
-        indication = (
-            ResponseIndication.get_label(self.indication)
-            if ResponseIndication.contains(self.indication)
-            else f"Invalid indication code: {self.indication:02X}"
+        return f"Failed: {self.failure_reason}"
+
+    @property
+    def failure_reason(self) -> str:
+        """Get decoded reason of the response indication.
+
+        The indication is decoded by the message specific indication enumeration and the
+        description is replaced by the command specific root cause when it is known.
+
+        :return: Human-readable reason in format "<label> (<code>): <description>".
+        """
+        code = f"0x{self.indication:02X}"
+        if self.indication == 0:
+            return f"General error ({code})"
+        if self.indication not in self.RESPONSE_INDICATIONS.tags():
+            return f"Unknown indication ({code})"
+        label = self.RESPONSE_INDICATIONS.get_label(self.indication)
+        description = self.RESPONSE_ROOT_CAUSES.get(
+            self.indication, self.RESPONSE_INDICATIONS.get_description(self.indication)
         )
-        return f"Failed: {indication}"
+        return f"{label} ({code}): {description}" if description else f"{label} ({code})"
 
     def set_buffer_params(self, buff_addr: int, buff_size: int) -> None:
         """Set the communication buffer parameters to allow command update addresses inside command payload.
@@ -411,12 +431,14 @@ class EleMessage:
 
         :return: Formatted string containing response status details.
         """
-        ret = f"Response status: {ResponseStatus.get_label(self.status)}\n"
-        if self.status == ResponseStatus.ELE_FAILURE_IND:
-            ret += (
-                f"   Response indication: {ResponseIndication.get_label(self.indication)}"
-                f" - ({hex(self.indication)})\n"
-            )
+        status = (
+            ResponseStatus.get_label(self.status)
+            if ResponseStatus.contains(self.status)
+            else f"Unknown ({hex(self.status)})"
+        )
+        ret = f"Response status: {status}\n"
+        if self.status != ResponseStatus.ELE_SUCCESS_IND:
+            ret += f"   Response indication: {self.failure_reason}\n"
             ret += f"   Response abort code: {hex(self.abort_code)}\n"
         return ret
 
@@ -645,6 +667,15 @@ class EleMessageOemContainerAuthenticate(EleMessage):
     """
 
     CMD = MessageIDs.ELE_OEM_CNTN_AUTH_REQ.tag
+    RESPONSE_ROOT_CAUSES = {
+        ResponseIndication.ELE_INVALID_OPERATION_FAILURE_IND.tag: (
+            "Another authentication is already on-going"
+        ),
+        ResponseIndication.ELE_NO_AUTHENTICATION_FAILURE_IND.tag: (
+            "Invalid configuration makes the container considered as unsigned"
+        ),
+        ResponseIndication.ELE_BAD_VERSION_FAILURE_IND.tag: "Invalid fuse version",
+    }
     COMMAND_PAYLOAD_WORDS_COUNT = 2
 
     def __init__(self, oem_cntn_addr: int) -> None:
@@ -683,6 +714,10 @@ class EleMessageVerifyImage(EleMessage):
     """
 
     CMD = MessageIDs.ELE_VERIFY_IMAGE_REQ.tag
+    RESPONSE_ROOT_CAUSES = {
+        ResponseIndication.ELE_INVALID_OPERATION_FAILURE_IND.tag: "No authentication is on-going",
+        ResponseIndication.ELE_INVALID_MESSAGE_FAILURE_IND.tag: "Invalid image mask",
+    }
     COMMAND_PAYLOAD_WORDS_COUNT = 1
     RESPONSE_PAYLOAD_WORDS_COUNT = 2
 
@@ -772,6 +807,11 @@ class EleMessageForwardLifeCycleUpdate(EleMessage):
     """
 
     CMD = MessageIDs.ELE_FWD_LIFECYCLE_UP_REQ.tag
+    RESPONSE_ROOT_CAUSES = {
+        ResponseIndication.ELE_AUTH_SKIPPED_OR_FAILED_FAILURE_IND.tag: (
+            "Cannot move to OEM CLOSED because the authentication failed or was skipped"
+        ),
+    }
     COMMAND_PAYLOAD_WORDS_COUNT = 1
 
     def __init__(self, lifecycle_update: LifeCycleToSwitch) -> None:
@@ -814,6 +854,15 @@ class EleMessageForwardBootCrypto(EleMessage):
     """
 
     CMD = MessageIDs.ELE_FWD_BOOT_CRYPTO_REQ.tag
+    RESPONSE_ROOT_CAUSES = {
+        ResponseIndication.ELE_BAD_PAYLOAD_FAILURE_IND.tag: "Invalid secure boot crypto magic",
+        ResponseIndication.ELE_INCONSISTENT_PAR_FAILURE_IND.tag: (
+            "Secure boot crypto magic mismatch"
+        ),
+        ResponseIndication.ELE_MUST_SIGNED_FAILURE_IND.tag: (
+            "Invalid signed message type, bit 15 in the container header must be set"
+        ),
+    }
     COMMAND_PAYLOAD_WORDS_COUNT = 3
 
     def __init__(
@@ -939,6 +988,21 @@ class EleMessageGetEvents(EleMessage):
             logger.error("Invalid message CRC for get events message")
 
     @staticmethod
+    def _describe_field(enum: type[SpsdkEnum], value: int, field_name: str) -> str:
+        """Get human-readable description of one event sub-field.
+
+        :param enum: Enumeration used to decode the value.
+        :param value: Raw 8-bit value of the sub-field.
+        :param field_name: Name of the field used in the text for unknown values.
+        :return: Text in format "0xNN - description" or "0xNN - Unknown <field_name>".
+        """
+        if value in enum.tags():
+            description = enum.get_description(value) or enum.get_label(value)
+        else:
+            description = f"Unknown {field_name}"
+        return f"0x{value:02X} - {description}"
+
+    @staticmethod
     def get_ipc_id(event: int) -> str:
         """Get IPC ID in string from event.
 
@@ -946,10 +1010,12 @@ class EleMessageGetEvents(EleMessage):
         and masking bits, then converts it to a human-readable string description.
 
         :param event: Event value containing the IPC ID in bits 24-31.
-        :return: String description of the IPC ID or empty string if not found.
+        :return: Raw IPC ID value with its description.
         """
         ipc_id = (event >> 24) & 0xFF
-        return MessageUnitId.get_description(ipc_id, f"Unknown MU: ({ipc_id})") or ""
+        if ipc_id == 0:
+            return "0x00 - Unknown/not specified message unit"
+        return EleMessageGetEvents._describe_field(MessageUnitId, ipc_id, "message unit")
 
     @staticmethod
     def get_cmd(event: int) -> str:
@@ -958,10 +1024,10 @@ class EleMessageGetEvents(EleMessage):
         Extracts the command field from an event value and returns its string description.
 
         :param event: Event value containing command information in bits 16-23.
-        :return: String description of the command or empty string if not found.
+        :return: Raw command value with its description.
         """
         cmd = (event >> 16) & 0xFF
-        return MessageIDs.get_description(cmd, f"Unknown Command: (0x{cmd:02})") or ""
+        return EleMessageGetEvents._describe_field(MessageIDs, cmd, "command")
 
     @staticmethod
     def get_ind(event: int) -> str:
@@ -971,10 +1037,12 @@ class EleMessageGetEvents(EleMessage):
         string description.
 
         :param event: Event value containing indication bits in bits 8-15.
-        :return: String description of the indication or empty string if not found.
+        :return: Raw indication value with its description.
         """
         ind = (event >> 8) & 0xFF
-        return ResponseIndication.get_description(ind, f"Unknown Indication: (0x{ind:02})") or ""
+        if ind == 0:
+            return "0x00 - No indication"
+        return EleMessageGetEvents._describe_field(ResponseIndication, ind, "indication")
 
     @staticmethod
     def get_sts(event: int) -> str:
@@ -984,16 +1052,38 @@ class EleMessageGetEvents(EleMessage):
         human-readable string description.
 
         :param event: Event code containing status information in lower 8 bits.
-        :return: String description of the status code, or empty string if conversion fails.
+        :return: Raw status value with its description.
         """
         sts = event & 0xFF
-        return ResponseStatus.get_description(sts, f"Unknown Status: (0x{sts:02})") or ""
+        return EleMessageGetEvents._describe_field(ResponseStatus, sts, "status")
+
+    @staticmethod
+    def get_event_type(event: int) -> str:
+        """Get classification of the event.
+
+        ELE records every response that is not a plain success. A failure status means the
+        request failed; a success status with a non-zero indication is a warning (e.g. a
+        not-authenticated container accepted in open lifecycle).
+
+        :param event: Event value.
+        :return: "Failure", "Warning" or "Unknown" event type with short explanation.
+        """
+        sts = event & 0xFF
+        ind = (event >> 8) & 0xFF
+        if sts == ResponseStatus.ELE_FAILURE_IND.tag:
+            return "Failure (request failed)"
+        if sts == ResponseStatus.ELE_SUCCESS_IND.tag:
+            if ind:
+                return "Warning (request succeeded with indication)"
+            return "Success"
+        return "Unknown (unrecognized status)"
 
     def response_info(self) -> str:
         """Get formatted string with events information.
 
         Formats and returns a string containing detailed information about all events,
-        including event count, IPC ID, command, indication, and status for each event.
+        including event count, event type (failure/warning), IPC ID, command, indication
+        and status for each event. Each sub-field is shown with its raw value.
         If the event count exceeds the maximum supported limit, only the first events
         up to the limit are displayed with a warning message.
 
@@ -1002,6 +1092,7 @@ class EleMessageGetEvents(EleMessage):
         ret = f"Event count:     {self.event_cnt}"
         for i, event in enumerate(self.events[: min(self.event_cnt, self.MAX_EVENT_CNT)]):
             ret += f"\nEvent[{i}]:      0x{event:08X}"
+            ret += f"\n  Type:          {self.get_event_type(event)}"
             ret += f"\n  IPC ID:        {self.get_ipc_id(event)}"
             ret += f"\n  Command:       {self.get_cmd(event)}"
             ret += f"\n  Indication:    {self.get_ind(event)}"
@@ -1091,6 +1182,14 @@ class EleMessageCommit(EleMessage):
     """
 
     CMD = MessageIDs.ELE_COMMIT_REQ.tag
+    RESPONSE_ROOT_CAUSES = {
+        ResponseIndication.ELE_INVALID_MESSAGE_FAILURE_IND.tag: (
+            "The information encoded in the request is invalid"
+        ),
+        ResponseIndication.ELE_INVALID_OPERATION_FAILURE_IND.tag: (
+            "OEM version or SRK revocation is targeted but there are events in the event " "queue"
+        ),
+    }
     COMMAND_PAYLOAD_WORDS_COUNT = 1
     RESPONSE_PAYLOAD_WORDS_COUNT = 1
 
@@ -1279,6 +1378,12 @@ class EleMessageReadCommonFuse(EleMessage):
     """
 
     CMD = MessageIDs.READ_COMMON_FUSE.tag
+    RESPONSE_ROOT_CAUSES = {
+        ResponseIndication.ELE_INCONSISTENT_PAR_FAILURE_IND.tag: "Invalid fuse ID",
+        ResponseIndication.ELE_INVALID_MESSAGE_FAILURE_IND.tag: (
+            "Unused command fields are not set to 0"
+        ),
+    }
     COMMAND_PAYLOAD_WORDS_COUNT = 1
     # Newer ELE FW revisions return a 4-word response (2 payload words) while
     # older revisions still return 3 words. Keep exact validation per command.
@@ -1727,6 +1832,14 @@ class EleMessageDeriveKey(EleMessage):
     """
 
     CMD = MessageIDs.ELE_DERIVE_KEY_REQ.tag
+    RESPONSE_ROOT_CAUSES = {
+        ResponseIndication.ELE_WRONG_SIZE_FAILURE_IND.tag: "Output key size must be 16 or 32 bytes",
+        ResponseIndication.ELE_DISABLED_FEATURE_FAILURE_IND.tag: (
+            "Only one call per message unit is allowed"
+        ),
+        ResponseIndication.ELE_INCONSISTENT_PAR_FAILURE_IND.tag: "Reserved field is not 0",
+        ResponseIndication.ELE_INVALID_KEY_FAILURE_IND.tag: "ELE master key is not ready",
+    }
     COMMAND_PAYLOAD_WORDS_COUNT = 6
     MAX_RESPONSE_DATA_SIZE = 32
     _MAX_COMMAND_DATA_SIZE = 65536
@@ -1963,6 +2076,9 @@ class EleMessageGenerateKeyBlob(EleMessage):
     KEYBLOB_TAG = 0x81
     KEYBLOB_VERSION = 0x00
     CMD = MessageIDs.GENERATE_KEY_BLOB_REQ.tag
+    RESPONSE_ROOT_CAUSES = {
+        ResponseIndication.ELE_WRONG_SIZE_FAILURE_IND.tag: "Output size is too small",
+    }
     COMMAND_PAYLOAD_WORDS_COUNT = 7
     MAX_RESPONSE_DATA_SIZE = 512
 
@@ -2518,6 +2634,25 @@ class EleMessageWriteFuse(EleMessage):
     """
 
     CMD = MessageIDs.WRITE_FUSE.tag
+    RESPONSE_ROOT_CAUSES = {
+        ResponseIndication.ELE_WRONG_SIZE_FAILURE_IND.tag: (
+            "Inconsistent request: invalid bit length, bit outside of the fuse map, request "
+            "overlaps two fuse banks or payload does not match the bit length"
+        ),
+        ResponseIndication.ELE_OTP_PROGFAIL_FAILURE_IND.tag: "The write operation failed",
+        ResponseIndication.ELE_OTP_LOCKED_FAILURE_IND.tag: (
+            "Fuse is locked or the ECC fuse word is already programmed"
+        ),
+        ResponseIndication.ELE_OTP_INVALID_IDX_FAILURE_IND.tag: (
+            "Write of a redundant bit in a redundant bank or write of a protected fuse"
+        ),
+        ResponseIndication.ELE_INVALID_LIFECYCLE_IND.tag: (
+            "The targeted fuse cannot be written in the current lifecycle"
+        ),
+        ResponseIndication.ELE_BAD_VALUE_FAILURE_IND.tag: (
+            "Payload is not coherent with the request"
+        ),
+    }
     COMMAND_PAYLOAD_WORDS_COUNT = 2
     RESPONSE_PAYLOAD_WORDS_COUNT = 1
 
@@ -2591,7 +2726,7 @@ class EleMessageWriteShadowFuse(EleMessage):
 
         This command allows to write to the shadow fuses.
 
-        :param index: Fuse identifier expressed as its position in bit in the fuse map.
+        :param index: Shadow fuse word index (32-bit word offset in the fuse map, not bit position).
         :param value: Data to be written.
         """
         super().__init__()
@@ -2626,6 +2761,14 @@ class EleMessageEnableApc(EleMessage):
     """
 
     CMD = MessageIDs.ELE_ENABLE_APC_REQ.tag
+    RESPONSE_ROOT_CAUSES = {
+        ResponseIndication.ELE_APC_ALREADY_ENABLED_FAILURE_IND.tag: (
+            "The APC is already released from reset"
+        ),
+        ResponseIndication.ELE_WRONG_BOOT_MODE_FAILURE_IND.tag: (
+            "The current boot mode is not low power mode"
+        ),
+    }
 
 
 class EleMessageEnableRtc(EleMessage):
@@ -2638,6 +2781,14 @@ class EleMessageEnableRtc(EleMessage):
     """
 
     CMD = MessageIDs.ELE_ENABLE_RTC_REQ.tag
+    RESPONSE_ROOT_CAUSES = {
+        ResponseIndication.ELE_RTC_ALREADY_ENABLED_FAILURE_IND.tag: (
+            "The RTC is already released from reset"
+        ),
+        ResponseIndication.ELE_WRONG_BOOT_MODE_FAILURE_IND.tag: (
+            "The current boot mode is not low power mode"
+        ),
+    }
 
 
 class EleMessageResetApcContext(EleMessage):
@@ -2670,6 +2821,13 @@ class EleMessageSessionOpen(EleMessage):
 
     CMD = 0x10  # Session open command ID
     VERSION = 0x07  # Version for HSM API
+    RESPONSE_INDICATIONS = HsmResponseIndication
+    RESPONSE_ROOT_CAUSES = {
+        HsmResponseIndication.SAB_OUT_OF_MEMORY.tag: "Out of memory or too many sessions opened",
+        HsmResponseIndication.SAB_NOT_READY.tag: (
+            "Services have not been initialized, see SAB Init (0x17)"
+        ),
+    }
     COMMAND_PAYLOAD_WORDS_COUNT = 2  # Two reserved words
     RESPONSE_PAYLOAD_WORDS_COUNT = 1  # Session handle word
 
@@ -2797,6 +2955,7 @@ class EleMessageSessionClose(EleMessage):
 
     CMD = 0x11  # Session close command ID
     VERSION = 0x07  # Version for HSM API
+    RESPONSE_INDICATIONS = HsmResponseIndication
     COMMAND_PAYLOAD_WORDS_COUNT = 1  # Session handle word
     RESPONSE_PAYLOAD_WORDS_COUNT = 0  # No response payload
 
@@ -2885,6 +3044,7 @@ class EleMessageSabInit(EleMessage):
 
     CMD = 0x17  # SAB Init command ID
     VERSION = 0x07  # Version for HSM API
+    RESPONSE_INDICATIONS = HsmResponseIndication
     COMMAND_PAYLOAD_WORDS_COUNT = 0  # No payload words
     RESPONSE_PAYLOAD_WORDS_COUNT = 0  # No response payload
 
@@ -2964,6 +3124,7 @@ class EleMessageKeyStoreOpen(EleMessage):
 
     CMD = 0x30  # Key store open command ID
     VERSION = 0x07  # Version for HSM API
+    RESPONSE_INDICATIONS = HsmResponseIndication
     COMMAND_PAYLOAD_WORDS_COUNT = 5  # Session handle, key store ID, nonce, flags, CRC
     RESPONSE_PAYLOAD_WORDS_COUNT = 1  # Key store handle
 
@@ -3169,6 +3330,7 @@ class EleMessagePublicKeyExport(EleMessage):
 
     CMD = 0x32  # Public key export command ID
     VERSION = 0x07  # Version for HSM API
+    RESPONSE_INDICATIONS = HsmResponseIndication
     COMMAND_PAYLOAD_WORDS_COUNT = 6  # Key store handle, key ID, addresses, size, CRC
     RESPONSE_PAYLOAD_WORDS_COUNT = 1  # Output size
     MAX_RESPONSE_DATA_SIZE = 1024  # Maximum public key size
@@ -3341,6 +3503,7 @@ class EleMessageKeyStoreClose(EleMessage):
 
     CMD = MessageIDs.KEY_STORE_CLOSE_REQ.tag
     VERSION = 0x07  # Version for HSM API
+    RESPONSE_INDICATIONS = HsmResponseIndication
     COMMAND_PAYLOAD_WORDS_COUNT = 1  # Key store handle only
     RESPONSE_PAYLOAD_WORDS_COUNT = 0  # No response payload
 

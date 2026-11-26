@@ -38,11 +38,12 @@ from spsdk.crypto.keys import (
 )
 from spsdk.crypto.signature_provider import (
     HttpProxySP,
+    InteractivePlainFileSP,
     SignatureProvider,
     get_signature_provider_from_config_str,
 )
 from spsdk.exceptions import SPSDKError, SPSDKKeyError, SPSDKValueError
-from spsdk.utils.misc import write_file
+from spsdk.utils.misc import use_working_directory, write_file
 
 
 def test_types() -> None:
@@ -555,8 +556,75 @@ def test_convert_params_invalid_format() -> None:
     :raises SPSDKValueError: When parameter string format is invalid.
     """
     params = "type:file;file_path=/path"
-    with pytest.raises(SPSDKValueError):
+    with pytest.raises(SPSDKValueError, match="Invalid parameter 'type:file'"):
         SignatureProvider.convert_params(params)
+
+
+def test_convert_params_value_with_equal_sign() -> None:
+    """Test that convert_params keeps the '=' character inside of a parameter value."""
+    result = SignatureProvider.convert_params("type=file;file_path=dir=1/key.pem")
+    assert result == {"type": "file", "file_path": "dir=1/key.pem"}
+
+
+@pytest.mark.parametrize(
+    "sp_cfg, error_match",
+    [
+        (
+            "type=pkcs11;so_path:/lib/pkcs11.so;user_pin=123;token_label=My token 1;key_label=rsa",
+            "Invalid parameter 'so_path:/lib/pkcs11.so'",
+        ),
+        ("type=file;;file_path=key.pem", "Invalid parameter ''"),
+        ("type=file;=key.pem", "Invalid parameter '=key.pem'"),
+        ("file_path=key.pem;password=pwd", "Missing 'type' parameter"),
+        ("type=totally_legit_provider;param=1", "Unknown signature provider type"),
+        ("type=file;password=pwd", "missing a required argument: 'file_path'"),
+    ],
+)
+def test_get_signature_provider_malformed_config(
+    tmpdir: str, sp_cfg: str, error_match: str
+) -> None:
+    """Test that a malformed signature provider configuration reports the parsing problem.
+
+    The malformed configuration must not be reported as a missing private key file.
+
+    :param tmpdir: Temporary directory used as working directory.
+    :param sp_cfg: Malformed signature provider configuration string.
+    :param error_match: Regular expression expected in the error message.
+    """
+    with use_working_directory(str(tmpdir)):
+        with pytest.raises(SPSDKValueError, match=error_match) as exc_info:
+            get_signature_provider_from_config_str(sp_cfg)
+    assert "not found, Searched in" not in str(exc_info.value)
+
+
+def test_create_invalid_params() -> None:
+    """Test that SignatureProvider.create reports a missing type or missing required parameters."""
+    with pytest.raises(SPSDKValueError, match="Missing 'type' parameter"):
+        SignatureProvider.create("file_path=key.pem")
+    with pytest.raises(SPSDKValueError, match="missing a required argument: 'file_path'"):
+        SignatureProvider.create("type=file;password=pwd")
+
+
+def test_get_signature_provider_missing_key_file(tmpdir: str) -> None:
+    """Test that a missing plain key file is still reported as a file not found."""
+    with use_working_directory(str(tmpdir)):
+        with pytest.raises(SPSDKError, match="not found"):
+            get_signature_provider_from_config_str("missing_key.pem")
+
+
+@pytest.mark.parametrize("file_name", ["priv.pem", "key=1.pem", "dir=a;b/key.pem"])
+def test_get_signature_provider_plain_file_path(tmpdir: str, file_name: str) -> None:
+    """Test that plain key file paths work, including paths containing '=' or ';'.
+
+    :param tmpdir: Temporary directory where the key file is created.
+    :param file_name: Relative path of the private key file.
+    """
+    key_path = os.path.join(str(tmpdir), file_name)
+    os.makedirs(os.path.dirname(key_path), exist_ok=True)
+    write_file(PrivateKeyEcc.generate_key().export(), key_path, mode="wb")
+    with use_working_directory(str(tmpdir)):
+        provider = get_signature_provider_from_config_str(file_name)
+    assert isinstance(provider, InteractivePlainFileSP)
 
 
 def test_filter_params() -> None:
@@ -588,3 +656,20 @@ def test_filter_params() -> None:
 
     assert "type" not in filtered
     assert "extra" in filtered
+
+
+@pytest.mark.parametrize("encoding", [SPSDKEncoding.PEM, SPSDKEncoding.DER])
+def test_plain_key_with_password(tmpdir: str, encoding: SPSDKEncoding) -> None:
+    """Test that a file signature provider signs with a plain key even if a password is given.
+
+    :param tmpdir: Temporary directory for the key file.
+    :param encoding: Encoding of the private key file.
+    """
+    private_key = PrivateKeyEcc.generate_key()
+    private_key_path = os.path.join(tmpdir, f"plain.{encoding.name.lower()}")
+    write_file(private_key.export(encoding=encoding), private_key_path, mode="wb")
+    config_string = f"type=file;file_path={private_key_path};password={PASSPHRASE}"
+    signature_provider = SignatureProvider.create(config_string)
+    assert signature_provider
+    signature = signature_provider.get_signature(b"data to sign")
+    assert private_key.get_public_key().verify_signature(signature, b"data to sign")

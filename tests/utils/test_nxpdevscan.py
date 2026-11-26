@@ -13,6 +13,7 @@ The tests cover device detection, error handling, platform-specific
 behavior, and permission scenarios for NXP device scanning functionality.
 """
 
+import logging
 import platform
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -766,3 +767,184 @@ def test_uart_device_search_no_device_found_error_continues() -> None:
     assert "COM1" not in device_types or device_types.get("COM1") != "mboot device"
     assert device_types.get("COM5") == "SDP device"
     assert device_types.get("COM9") == "U-Boot console"
+
+
+_FAKE_PLUGIN_SOURCE = '''
+"""Fake device interface plugin used by nxpdevscan tests."""
+
+from typing import Optional
+
+from spsdk.mboot.protocol.serial_protocol import MbootSerialProtocol
+from spsdk.sdp.protocol.serial_protocol import SDPSerialProtocol
+from spsdk.utils.interfaces.device.base import DeviceBase
+
+
+class FakeDevice(DeviceBase):
+    """Fake device."""
+
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+    @property
+    def timeout(self) -> int:
+        return 0
+
+    @timeout.setter
+    def timeout(self, value: int) -> None:
+        pass
+
+    @property
+    def is_opened(self) -> bool:
+        return False
+
+    def open(self) -> None:
+        pass
+
+    def close(self) -> None:
+        pass
+
+    def read(self, length: int, timeout: Optional[int] = None) -> bytes:
+        return b""
+
+    def write(self, data: bytes, timeout: Optional[int] = None) -> None:
+        pass
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class FakeMbootInterface(MbootSerialProtocol):
+    """Fake mboot plugin interface."""
+
+    identifier = "fake_mboot"
+
+    @classmethod
+    def scan(cls, port: Optional[str] = None, timeout: Optional[int] = None) -> list:
+        return [cls(FakeDevice("fake-mboot-0")), cls(FakeDevice("fake-mboot-1"))]
+
+
+class FakeFailingInterface(MbootSerialProtocol):
+    """Fake mboot plugin interface which fails during scan."""
+
+    identifier = "fake_failing"
+
+    @classmethod
+    def scan(cls, timeout: Optional[int] = None) -> list:
+        raise RuntimeError("Plugin scan crashed")
+
+
+class FakeRequiredArgInterface(MbootSerialProtocol):
+    """Fake mboot plugin interface which requires a scan parameter."""
+
+    identifier = "fake_required"
+
+    @classmethod
+    def scan(cls, config: str, timeout: Optional[int] = None) -> list:
+        return [cls(FakeDevice(config))]
+
+
+class FakeSdpInterface(SDPSerialProtocol):
+    """Fake SDP plugin interface."""
+
+    identifier = "fake_sdp"
+
+    @classmethod
+    def scan(cls, timeout: Optional[int] = None) -> list:
+        return [cls(FakeDevice("fake-sdp-0"))]
+'''
+
+
+@pytest.fixture
+def fake_interface_plugin(tmp_path: Any) -> Any:
+    """Register a fake device interface plugin and clean up afterwards.
+
+    :param tmp_path: Pytest temporary directory.
+    :return: Generator yielding the plugin module name.
+    """
+    # pylint: disable=import-outside-toplevel
+    import sys
+
+    from spsdk.utils.plugins import PluginsManager
+
+    module_name = "spsdk_fake_devscan_plugin"
+    plugin_file = tmp_path / f"{module_name}.py"
+    plugin_file.write_text(_FAKE_PLUGIN_SOURCE)
+    manager = PluginsManager()
+    original_plugins = dict(manager.plugins)
+    with patch.object(PluginsManager, "load_from_entrypoints", MagicMock(return_value=0)):
+        manager.load_from_source_file(str(plugin_file), module_name)
+        yield module_name
+    manager.plugins = original_plugins
+    sys.modules.pop(module_name, None)
+
+
+def test_plugin_device_search(
+    fake_interface_plugin: Any,  # pylint: disable=redefined-outer-name
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Test that devices found by device interface plugins are reported.
+
+    Failing plugins and plugins requiring scan parameters must be skipped with a warning
+    while devices from other plugins are still returned.
+
+    :param fake_interface_plugin: Fixture registering fake interface plugin.
+    :param caplog: Pytest log capture fixture.
+    """
+    with caplog.at_level(logging.WARNING):
+        devices = nds.search_plugin_devices()
+
+    found = sorted((dev.protocol, dev.identifier, dev.device) for dev in devices)
+    assert found == [
+        ("mboot", "fake_mboot", "fake-mboot-0"),
+        ("mboot", "fake_mboot", "fake-mboot-1"),
+        ("sdp", "fake_sdp", "fake-sdp-0"),
+    ]
+    assert all(isinstance(dev, devicedescription.PluginDeviceDescription) for dev in devices)
+    assert "fake_failing" in caplog.text
+    assert "Plugin scan crashed" in caplog.text
+    assert "fake_required" in caplog.text
+    assert "config" in caplog.text
+    assert "Protocol: mboot" in str(devices[0])
+
+
+def test_plugin_device_search_builtin_interfaces_excluded() -> None:
+    """Test that built-in interfaces are not scanned as plugins."""
+    with patch(
+        "spsdk.utils.plugins.PluginsManager.load_from_entrypoints", MagicMock(return_value=0)
+    ):
+        with patch.object(
+            nds.MbootUARTInterface, "scan", MagicMock(side_effect=AssertionError("called"))
+        ):
+            assert nds.search_plugin_devices() == []
+
+
+def test_plugin_device_search_loading_fails() -> None:
+    """Test that failure of plugin loading doesn't break the search."""
+    with patch.object(
+        nds.MbootProtocolBase,
+        "get_plugin_interface_classes",
+        MagicMock(side_effect=SPSDKError("broken")),
+    ):
+        with patch.object(
+            nds.SDPProtocolBase, "get_plugin_interface_classes", MagicMock(return_value=[])
+        ):
+            assert nds.search_plugin_devices() == []
+
+
+def test_nxpdevscan_app_plugin_scope(
+    fake_interface_plugin: Any,  # pylint: disable=redefined-outer-name
+) -> None:
+    """Test nxpdevscan CLI lists devices found by interface plugins.
+
+    :param fake_interface_plugin: Fixture registering fake interface plugin.
+    """
+    # pylint: disable=import-outside-toplevel
+    from click.testing import CliRunner
+
+    from spsdk.apps import nxpdevscan as nxpdevscan_app
+
+    result = CliRunner().invoke(nxpdevscan_app.main, ["--plugin"])
+    assert result.exit_code == 0, result.output
+    assert "fake_mboot" in result.output
+    assert "fake-mboot-1" in result.output
+    assert "fake_sdp" in result.output

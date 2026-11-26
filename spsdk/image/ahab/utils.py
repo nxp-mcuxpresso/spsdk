@@ -21,6 +21,7 @@ from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
 from spsdk.crypto.signature_provider import SignatureProvider
 from spsdk.image.ahab.ahab_abstract_interfaces import HeaderContainer
 from spsdk.image.ahab.ahab_blob import AhabBlob
+from spsdk.image.ahab.ahab_container import AHABContainer, AHABContainerBase
 from spsdk.image.ahab.ahab_data import (
     AhabChipContainerConfig,
     AHABTags,
@@ -37,7 +38,7 @@ from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
 from spsdk.utils.family import FamilyRevision, get_db
-from spsdk.utils.misc import load_binary
+from spsdk.utils.misc import BinaryPattern, load_binary
 from spsdk.utils.universal_binary_file import UniversalBinaryFile
 
 logger = logging.getLogger(__name__)
@@ -332,6 +333,75 @@ def ahab_re_sign(
             f.write(signature_data)
 
 
+def _get_container_setting_changes(
+    original: AHABContainerBase, updated: AHABContainerBase
+) -> list[str]:
+    """Get list of container settings changed by applying the signing configuration.
+
+    Compares the human-readable container flags (SRK set, used SRK ID, SRK revoke mask and
+    family specific flags), fuse version and SW version of the original and updated container.
+
+    :param original: Container before the signing configuration has been applied.
+    :param updated: Container after the signing configuration has been applied.
+    :return: List of descriptions of changed settings, empty if nothing changed.
+    """
+    original_cfg = original._create_flags_config()
+    updated_cfg = updated._create_flags_config()
+    original_cfg["fuse_version"] = original.fuse_version
+    original_cfg["sw_version"] = original.sw_version
+    updated_cfg["fuse_version"] = updated.fuse_version
+    updated_cfg["sw_version"] = updated.sw_version
+    # Assigning the SRK set to an unsigned container is the purpose of signing
+    if original.flag_srk_set == FlagsSrkSet.NONE:
+        original_cfg.pop("srk_set", None)
+    return [
+        f"{key}: {original_cfg[key]} -> {value}"
+        for key, value in updated_cfg.items()
+        if key in original_cfg and original_cfg[key] != value
+    ]
+
+
+def _is_v2x_container(container: AHABContainer) -> bool:
+    """Check if the container is a V2X firmware container.
+
+    The V2X image embedded as an OEM image (double authentication) is only a payload of the OEM
+    container, so it doesn't make the OEM container a V2X container and the container must be signed.
+
+    :param container: AHAB container to check.
+    :return: True if the container contains V2X firmware images, False otherwise.
+    """
+    return any(
+        "v2x" in image.flags_core_id_name and image.flags_image_type_name != "v2x_as_image"
+        for image in container.image_array
+    )
+
+
+def _keep_gaps_behind_grown_images(
+    original_container: AHABContainer, container: AHABContainer
+) -> None:
+    """Keep the data stored in the gaps behind the images at their original offsets.
+
+    The encryption may pad an image, so the image grows into the gap behind it while the
+    offset of the next image is preserved. The gap is shortened by the growth of the image.
+
+    :param original_container: Container before the update.
+    :param container: Updated container with the same images.
+    """
+    for ix, (original_image, image) in enumerate(
+        zip(original_container.image_array, container.image_array)
+    ):
+        growth = image.image_size - original_image.image_size
+        if growth <= 0 or not image.gap_after_image:
+            continue
+        if any(image.gap_after_image_binary[:growth]):
+            logger.warning(
+                f"Image {ix} in container 0x{container.chip_config.container_offset:04X} has grown "
+                f"by {growth} B and overwrites the data stored in the gap behind it."
+            )
+        image.gap_after_image = max(image.gap_after_image - growth, 0)
+        image.gap_after_image_binary = image.gap_after_image_binary[growth:]
+
+
 def ahab_sign_image(
     image_path: str, config: Config, mem_type: str, image_id: int = 0
 ) -> tuple[bytes, BootableImage]:
@@ -356,7 +426,8 @@ def ahab_sign_image(
         memory = MemoryType.from_label(mem_type)
     except KeyError:
         memory = None
-    bimg = BootableImage.parse(load_binary(image_path), family=family, mem_type=memory)
+    input_binary = load_binary(image_path)
+    bimg = BootableImage.parse(input_binary, family=family, mem_type=memory)
     logger.info(f"Parsed Bootable image memory map: {bimg.image_info().draw()}")
     act_ahab_image_id = 0
     for segment in bimg.segments:
@@ -369,14 +440,7 @@ def ahab_sign_image(
                 if container.flag_srk_set not in [FlagsSrkSet.OEM, FlagsSrkSet.NONE]:
                     logger.info("Skipping signing of none OEM and non signed container")
                     continue
-                # Check if container contains V2X image
-                v2x_found = False
-                if len(container.image_array) > 0:
-                    for image in container.image_array:
-                        if "v2x" in image.flags_core_id_name:
-                            v2x_found = True
-                            break
-                if v2x_found:
+                if _is_v2x_container(container):
                     logger.info("Skipping signing of V2X container")
                     continue
                 original_container = deepcopy(container)
@@ -410,8 +474,9 @@ def ahab_sign_image(
                         # Erase existing image hash
                         image.image_hash = b""
                 container.update_fields()
+                _keep_gaps_behind_grown_images(original_container, container)
                 # Calculate absolute offset (segment + container)
-                segment_offset = segment.full_image_offset
+                segment_offset = bimg.get_segment_offset(segment)
                 container_offset = container.chip_config.container_offset
                 absolute_offset = segment_offset + container_offset
 
@@ -422,6 +487,14 @@ def ahab_sign_image(
                     f"{container.print_diff(original_container.diff(container))}"
                 )
                 logger.info(changes_info)
+                setting_changes = _get_container_setting_changes(original_container, container)
+                if setting_changes:
+                    logger.warning(
+                        "Signing configuration changed settings of the container at absolute offset "
+                        f"{hex(absolute_offset)} in {segment.image_info().name}: "
+                        f"{'; '.join(setting_changes)}. Align the signing configuration with "
+                        "the image build configuration if this is not intended."
+                    )
 
             segment.ahab.update_fields()
             segment.ahab.verify()
@@ -429,7 +502,18 @@ def ahab_sign_image(
         else:
             logger.warning(f"{segment} does not contain AHAB data")
 
-    return bimg.export(), bimg
+    signed_binary = bimg.export()
+    dropped_data = input_binary[len(signed_binary) :]
+    if dropped_data and dropped_data != BinaryPattern(bimg.image_pattern).get_block(
+        len(dropped_data)
+    ):
+        logger.warning(
+            f"The signed image ({len(signed_binary)} bytes) is smaller than the input image "
+            f"({len(input_binary)} bytes). The input data behind offset 0x{len(signed_binary):X} "
+            f"is not part of the bootable image for memory type '{bimg.mem_type.label}' and it "
+            "has been dropped. Specify the correct memory type if this is not intended."
+        )
+    return signed_binary, bimg
 
 
 def ahab_fix_signature_block_version(

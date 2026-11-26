@@ -1,0 +1,8 @@
+uuu_version 1.2.39
+
+# @_flash.bin            | bootloader
+
+# SPL loads U-Boot through the ROM API from the same stream (i.MX 8ULP, i.MX 91, i.MX 93),
+# the whole image is downloaded in this stage and no SPL SDP device enumerates
+SDPS[-t 10000]: boot -f _flash.bin
+SDPS: done

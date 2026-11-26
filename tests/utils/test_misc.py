@@ -720,7 +720,7 @@ def test_load_secret(data_dir: str) -> None:
 @pytest.mark.parametrize(
     "file_content,file_extension,error_substring",
     [
-        ('{"key": "value" "another": "value"}', ".json", "expecting ',' delimiter"),
+        ('{"key": "value" "another": "value"}', ".json", "comma"),
         ("key:\n  - value\n  invalid_indent", ".yaml", "scanning a simple key"),
         ("key: [\n  value\n  missing_bracket", ".yaml", "parsing a flow sequence"),
         ("key: 'unclosed string", ".yaml", "scanning a quoted scalar"),

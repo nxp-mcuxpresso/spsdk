@@ -3,6 +3,8 @@ HAB
 ------
 
 HAB (High Assurance Boot) provides a mechanism to ensure that the running software can be trusted.
+In SPSDK, HAB is supported for i.MX RT10xx and RT115x/RT116x/RT117x devices; newer devices with EdgeLock Enclave
+(i.MX 8ULP, i.MX 9x, i.MX RT118x, ...) use :doc:`/images/ahab` instead. See the :doc:`/devices_list` for details.
 Nxpimage application is used for generation of HAB container including CSF data and image encryption(if applicable).
 It is an actual successor of legacy elftosb and CST tools.
 

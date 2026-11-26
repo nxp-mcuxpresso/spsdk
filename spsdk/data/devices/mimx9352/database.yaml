@@ -155,6 +155,7 @@ features:
     based_on_ele: True # Flag if the implementation of DAT is based on EdgeLock Enclave
     dat_is_using_sha256_always: True
     dmbox_ap_ix: 0
+    dmbox_ap_shared_with_mem_ap: True # RM: SWJ-DP(AUTH) ISP-AP (mailbox) vs SWJ-DP AHB-AP share AP0
 
   # ======== AHAB section ========
   ahab:
@@ -378,7 +379,10 @@ features:
     size: 0x2000_0000
 
   # ======== nxpuuu ==========
-  nxpuuu: {}
+  nxpuuu:
+    boot_devices:
+      spl:
+        script: ../../common/uuu/spl_boot_rom.lst
 
   # ======== EL2GO TP section ========
   el2go_tp:
@@ -390,3 +394,6 @@ features:
 
   # ===== TLV =====
   tlv_blob: {}
+
+  # ======== AISEC protected-directory container ========
+  aisec: {}

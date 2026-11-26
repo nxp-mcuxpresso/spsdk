@@ -1,0 +1,3 @@
+# Golden AISEC fixtures are byte-exact: the container binaries embed the model files,
+# so no end-of-line conversion may be applied to any file in this directory.
+* -text

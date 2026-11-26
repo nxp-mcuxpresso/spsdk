@@ -1,0 +1,13 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ==================================  PFR CFPA configuration for mcxn946  =====================================
+# NXP chip family identifier.
+family: mcxn946
+# Revision of silicon.
+revision: latest
+# PFR / IFR configuration area type.
+type: CFPA
+# CFPA register settings. In this minimal example we keep the factory defaults.
+settings: {}
